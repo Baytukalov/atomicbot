@@ -70,8 +70,6 @@ export function AutoTopUpControl({
   onError,
 }: AutoTopUpControlProps) {
   const [open, setOpen] = React.useState(false);
-  const [infoOpen, setInfoOpen] = React.useState(false);
-  const infoRef = React.useRef<HTMLButtonElement>(null);
   const [thresholdUsd, setThresholdUsd] = React.useState(String(settings.thresholdUsd));
   const [topupAmountUsd, setTopupAmountUsd] = React.useState(String(settings.topupAmountUsd));
   const [monthlyCapUsd, setMonthlyCapUsd] = React.useState(
@@ -123,17 +121,6 @@ export function AutoTopUpControl({
     }
   }, [monthlyCapUsd, onPatch, onError, settings.enabled, thresholdUsd, topupAmountUsd]);
 
-  React.useEffect(() => {
-    if (!infoOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (infoRef.current && !infoRef.current.contains(e.target as Node)) {
-        setInfoOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [infoOpen]);
-
   const wrapperClassName = className ? `${s.root} ${className}` : s.root;
   const monthlyLimitText =
     settings.monthlyCapUsd === null
@@ -146,20 +133,6 @@ export function AutoTopUpControl({
         <div className={s.header}>
           <div className={s.titleWrap}>
             <span className={s.title}>{title}</span>
-            <button
-              ref={infoRef}
-              type="button"
-              className={s.infoBtn}
-              onClick={() => setInfoOpen((v) => !v)}
-              aria-label="What is auto refill?"
-            >
-              &#9432;
-              {infoOpen ? (
-                <div className={s.infoPopover}>
-                  Automatically recharge card when credit balance falls below a threshold
-                </div>
-              ) : null}
-            </button>
           </div>
 
           <div className={s.actions}>
@@ -190,8 +163,8 @@ export function AutoTopUpControl({
         </div>
 
         <span className={s.hint}>
-          Add {formatDollars(settings.topupAmountUsd)} when balance &lt;{" "}
-          {formatDollars(settings.thresholdUsd)}
+          Automatically add ${settings.topupAmountUsd} when balance drops below $
+          {settings.thresholdUsd}. You can change this anytime.
         </span>
         <span className={s.subHintSrOnly}>{monthlyLimitText}</span>
         {!settings.hasPaymentMethod ? (
