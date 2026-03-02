@@ -22,7 +22,7 @@ import {
   fetchAutoTopUpSettings,
   fetchDesktopStatus,
   patchAutoTopUpSettings,
-} from "@store/slices/authSlice";
+} from "@store/slices/auth/authSlice";
 import { setOnboarded } from "@store/slices/onboardingSlice";
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
 import { backendApi, type SubscriptionPriceInfo } from "@ipc/backendApi";

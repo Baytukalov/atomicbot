@@ -8,58 +8,46 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
 import {
   backendApi,
-  type AutoTopUpSettingsResponse,
   type DesktopStatusResponse,
-  type DeploymentInfo,
-  type SubscriptionInfo,
   type UpdateAutoTopUpPayload,
 } from "@ipc/backendApi";
-import { reloadConfig } from "./configSlice";
-import type { GatewayRequest } from "./chatSlice";
+import { reloadConfig } from "../configSlice";
+import type { GatewayRequest } from "../chat/chatSlice";
+import type {
+  AuthRefreshReason,
+  AuthSliceState,
+  ConfigSnapshot,
+  SelfManagedBackup,
+} from "./auth-types";
+import { DEFAULT_AUTO_TOP_UP_SETTINGS } from "./auth-types";
+import {
+  clearBackup,
+  clearPersistedAuthToken,
+  persistAuthToken,
+  persistMode,
+  readBackup,
+  readPersistedAuthToken,
+  readPersistedMode,
+  saveBackup,
+} from "./auth-persistence";
+import {
+  extractAuth,
+  extractModel,
+  getBaseHash,
+  normalizeAutoTopUpSettings,
+  resetAuthFields,
+} from "./auth-utils";
 
-export type SetupMode = "paid" | "self-managed";
-
-export type AutoTopUpState = {
-  enabled: boolean;
-  thresholdUsd: number;
-  topupAmountUsd: number;
-  monthlyCapUsd: number | null;
-  hasPaymentMethod: boolean;
-  currentMonthSpentUsd: number;
-};
-
-export const DEFAULT_AUTO_TOP_UP_SETTINGS: AutoTopUpState = {
-  enabled: true,
-  thresholdUsd: 2,
-  topupAmountUsd: 10,
-  monthlyCapUsd: 300,
-  hasPaymentMethod: false,
-  currentMonthSpentUsd: 0,
-};
-
-export type AuthSliceState = {
-  mode: SetupMode | null;
-  jwt: string | null;
-  email: string | null;
-  userId: string | null;
-  balance: { remaining: number; limit: number; usage: number } | null;
-  deployment: DeploymentInfo | null;
-  subscription: SubscriptionInfo | null;
-  loading: boolean;
-  error: string | null;
-  lastRefreshAt: number | null;
-  refreshInFlight: boolean;
-  refreshError: string | null;
-  nextAllowedAt: number | null;
-  refreshFailureCount: number;
-  topUpPending: boolean;
-  topUpError: string | null;
-  autoTopUp: AutoTopUpState;
-  autoTopUpLoading: boolean;
-  autoTopUpSaving: boolean;
-  autoTopUpError: string | null;
-  autoTopUpLoaded: boolean;
-};
+export type { SetupMode, AutoTopUpState, AuthSliceState, AuthRefreshReason } from "./auth-types";
+export { DEFAULT_AUTO_TOP_UP_SETTINGS } from "./auth-types";
+export { persistMode } from "./auth-persistence";
+export {
+  extractAuth,
+  extractModel,
+  getBaseHash,
+  normalizeAutoTopUpSettings,
+  resetAuthFields,
+} from "./auth-utils";
 
 const initialState: AuthSliceState = {
   mode: null,
@@ -84,161 +72,6 @@ const initialState: AuthSliceState = {
   autoTopUpError: null,
   autoTopUpLoaded: false,
 };
-
-export type AuthRefreshReason = "immediate" | "interval" | "focus" | "visibility";
-
-// ── localStorage helpers ──────────────────────────────────────
-
-const MODE_LS_KEY = "openclaw-desktop-mode";
-const AUTH_TOKEN_LS_KEY = "openclaw-auth-token";
-const BACKUP_LS_KEY = "openclaw-self-managed-backup";
-
-type SelfManagedBackup = {
-  credentials: {
-    profiles: Record<string, unknown>;
-    order: Record<string, string[]>;
-  };
-  configAuth: {
-    profiles?: Record<string, unknown>;
-    order?: Record<string, unknown>;
-  };
-  configModel: {
-    primary?: string;
-    models?: Record<string, unknown>;
-  };
-  savedAt: string;
-};
-
-export function persistMode(mode: SetupMode): void {
-  try {
-    localStorage.setItem(MODE_LS_KEY, mode);
-  } catch {
-    // best effort
-  }
-}
-
-function readPersistedMode(): SetupMode | null {
-  try {
-    const val = localStorage.getItem(MODE_LS_KEY);
-    if (val === "paid" || val === "self-managed") return val;
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-type PersistedAuthToken = { jwt: string; email: string; userId: string };
-
-function persistAuthToken(data: PersistedAuthToken): void {
-  try {
-    localStorage.setItem(AUTH_TOKEN_LS_KEY, JSON.stringify(data));
-  } catch {
-    // best effort
-  }
-}
-
-function readPersistedAuthToken(): PersistedAuthToken | null {
-  try {
-    const raw = localStorage.getItem(AUTH_TOKEN_LS_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
-    if (typeof parsed?.jwt === "string") return parsed as unknown as PersistedAuthToken;
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-function clearPersistedAuthToken(): void {
-  try {
-    localStorage.removeItem(AUTH_TOKEN_LS_KEY);
-  } catch {
-    // ignore
-  }
-}
-
-function readBackup(): SelfManagedBackup | null {
-  try {
-    const raw = localStorage.getItem(BACKUP_LS_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as SelfManagedBackup;
-  } catch {
-    return null;
-  }
-}
-
-function saveBackup(backup: SelfManagedBackup): void {
-  try {
-    localStorage.setItem(BACKUP_LS_KEY, JSON.stringify(backup));
-  } catch (err) {
-    console.warn("[authSlice] Failed to save backup:", err);
-  }
-}
-
-function clearBackup(): void {
-  try {
-    localStorage.removeItem(BACKUP_LS_KEY);
-  } catch {
-    // ignore
-  }
-}
-
-// ── Config extraction helpers ─────────────────────────────────
-
-type ConfigSnapshot = {
-  config: Record<string, unknown>;
-  hash?: string;
-  exists?: boolean;
-};
-
-function extractAuth(cfg: Record<string, unknown>) {
-  const auth =
-    cfg.auth && typeof cfg.auth === "object" && !Array.isArray(cfg.auth)
-      ? (cfg.auth as Record<string, unknown>)
-      : {};
-  return {
-    profiles: auth.profiles as Record<string, unknown> | undefined,
-    order: auth.order as Record<string, unknown> | undefined,
-  };
-}
-
-function extractModel(cfg: Record<string, unknown>) {
-  const agents =
-    cfg.agents && typeof cfg.agents === "object" ? (cfg.agents as Record<string, unknown>) : {};
-  const defaults =
-    agents.defaults && typeof agents.defaults === "object"
-      ? (agents.defaults as Record<string, unknown>)
-      : {};
-  const model =
-    defaults.model && typeof defaults.model === "object"
-      ? (defaults.model as Record<string, unknown>)
-      : {};
-  return {
-    primary: typeof model.primary === "string" ? model.primary : undefined,
-    models: defaults.models as Record<string, unknown> | undefined,
-  };
-}
-
-function getBaseHash(snap: { hash?: string }): string | null {
-  return typeof snap.hash === "string" && snap.hash.trim() ? snap.hash.trim() : null;
-}
-
-function normalizeAutoTopUpSettings(
-  raw?: Partial<AutoTopUpSettingsResponse> | null
-): AutoTopUpState {
-  return {
-    enabled: raw?.enabled ?? DEFAULT_AUTO_TOP_UP_SETTINGS.enabled,
-    thresholdUsd: raw?.thresholdUsd ?? DEFAULT_AUTO_TOP_UP_SETTINGS.thresholdUsd,
-    topupAmountUsd: raw?.topupAmountUsd ?? DEFAULT_AUTO_TOP_UP_SETTINGS.topupAmountUsd,
-    monthlyCapUsd:
-      raw?.monthlyCapUsd !== undefined
-        ? raw.monthlyCapUsd
-        : DEFAULT_AUTO_TOP_UP_SETTINGS.monthlyCapUsd,
-    hasPaymentMethod: raw?.hasPaymentMethod ?? DEFAULT_AUTO_TOP_UP_SETTINGS.hasPaymentMethod,
-    currentMonthSpentUsd:
-      raw?.currentMonthSpentUsd ?? DEFAULT_AUTO_TOP_UP_SETTINGS.currentMonthSpentUsd,
-  };
-}
 
 // ── Thunks ────────────────────────────────────────────────────
 
@@ -282,7 +115,6 @@ export const switchToSubscription = createAsyncThunk(
   async ({ request }: { request: GatewayRequest }, thunkApi) => {
     const api = getDesktopApiOrNull();
 
-    // 1. Read current credentials from auth-profiles.json
     let credentials: SelfManagedBackup["credentials"] = { profiles: {}, order: {} };
     if (api?.authReadProfiles) {
       try {
@@ -292,7 +124,6 @@ export const switchToSubscription = createAsyncThunk(
       }
     }
 
-    // 2. Read current config (auth + model sections)
     let configAuth: SelfManagedBackup["configAuth"] = {};
     let configModel: SelfManagedBackup["configModel"] = {};
     let baseHash: string | null = null;
@@ -309,9 +140,9 @@ export const switchToSubscription = createAsyncThunk(
       console.warn("[authSlice] Failed to read config:", err);
     }
 
-    // 3. Save backup to localStorage (skip if one already exists to stay idempotent —
-    //    a second switchToSubscription call, e.g. from the deep-link handler, would
-    //    otherwise overwrite the real backup with already-cleared data)
+    // Skip if one already exists to stay idempotent — a second
+    // switchToSubscription call would overwrite the real backup with
+    // already-cleared data.
     if (!readBackup()) {
       saveBackup({
         credentials,
@@ -321,7 +152,6 @@ export const switchToSubscription = createAsyncThunk(
       });
     }
 
-    // 4. Clear credentials (write empty store)
     if (api?.authWriteProfiles) {
       try {
         await api.authWriteProfiles({ profiles: {}, order: {} });
@@ -330,8 +160,7 @@ export const switchToSubscription = createAsyncThunk(
       }
     }
 
-    // 5. Clear config auth + model in a single patch.
-    //    RFC 7396 merge-patch: null deletes a key, "" clears a string value.
+    // RFC 7396 merge-patch: null deletes a key, "" clears a string value.
     if (baseHash) {
       try {
         await request("config.patch", {
@@ -351,7 +180,6 @@ export const switchToSubscription = createAsyncThunk(
       }
     }
 
-    // 6. Set mode
     thunkApi.dispatch(authActions.setMode("paid"));
     persistMode("paid");
   }
@@ -367,7 +195,6 @@ export const switchToSelfManaged = createAsyncThunk(
     const api = getDesktopApiOrNull();
     const backup = readBackup();
 
-    // 1. Restore or clear credentials
     if (api?.authWriteProfiles) {
       try {
         const restoredProfiles = backup?.credentials ?? { profiles: {}, order: {} };
@@ -380,7 +207,6 @@ export const switchToSelfManaged = createAsyncThunk(
       }
     }
 
-    // 2. Clear subscription config and restore backup (or clear)
     try {
       const snap = await request<ConfigSnapshot>("config.get", {});
       const baseHash = getBaseHash(snap);
@@ -416,14 +242,11 @@ export const switchToSelfManaged = createAsyncThunk(
       console.warn("[authSlice] Failed to patch config:", err);
     }
 
-    // 3. Clear JWT / auth state
     await thunkApi.dispatch(clearAuth());
 
-    // 4. Set mode
     thunkApi.dispatch(authActions.setMode("self-managed"));
     persistMode("self-managed");
 
-    // 5. Clean up backup
     clearBackup();
 
     return { hasBackup: !!backup };
@@ -588,7 +411,7 @@ const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    setMode(state, action: PayloadAction<SetupMode>) {
+    setMode(state, action: PayloadAction<AuthSliceState["mode"]>) {
       state.mode = action.payload;
     },
     setAuth(state, action: PayloadAction<{ jwt: string; email: string; userId: string }>) {
@@ -604,25 +427,7 @@ const authSlice = createSlice({
       state.balance = action.payload;
     },
     clearAuthState(state) {
-      state.jwt = null;
-      state.email = null;
-      state.userId = null;
-      state.balance = null;
-      state.deployment = null;
-      state.subscription = null;
-      state.error = null;
-      state.lastRefreshAt = null;
-      state.refreshInFlight = false;
-      state.refreshError = null;
-      state.nextAllowedAt = null;
-      state.refreshFailureCount = 0;
-      state.topUpPending = false;
-      state.topUpError = null;
-      state.autoTopUp = { ...DEFAULT_AUTO_TOP_UP_SETTINGS };
-      state.autoTopUpLoading = false;
-      state.autoTopUpSaving = false;
-      state.autoTopUpError = null;
-      state.autoTopUpLoaded = false;
+      resetAuthFields(state);
     },
     requestBackgroundRefresh(state, _action: PayloadAction<{ reason: AuthRefreshReason }>) {
       // reducer is intentionally empty; handled by listener middleware
@@ -660,24 +465,7 @@ const authSlice = createSlice({
         state.error = null;
       })
       .addCase(clearAuth.fulfilled, (state) => {
-        state.jwt = null;
-        state.email = null;
-        state.userId = null;
-        state.balance = null;
-        state.deployment = null;
-        state.subscription = null;
-        state.lastRefreshAt = null;
-        state.refreshInFlight = false;
-        state.refreshError = null;
-        state.nextAllowedAt = null;
-        state.refreshFailureCount = 0;
-        state.topUpPending = false;
-        state.topUpError = null;
-        state.autoTopUp = { ...DEFAULT_AUTO_TOP_UP_SETTINGS };
-        state.autoTopUpLoading = false;
-        state.autoTopUpSaving = false;
-        state.autoTopUpError = null;
-        state.autoTopUpLoaded = false;
+        resetAuthFields(state);
       })
       .addCase(fetchDesktopStatus.pending, (state) => {
         state.loading = true;

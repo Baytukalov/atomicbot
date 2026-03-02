@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer } from "electron";
 import type { ExecResult } from "./shared/types";
 import type { GogExecResult } from "./main/gog/types";
 import type { GatewayState, ResetAndCloseResult } from "./main/types";
+import { IPC, IPC_EVENTS } from "./shared/ipc-channels";
 
 type UpdateAvailablePayload = {
   version: string;
@@ -190,123 +191,111 @@ type OpenclawDesktopApi = {
 const api: OpenclawDesktopApi = {
   platform: process.platform,
   version: "0.0.0",
-  openLogs: async () => ipcRenderer.invoke("open-logs"),
-  openWorkspaceFolder: async () => ipcRenderer.invoke("open-workspace-folder"),
-  openOpenclawFolder: async () => ipcRenderer.invoke("open-openclaw-folder"),
-  toggleDevTools: async () => ipcRenderer.invoke("devtools-toggle"),
-  retry: async () => ipcRenderer.invoke("gateway-retry"),
-  resetAndClose: async () => ipcRenderer.invoke("reset-and-close"),
-  getGatewayInfo: async () => ipcRenderer.invoke("gateway-get-info"),
-  getConsentInfo: async () => ipcRenderer.invoke("consent-get"),
-  acceptConsent: async () => ipcRenderer.invoke("consent-accept"),
-  startGateway: async () => ipcRenderer.invoke("gateway-start"),
-  openExternal: async (url: string) => ipcRenderer.invoke("open-external", { url }),
+  openLogs: async () => ipcRenderer.invoke(IPC.openLogs),
+  openWorkspaceFolder: async () => ipcRenderer.invoke(IPC.openWorkspaceFolder),
+  openOpenclawFolder: async () => ipcRenderer.invoke(IPC.openOpenclawFolder),
+  toggleDevTools: async () => ipcRenderer.invoke(IPC.devtoolsToggle),
+  retry: async () => ipcRenderer.invoke(IPC.gatewayRetry),
+  resetAndClose: async () => ipcRenderer.invoke(IPC.resetAndClose),
+  getGatewayInfo: async () => ipcRenderer.invoke(IPC.gatewayGetInfo),
+  getConsentInfo: async () => ipcRenderer.invoke(IPC.consentGet),
+  acceptConsent: async () => ipcRenderer.invoke(IPC.consentAccept),
+  startGateway: async () => ipcRenderer.invoke(IPC.gatewayStart),
+  openExternal: async (url: string) => ipcRenderer.invoke(IPC.openExternal, { url }),
   setApiKey: async (provider: string, apiKey: string) =>
-    ipcRenderer.invoke("auth-set-api-key", { provider, apiKey }),
+    ipcRenderer.invoke(IPC.authSetApiKey, { provider, apiKey }),
   setSetupToken: async (provider: string, token: string) =>
-    ipcRenderer.invoke("auth-set-setup-token", { provider, token }),
+    ipcRenderer.invoke(IPC.authSetSetupToken, { provider, token }),
   validateApiKey: async (provider: string, apiKey: string) =>
-    ipcRenderer.invoke("auth-validate-api-key", { provider, apiKey }),
-  authHasApiKey: async (provider: string) => ipcRenderer.invoke("auth-has-api-key", { provider }),
-  authReadProfiles: async () => ipcRenderer.invoke("auth-read-profiles"),
+    ipcRenderer.invoke(IPC.authValidateApiKey, { provider, apiKey }),
+  authHasApiKey: async (provider: string) => ipcRenderer.invoke(IPC.authHasApiKey, { provider }),
+  authReadProfiles: async () => ipcRenderer.invoke(IPC.authReadProfiles),
   authWriteProfiles: async (store: {
     profiles: Record<string, unknown>;
     order: Record<string, string[]>;
-  }) => ipcRenderer.invoke("auth-write-profiles", store),
-  // OAuth login (runs full flow in main process, opens browser automatically)
-  oauthLogin: async (provider: string) => ipcRenderer.invoke("oauth:login", { provider }),
+  }) => ipcRenderer.invoke(IPC.authWriteProfiles, store),
+  oauthLogin: async (provider: string) => ipcRenderer.invoke(IPC.oauthLogin, { provider }),
   onOAuthProgress: (cb: (payload: { provider: string; message: string }) => void) =>
-    onIpc("oauth:progress", cb),
-  gogAuthList: async () => ipcRenderer.invoke("gog-auth-list"),
+    onIpc(IPC_EVENTS.oauthProgress, cb),
+  gogAuthList: async () => ipcRenderer.invoke(IPC.gogAuthList),
   gogAuthAdd: async (params: { account: string; services?: string; noInput?: boolean }) =>
-    ipcRenderer.invoke("gog-auth-add", params),
+    ipcRenderer.invoke(IPC.gogAuthAdd, params),
   gogAuthCredentials: async (params: { credentialsJson: string; filename?: string }) =>
-    ipcRenderer.invoke("gog-auth-credentials", params),
-  memoCheck: async () => ipcRenderer.invoke("memo-check"),
-  remindctlAuthorize: async () => ipcRenderer.invoke("remindctl-authorize"),
-  remindctlTodayJson: async () => ipcRenderer.invoke("remindctl-today-json"),
-  obsidianCliCheck: async () => ipcRenderer.invoke("obsidian-cli-check"),
-  obsidianCliPrintDefaultPath: async () => ipcRenderer.invoke("obsidian-cli-print-default-path"),
-  obsidianVaultsList: async () => ipcRenderer.invoke("obsidian-vaults-list"),
+    ipcRenderer.invoke(IPC.gogAuthCredentials, params),
+  memoCheck: async () => ipcRenderer.invoke(IPC.memoCheck),
+  remindctlAuthorize: async () => ipcRenderer.invoke(IPC.remindctlAuthorize),
+  remindctlTodayJson: async () => ipcRenderer.invoke(IPC.remindctlTodayJson),
+  obsidianCliCheck: async () => ipcRenderer.invoke(IPC.obsidianCliCheck),
+  obsidianCliPrintDefaultPath: async () => ipcRenderer.invoke(IPC.obsidianCliPrintDefaultPath),
+  obsidianVaultsList: async () => ipcRenderer.invoke(IPC.obsidianVaultsList),
   obsidianCliSetDefault: async (params: { vaultName: string }) =>
-    ipcRenderer.invoke("obsidian-cli-set-default", params),
-  ghCheck: async () => ipcRenderer.invoke("gh-check"),
-  ghAuthLoginPat: async (params: { pat: string }) =>
-    ipcRenderer.invoke("gh-auth-login-pat", params),
-  ghAuthStatus: async () => ipcRenderer.invoke("gh-auth-status"),
-  ghApiUser: async () => ipcRenderer.invoke("gh-api-user"),
-  onGatewayState: (cb: (state: GatewayState) => void) => onIpc("gateway-state", cb),
-  // OpenClaw config (openclaw.json)
-  readConfig: async () => ipcRenderer.invoke("config-read"),
-  writeConfig: async (content: string) => ipcRenderer.invoke("config-write", { content }),
-  // Launch at login (auto-start)
-  getLaunchAtLogin: async () => ipcRenderer.invoke("launch-at-login-get"),
+    ipcRenderer.invoke(IPC.obsidianCliSetDefault, params),
+  ghCheck: async () => ipcRenderer.invoke(IPC.ghCheck),
+  ghAuthLoginPat: async (params: { pat: string }) => ipcRenderer.invoke(IPC.ghAuthLoginPat, params),
+  ghAuthStatus: async () => ipcRenderer.invoke(IPC.ghAuthStatus),
+  ghApiUser: async () => ipcRenderer.invoke(IPC.ghApiUser),
+  onGatewayState: (cb: (state: GatewayState) => void) => onIpc(IPC_EVENTS.gatewayState, cb),
+  readConfig: async () => ipcRenderer.invoke(IPC.configRead),
+  writeConfig: async (content: string) => ipcRenderer.invoke(IPC.configWrite, { content }),
+  getLaunchAtLogin: async () => ipcRenderer.invoke(IPC.launchAtLoginGet),
   setLaunchAtLogin: async (enabled: boolean) =>
-    ipcRenderer.invoke("launch-at-login-set", { enabled }),
-  // App version
-  getAppVersion: async () => ipcRenderer.invoke("get-app-version"),
+    ipcRenderer.invoke(IPC.launchAtLoginSet, { enabled }),
+  getAppVersion: async () => ipcRenderer.invoke(IPC.getAppVersion),
   fetchReleaseNotes: async (version: string, owner: string, repo: string) =>
-    ipcRenderer.invoke("fetch-release-notes", { version, owner, repo }),
-  // Auto-updater
-  checkForUpdate: async () => ipcRenderer.invoke("updater-check"),
-  downloadUpdate: async () => ipcRenderer.invoke("updater-download"),
-  installUpdate: async () => ipcRenderer.invoke("updater-install"),
+    ipcRenderer.invoke(IPC.fetchReleaseNotes, { version, owner, repo }),
+  checkForUpdate: async () => ipcRenderer.invoke(IPC.updaterCheck),
+  downloadUpdate: async () => ipcRenderer.invoke(IPC.updaterDownload),
+  installUpdate: async () => ipcRenderer.invoke(IPC.updaterInstall),
   onUpdateAvailable: (cb: (payload: UpdateAvailablePayload) => void) =>
-    onIpc("updater-available", cb),
+    onIpc(IPC_EVENTS.updaterAvailable, cb),
   onUpdateDownloadProgress: (cb: (payload: UpdateDownloadProgressPayload) => void) =>
-    onIpc("updater-download-progress", cb),
+    onIpc(IPC_EVENTS.updaterDownloadProgress, cb),
   onUpdateDownloaded: (cb: (payload: UpdateDownloadedPayload) => void) =>
-    onIpc("updater-downloaded", cb),
-  onUpdateError: (cb: (payload: UpdateErrorPayload) => void) => onIpc("updater-error", cb),
-  // Backup & restore
-  createBackup: async (mode?: string) => ipcRenderer.invoke("backup-create", { mode }),
+    onIpc(IPC_EVENTS.updaterDownloaded, cb),
+  onUpdateError: (cb: (payload: UpdateErrorPayload) => void) => onIpc(IPC_EVENTS.updaterError, cb),
+  createBackup: async (mode?: string) => ipcRenderer.invoke(IPC.backupCreate, { mode }),
   restoreBackup: async (data: string, filename?: string) =>
-    ipcRenderer.invoke("backup-restore", { data, filename }),
-  detectLocalOpenclaw: async () => ipcRenderer.invoke("backup-detect-local"),
+    ipcRenderer.invoke(IPC.backupRestore, { data, filename }),
+  detectLocalOpenclaw: async () => ipcRenderer.invoke(IPC.backupDetectLocal),
   restoreFromDirectory: async (dirPath: string) =>
-    ipcRenderer.invoke("backup-restore-from-dir", { dirPath }),
-  selectOpenclawFolder: async () => ipcRenderer.invoke("backup-select-folder"),
-  // Custom skills
-  installCustomSkill: async (data: string) => ipcRenderer.invoke("install-custom-skill", { data }),
-  listCustomSkills: async () => ipcRenderer.invoke("list-custom-skills"),
+    ipcRenderer.invoke(IPC.backupRestoreFromDir, { dirPath }),
+  selectOpenclawFolder: async () => ipcRenderer.invoke(IPC.backupSelectFolder),
+  installCustomSkill: async (data: string) => ipcRenderer.invoke(IPC.installCustomSkill, { data }),
+  listCustomSkills: async () => ipcRenderer.invoke(IPC.listCustomSkills),
   removeCustomSkill: async (dirName: string) =>
-    ipcRenderer.invoke("remove-custom-skill", { dirName }),
-  // Local Whisper voice transcription
+    ipcRenderer.invoke(IPC.removeCustomSkill, { dirName }),
   whisperModelStatus: async (params?: { model?: string }) =>
-    ipcRenderer.invoke("whisper-model-status", params),
+    ipcRenderer.invoke(IPC.whisperModelStatus, params),
   whisperModelDownload: async (params?: { model?: string }) =>
-    ipcRenderer.invoke("whisper-model-download", params),
-  whisperModelDownloadCancel: async () => ipcRenderer.invoke("whisper-model-download-cancel"),
+    ipcRenderer.invoke(IPC.whisperModelDownload, params),
+  whisperModelDownloadCancel: async () => ipcRenderer.invoke(IPC.whisperModelDownloadCancel),
   whisperSetGatewayModel: async (modelId: string) =>
-    ipcRenderer.invoke("whisper-set-gateway-model", modelId),
+    ipcRenderer.invoke(IPC.whisperSetGatewayModel, modelId),
   onWhisperModelDownloadProgress: (
     cb: (payload: { percent: number; transferred: number; total: number }) => void
-  ) => onIpc("whisper-model-download-progress", cb),
-  whisperModelsList: async () => ipcRenderer.invoke("whisper-models-list"),
+  ) => onIpc(IPC_EVENTS.whisperModelDownloadProgress, cb),
+  whisperModelsList: async () => ipcRenderer.invoke(IPC.whisperModelsList),
   whisperTranscribe: async (params: { audio: string; language?: string; model?: string }) =>
-    ipcRenderer.invoke("whisper-transcribe", params),
-  // Refocus BrowserWindow after native dialogs (confirm/alert) steal OS-level focus
-  focusWindow: async () => ipcRenderer.invoke("focus-window"),
-  // Windows Defender exclusions
-  defenderStatus: async () => ipcRenderer.invoke("defender-status"),
-  defenderApplyExclusions: async () => ipcRenderer.invoke("defender-apply-exclusions"),
-  defenderDismiss: async () => ipcRenderer.invoke("defender-dismiss"),
+    ipcRenderer.invoke(IPC.whisperTranscribe, params),
+  focusWindow: async () => ipcRenderer.invoke(IPC.focusWindow),
+  defenderStatus: async () => ipcRenderer.invoke(IPC.defenderStatus),
+  defenderApplyExclusions: async () => ipcRenderer.invoke(IPC.defenderApplyExclusions),
+  defenderDismiss: async () => ipcRenderer.invoke(IPC.defenderDismiss),
   onDeepLink: (
     cb: (payload: { host: string; pathname: string; params: Record<string, string> }) => void
-  ) => onIpc("deep-link", cb),
-  // Embedded terminal (PTY) — multi-session
-  terminalCreate: async () => ipcRenderer.invoke("terminal:create"),
+  ) => onIpc(IPC_EVENTS.deepLink, cb),
+  terminalCreate: async () => ipcRenderer.invoke(IPC.terminalCreate),
   terminalWrite: async (id: string, data: string) =>
-    ipcRenderer.invoke("terminal:write", { id, data }),
+    ipcRenderer.invoke(IPC.terminalWrite, { id, data }),
   terminalResize: async (id: string, cols: number, rows: number) =>
-    ipcRenderer.invoke("terminal:resize", { id, cols, rows }),
-  terminalKill: async (id: string) => ipcRenderer.invoke("terminal:kill", { id }),
-  terminalList: async () => ipcRenderer.invoke("terminal:list"),
-  terminalGetBuffer: async (id: string) => ipcRenderer.invoke("terminal:get-buffer", { id }),
+    ipcRenderer.invoke(IPC.terminalResize, { id, cols, rows }),
+  terminalKill: async (id: string) => ipcRenderer.invoke(IPC.terminalKill, { id }),
+  terminalList: async () => ipcRenderer.invoke(IPC.terminalList),
+  terminalGetBuffer: async (id: string) => ipcRenderer.invoke(IPC.terminalGetBuffer, { id }),
   onTerminalData: (cb: (payload: { id: string; data: string }) => void) =>
-    onIpc("terminal:data", cb),
+    onIpc(IPC_EVENTS.terminalData, cb),
   onTerminalExit: (cb: (payload: { id: string; exitCode: number; signal?: number }) => void) =>
-    onIpc("terminal:exit", cb),
+    onIpc(IPC_EVENTS.terminalExit, cb),
 };
 
 contextBridge.exposeInMainWorld("openclawDesktop", api);

@@ -2,7 +2,7 @@ import React from "react";
 
 import { Modal, PrimaryButton, InlineError } from "@shared/kit";
 import type { UpdateAutoTopUpPayload } from "@ipc/backendApi";
-import type { AutoTopUpState } from "@store/slices/authSlice";
+import type { AutoTopUpState } from "@store/slices/auth/authSlice";
 
 import s from "./AutoTopUpControl.module.css";
 

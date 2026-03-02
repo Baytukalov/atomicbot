@@ -40,8 +40,11 @@ export class BrowserWindow {
     closeDevTools: vi.fn(),
   };
   isDestroyed = vi.fn(() => false);
+  isMinimized = vi.fn(() => false);
   loadFile = vi.fn(() => Promise.resolve());
   show = vi.fn();
+  restore = vi.fn();
+  focus = vi.fn();
   on = vi.fn();
 }
 
@@ -52,4 +55,21 @@ export const dialog = {
 
 export const contextBridge = {
   exposeInMainWorld: vi.fn(),
+};
+
+export class Tray {
+  setToolTip = vi.fn();
+  setContextMenu = vi.fn();
+  popUpContextMenu = vi.fn();
+  on = vi.fn();
+}
+
+export const Menu = {
+  buildFromTemplate: vi.fn(() => ({})),
+};
+
+export const nativeImage = {
+  createFromPath: vi.fn(() => ({
+    setTemplateImage: vi.fn(),
+  })),
 };

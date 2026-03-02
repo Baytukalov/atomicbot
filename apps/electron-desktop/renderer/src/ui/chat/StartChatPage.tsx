@@ -2,7 +2,7 @@ import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useGatewayRpc } from "@gateway/context";
 import type { GatewayState } from "@main/types";
-import { dataUrlToBase64, type ChatAttachmentInput } from "@store/slices/chatSlice";
+import { dataUrlToBase64, type ChatAttachmentInput } from "@store/slices/chat/chatSlice";
 import { getObject } from "@shared/utils/configHelpers";
 import { ChatComposer, type ChatComposerRef } from "./components/ChatComposer";
 import { useVoiceInput, getVoiceProvider } from "./hooks/useVoiceInput";

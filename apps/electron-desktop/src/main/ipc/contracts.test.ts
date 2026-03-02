@@ -2,92 +2,28 @@
  * IPC contract test: verifies that registerIpcHandlers registers all expected channels.
  * This is the most critical safety net for the register.ts split refactoring.
  * If any channel is lost during extraction, this test breaks immediately.
+ *
+ * Channel names are sourced from the shared IPC_CHANNELS constant so that
+ * handler registrations and the preload bridge stay in sync automatically.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ipcMain } from "electron";
 
 import { registerIpcHandlers } from "./register";
+import { IPC } from "../../shared/ipc-channels";
+
+// Terminal channels are registered by registerTerminalIpcHandlers (separate call in main.ts).
+const TERMINAL_CHANNELS = new Set([
+  IPC.terminalCreate,
+  IPC.terminalWrite,
+  IPC.terminalResize,
+  IPC.terminalKill,
+  IPC.terminalList,
+  IPC.terminalGetBuffer,
+]);
 
 /** All IPC channels that must be registered by registerIpcHandlers + sub-registrations. */
-const EXPECTED_CHANNELS = [
-  // files
-  "open-logs",
-  "open-workspace-folder",
-  "open-openclaw-folder",
-  "devtools-toggle",
-  "open-external",
-  // gateway / consent / app
-  "gateway-get-info",
-  "consent-get",
-  "consent-accept",
-  "gateway-start",
-  "gateway-retry",
-  // auth
-  "auth-set-api-key",
-  "auth-set-setup-token",
-  "auth-validate-api-key",
-  "auth-has-api-key",
-  // oauth
-  "oauth:login",
-  // memo
-  "memo-check",
-  // remindctl
-  "remindctl-authorize",
-  "remindctl-today-json",
-  // obsidian
-  "obsidian-cli-check",
-  "obsidian-cli-print-default-path",
-  "obsidian-vaults-list",
-  "obsidian-cli-set-default",
-  // gh
-  "gh-check",
-  "gh-auth-login-pat",
-  "gh-auth-status",
-  "gh-api-user",
-  // config
-  "config-read",
-  "config-write",
-  "launch-at-login-get",
-  "launch-at-login-set",
-  "get-app-version",
-  // updater
-  "fetch-release-notes",
-  "updater-check",
-  "updater-download",
-  "updater-install",
-  // backup
-  "backup-create",
-  "backup-restore",
-  "backup-detect-local",
-  "backup-restore-from-dir",
-  "backup-select-folder",
-  // skills
-  "install-custom-skill",
-  "list-custom-skills",
-  "remove-custom-skill",
-  // gog (registered by registerGogIpcHandlers)
-  "gog-auth-list",
-  "gog-auth-add",
-  "gog-auth-credentials",
-  // whisper (registered by registerWhisperIpcHandlers)
-  "whisper-model-status",
-  "whisper-model-download",
-  "whisper-model-download-cancel",
-  "whisper-set-gateway-model",
-  "whisper-models-list",
-  "whisper-transcribe",
-  // defender (registered by registerDefenderHandlers)
-  "defender-status",
-  "defender-apply-exclusions",
-  "defender-dismiss",
-  // reset (registered by registerResetAndCloseIpcHandler)
-  "reset-and-close",
-  // files (focus)
-  "focus-window",
-  // auth profiles (registered by registerKeysIpcHandlers)
-  "auth-read-profiles",
-  "auth-write-profiles",
-];
+const EXPECTED_CHANNELS: string[] = Object.values(IPC).filter((ch) => !TERMINAL_CHANNELS.has(ch));
 
 describe("IPC channel contracts", () => {
   beforeEach(() => {

@@ -6,7 +6,7 @@ import { GlassCard, HeroPageLayout, OnboardingDots } from "@shared/kit";
 import { errorToMessage } from "@shared/toast";
 import { useAppDispatch } from "@store/hooks";
 import { setOnboarded } from "@store/slices/onboardingSlice";
-import { authActions, clearAuth, persistMode } from "@store/slices/authSlice";
+import { authActions, clearAuth, persistMode } from "@store/slices/auth/authSlice";
 import { routes } from "../app/routes";
 
 import s from "./RestoreFilePage.module.css";

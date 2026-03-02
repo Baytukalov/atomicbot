@@ -4,7 +4,7 @@ import { GlassCard, HeroPageLayout, OnboardingDots, PrimaryButton } from "@share
 import { AutoTopUpControl } from "@shared/billing/AutoTopUpControl";
 import { formatModelDisplayName } from "@shared/models/modelPresentation";
 import type { SubscriptionPriceInfo } from "@ipc/backendApi";
-import type { AutoTopUpState } from "@store/slices/authSlice";
+import type { AutoTopUpState } from "@store/slices/auth/authSlice";
 
 import notionIcon from "@assets/set-up-skills/Notion.svg";
 import figmaIcon from "@assets/set-up-skills/Figma.svg";

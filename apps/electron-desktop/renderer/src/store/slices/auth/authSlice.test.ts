@@ -20,7 +20,7 @@ import {
   patchAutoTopUpSettings,
   DEFAULT_AUTO_TOP_UP_SETTINGS,
 } from "./authSlice";
-import { configReducer } from "./configSlice";
+import { configReducer } from "../configSlice";
 
 // ── localStorage shim ───────────────────────────────────────────────────────
 
@@ -151,6 +151,76 @@ beforeEach(() => {
 
 afterEach(() => {
   storageMap.clear();
+});
+
+// ── clearAuthState / clearAuth parity ───────────────────────────────────────
+
+describe("clearAuthState and clearAuth parity", () => {
+  it("clearAuthState reducer and clearAuth.fulfilled produce identical auth fields", () => {
+    const full: AuthSliceState = {
+      mode: "paid",
+      jwt: "tok",
+      email: "a@b.com",
+      userId: "u1",
+      balance: { remaining: 1, limit: 2, usage: 1 },
+      deployment: { id: "d1", status: "running", billingStatus: "active", dropletId: null },
+      subscription: {
+        status: "active",
+        currentPeriodEnd: "2026-03-01",
+        stripeSubscriptionId: "sub_1",
+      },
+      loading: false,
+      error: "err",
+      lastRefreshAt: 12345,
+      refreshInFlight: true,
+      refreshError: "refresh-err",
+      nextAllowedAt: 99999,
+      refreshFailureCount: 3,
+      topUpPending: true,
+      topUpError: "top-up-err",
+      autoTopUp: {
+        enabled: false,
+        thresholdUsd: 8,
+        topupAmountUsd: 25,
+        monthlyCapUsd: 90,
+        hasPaymentMethod: true,
+        currentMonthSpentUsd: 14,
+      },
+      autoTopUpLoading: true,
+      autoTopUpSaving: true,
+      autoTopUpError: "atop-err",
+      autoTopUpLoaded: true,
+    };
+
+    const viaReducer = authReducer(full, authActions.clearAuthState());
+    const viaThunk = authReducer(full, clearAuth.fulfilled(undefined, "test-req"));
+
+    const resetFields = [
+      "jwt",
+      "email",
+      "userId",
+      "balance",
+      "deployment",
+      "subscription",
+      "error",
+      "lastRefreshAt",
+      "refreshInFlight",
+      "refreshError",
+      "nextAllowedAt",
+      "refreshFailureCount",
+      "topUpPending",
+      "topUpError",
+      "autoTopUp",
+      "autoTopUpLoading",
+      "autoTopUpSaving",
+      "autoTopUpError",
+      "autoTopUpLoaded",
+    ] as const;
+
+    for (const field of resetFields) {
+      expect(viaReducer[field]).toEqual(viaThunk[field]);
+    }
+  });
 });
 
 // ── Initial state ───────────────────────────────────────────────────────────

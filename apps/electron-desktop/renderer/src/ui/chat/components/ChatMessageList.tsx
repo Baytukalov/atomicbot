@@ -9,9 +9,9 @@ import type {
   UiToolCall,
   UiToolResult,
   LiveToolCall,
-} from "@store/slices/chatSlice";
-import { isHeartbeatMessage } from "@store/slices/chatSlice";
-import type { ChatAttachmentInput } from "@store/slices/chatSlice";
+} from "@store/slices/chat/chatSlice";
+import { isHeartbeatMessage } from "@store/slices/chat/chatSlice";
+import type { ChatAttachmentInput } from "@store/slices/chat/chatSlice";
 import { CopyMessageButton } from "./CopyMessageButton";
 import { UserMessageBubble } from "./UserMessageBubble";
 import { AssistantStreamBubble, TypingIndicator } from "./AssistantStreamBubble";

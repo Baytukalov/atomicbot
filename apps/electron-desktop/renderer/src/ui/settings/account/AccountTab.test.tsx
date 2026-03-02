@@ -53,7 +53,7 @@ vi.mock("@gateway/context", () => ({
 
 const mockFetchBalance = vi.fn(() => ({ type: "auth/fetchBalance" }));
 
-vi.mock("@store/slices/authSlice", () => ({
+vi.mock("@store/slices/auth/authSlice", () => ({
   storeAuthToken: vi.fn((payload: unknown) => ({ type: "auth/storeToken", payload })),
   switchToSubscription: vi.fn((payload: unknown) => ({
     type: "auth/switchToSubscription",

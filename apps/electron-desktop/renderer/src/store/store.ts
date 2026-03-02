@@ -3,8 +3,8 @@ import {
   authRefreshListenerMiddleware,
   setupAuthRefreshListeners,
 } from "./listeners/authRefreshListener";
-import { authReducer } from "./slices/authSlice";
-import { chatReducer } from "./slices/chatSlice";
+import { authReducer } from "./slices/auth/authSlice";
+import { chatReducer } from "./slices/chat/chatSlice";
 import { configReducer } from "./slices/configSlice";
 import { gatewayReducer } from "./slices/gatewaySlice";
 import { onboardingReducer } from "./slices/onboardingSlice";

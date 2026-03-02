@@ -1,5 +1,5 @@
 import React from "react";
-import type { ChatAttachmentInput } from "@store/slices/chatSlice";
+import type { ChatAttachmentInput } from "@store/slices/chat/chatSlice";
 import type { DownloadStatus } from "@store/slices/whisperSlice";
 import { ChatAttachmentCard, getFileTypeLabel } from "./ChatAttachmentCard";
 import { MicrophoneIcon, SendIcon } from "@shared/kit/icons";

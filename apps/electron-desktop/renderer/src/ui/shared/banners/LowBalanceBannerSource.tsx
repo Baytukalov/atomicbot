@@ -1,7 +1,7 @@
 import React from "react";
 import { useAppSelector, useAppDispatch } from "@store/hooks";
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
-import { createAddonCheckout } from "@store/slices/authSlice";
+import { createAddonCheckout } from "@store/slices/auth/authSlice";
 import { useBannerRegister } from "./BannerContext";
 import type { BannerItem } from "./types";
 

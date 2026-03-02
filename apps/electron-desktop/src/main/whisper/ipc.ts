@@ -6,7 +6,7 @@ import * as path from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 
-import { writeSelectedWhisperModel } from "../gateway/spawn";
+import { writeSelectedWhisperModel } from "./model-state";
 import { getPlatform } from "../platform";
 
 export type WhisperModelId = "small" | "large-v3-turbo-q8" | "large-v3-turbo";

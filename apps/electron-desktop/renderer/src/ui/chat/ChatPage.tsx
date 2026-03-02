@@ -12,7 +12,7 @@ import {
   loadChatHistory,
   sendChatMessage,
   type ChatAttachmentInput,
-} from "@store/slices/chatSlice";
+} from "@store/slices/chat/chatSlice";
 import type { GatewayState } from "@main/types";
 import { CopyIcon, CheckIcon } from "@shared/kit/icons";
 import { HIDDEN_TOOL_NAMES } from "./components/ToolCallCard";

@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@store/hooks";
 import { useGatewayRpc } from "@gateway/context";
-import { switchToSubscription } from "@store/slices/authSlice";
+import { switchToSubscription } from "@store/slices/auth/authSlice";
 import { reloadConfig } from "@store/slices/configSlice";
 import { addToastError } from "@shared/toast";
 import { routes } from "../../app/routes";

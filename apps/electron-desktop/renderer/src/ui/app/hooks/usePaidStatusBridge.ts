@@ -1,6 +1,6 @@
 import React from "react";
 import { useAppDispatch, useAppSelector } from "@store/hooks";
-import { authActions, fetchBalance } from "@store/slices/authSlice";
+import { authActions, fetchBalance } from "@store/slices/auth/authSlice";
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
 import { addToast } from "@shared/toast";
 

@@ -2,7 +2,7 @@
  * Persists the desktop mode (paid vs self-managed) in localStorage.
  * Lightweight, synchronous read — no gateway dependency.
  */
-import type { SetupMode } from "@store/slices/authSlice";
+import type { SetupMode } from "@store/slices/auth/authSlice";
 
 const LS_KEY = "openclaw-desktop-mode";
 

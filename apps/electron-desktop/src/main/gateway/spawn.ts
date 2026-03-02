@@ -5,36 +5,8 @@ import * as path from "node:path";
 import { ensureDir } from "../util/fs";
 import { getPlatform } from "../platform";
 import type { TailBuffer } from "../util/net";
-import {
-  DEFAULT_MODEL_ID,
-  getModelDef,
-  resolveFfmpegPath,
-  resolveModelPath,
-  type WhisperModelId,
-} from "../whisper/ipc";
-
-const WHISPER_MODEL_FILE = "whisper-model-id";
-
-export function readSelectedWhisperModel(stateDir: string): WhisperModelId | "openai" {
-  try {
-    const raw = fs.readFileSync(path.join(stateDir, WHISPER_MODEL_FILE), "utf-8").trim();
-    if (
-      raw === "openai" ||
-      raw === "small" ||
-      raw === "large-v3-turbo-q8" ||
-      raw === "large-v3-turbo"
-    ) {
-      return raw;
-    }
-  } catch {
-    // File doesn't exist yet — use default
-  }
-  return DEFAULT_MODEL_ID;
-}
-
-export function writeSelectedWhisperModel(stateDir: string, modelId: string): void {
-  fs.writeFileSync(path.join(stateDir, WHISPER_MODEL_FILE), modelId, "utf-8");
-}
+import { getModelDef, resolveFfmpegPath, resolveModelPath } from "../whisper/ipc";
+import { readSelectedWhisperModel } from "../whisper/model-state";
 
 export function spawnGateway(params: {
   port: number;

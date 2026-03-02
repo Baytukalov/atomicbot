@@ -20,7 +20,7 @@ import {
   fetchDesktopStatus,
   fetchAutoTopUpSettings,
   patchAutoTopUpSettings,
-} from "@store/slices/authSlice";
+} from "@store/slices/auth/authSlice";
 import { useGatewayRpc } from "@gateway/context";
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
 import { backendApi, type SubscriptionPriceInfo } from "@ipc/backendApi";

@@ -30,7 +30,7 @@ vi.mock("@gateway/context", () => ({
   useGatewayRpc: () => mockGatewayRpc,
 }));
 
-vi.mock("@store/slices/authSlice", () => ({
+vi.mock("@store/slices/auth/authSlice", () => ({
   switchToSubscription: (payload: unknown) => mockSwitchToSubscription(payload),
 }));
 

@@ -1,7 +1,5 @@
-import { app, BrowserWindow, Menu, Tray, nativeImage } from "electron";
-import type { ChildProcess } from "node:child_process";
+import { app, type BrowserWindow } from "electron";
 import { randomBytes } from "node:crypto";
-import * as fs from "node:fs";
 import * as path from "node:path";
 import { getPlatform } from "./main/platform";
 
@@ -12,13 +10,16 @@ import { registerTerminalIpcHandlers } from "./main/terminal/ipc";
 import { DEFAULT_PORT } from "./main/constants";
 import { ensureGatewayConfigFile, readGatewayTokenFromConfig } from "./main/gateway/config";
 import { runConfigMigrations } from "./main/gateway/config-migrations";
-import { spawnGateway } from "./main/gateway/spawn";
 import {
-  writeGatewayPid,
   removeGatewayPid,
   killOrphanedGateway,
   removeStaleGatewayLock,
 } from "./main/gateway/pid-file";
+import {
+  broadcastGatewayState,
+  stopGatewayChild,
+  createGatewayStarter,
+} from "./main/gateway/lifecycle";
 import { initAutoUpdater, disposeAutoUpdater } from "./main/updater";
 import { killUpdateSplash } from "./main/update-splash";
 import {
@@ -29,9 +30,12 @@ import {
   resolveRendererIndex,
   resolveRepoRoot,
 } from "./main/openclaw/paths";
-import { createTailBuffer, pickPort, waitForPortOpen } from "./main/util/net";
-import { createMainWindow } from "./main/window/mainWindow";
-import type { GatewayState } from "./main/types";
+import { createTailBuffer, pickPort } from "./main/util/net";
+import { createAppState } from "./main/app-state";
+import { readConsentAccepted, writeConsentAccepted } from "./main/consent";
+import { handleDeepLink } from "./main/deep-link";
+import { createTray } from "./main/tray";
+import { ensureMainWindow, showMainWindow } from "./main/window/window-manager";
 
 if (process.env.ATOMICBOT_E2E_USER_DATA) {
   app.setPath("userData", process.env.ATOMICBOT_E2E_USER_DATA);
@@ -51,195 +55,33 @@ if (process.defaultApp) {
   app.setAsDefaultProtocolClient(DEEP_LINK_PROTOCOL);
 }
 
-let mainWindow: BrowserWindow | null = null;
-let tray: Tray | null = null;
+const st = createAppState();
 
-let preloadPathForWindow: string | null = null;
-let rendererIndexForWindow: string | null = null;
-
-let gateway: ChildProcess | null = null;
-let gatewayPid: number | null = null;
-let gatewayStateDir: string | null = null;
-let logsDirForUi: string | null = null;
-let gatewayState: GatewayState | null = null;
-let consentAccepted = false;
-
-async function stopGatewayChild(): Promise<void> {
-  const pid = gatewayPid;
-  gateway = null;
-  if (!pid) {
-    return;
+const replayGatewayState = (win: BrowserWindow) => {
+  if (st.gatewayState) {
+    broadcastGatewayState(win, st.gatewayState, st);
   }
+};
 
-  // Graceful shutdown first.
-  try {
-    platform.killProcess(pid);
-  } catch {
-    gatewayPid = null;
-    return;
-  }
-
-  // Wait up to 5s for graceful exit, then escalate to force-kill.
-  const gracefulDeadline = Date.now() + 5000;
-  while (Date.now() < gracefulDeadline) {
-    if (!platform.isProcessAlive(pid)) {
-      gatewayPid = null;
-      return;
-    }
-    await new Promise((r) => setTimeout(r, 100));
-  }
-
-  // Still alive — force kill the process tree.
-  try {
-    platform.killProcessTree(pid);
-  } catch {
-    // Already dead
-  }
-
-  // Brief wait for kill to take effect.
-  const killDeadline = Date.now() + 2000;
-  while (Date.now() < killDeadline) {
-    if (!platform.isProcessAlive(pid)) {
-      break;
-    }
-    await new Promise((r) => setTimeout(r, 50));
-  }
-
-  gatewayPid = null;
-}
-
-function broadcastGatewayState(win: BrowserWindow | null, state: GatewayState) {
-  gatewayState = state;
-  try {
-    win?.webContents.send("gateway-state", state);
-  } catch (err) {
-    console.warn("[main] broadcastGatewayState failed:", err);
-  }
-}
-
-function getWindowIconPath(): string | undefined {
-  if (process.platform !== "win32") {
-    return undefined;
-  }
-  if (app.isPackaged) {
-    return path.join(process.resourcesPath, "assets", "icon.ico");
-  }
-  return path.join(MAIN_DIR, "..", "assets", "icon.ico");
-}
-
-function getTrayIconPath(): string {
-  if (app.isPackaged) {
-    return path.join(process.resourcesPath, "assets", "trayTemplate.png");
-  }
-  return path.join(MAIN_DIR, "..", "assets", "trayTemplate.png");
-}
-
-async function ensureMainWindow(): Promise<BrowserWindow | null> {
-  const win = mainWindow;
-  if (win && !win.isDestroyed()) {
-    return win;
-  }
-
-  if (!preloadPathForWindow || !rendererIndexForWindow) {
-    return null;
-  }
-
-  const nextWin = await createMainWindow({
-    preloadPath: preloadPathForWindow,
-    rendererIndex: rendererIndexForWindow,
-    iconPath: getWindowIconPath(),
-  });
-  mainWindow = nextWin;
-
-  nextWin.on("closed", () => {
-    if (mainWindow === nextWin) {
-      mainWindow = null;
-    }
-  });
-
-  if (gatewayState) {
-    broadcastGatewayState(nextWin, gatewayState);
-  }
-
-  return nextWin;
-}
-
-async function showMainWindow(): Promise<void> {
-  const win = await ensureMainWindow();
-  if (!win) {
-    return;
-  }
-  if (win.isMinimized()) {
-    win.restore();
-  }
-  win.show();
-  win.focus();
-}
+const ensureWin = () => ensureMainWindow(st, MAIN_DIR, replayGatewayState);
+const showWin = () => showMainWindow(st, MAIN_DIR, replayGatewayState);
 
 function ensureTray(): void {
-  if (tray) {
+  if (st.tray) {
     return;
   }
-
-  const trayImage = nativeImage.createFromPath(getTrayIconPath());
-  // Avoid `nativeImage.resize()` here. Some Electron/macOS combos can crash inside the PNG stack
-  // during startup. The Tray API and OS will scale as needed, and we ship correctly-sized assets.
-  if (platform.trayIconIsTemplate) {
-    trayImage.setTemplateImage(true);
-  }
-
-  tray = new Tray(trayImage);
-  tray.setToolTip("Atomic Bot");
-
-  const menu = Menu.buildFromTemplate([
-    {
-      label: "Show Atomic Bot",
-      click: () => {
-        void showMainWindow();
-      },
-    },
-    { type: "separator" },
-    {
-      label: "Quit",
-      click: () => {
-        app.quit();
-      },
-    },
-  ]);
-
-  // Show the dropdown on left click (macOS menubar UX).
-  tray.on("click", () => {
-    tray?.popUpContextMenu(menu);
+  st.tray = createTray({
+    mainDir: MAIN_DIR,
+    trayIconIsTemplate: platform.trayIconIsTemplate,
+    onShow: () => void showWin(),
+    onQuit: () => app.quit(),
   });
-  tray.on("right-click", () => {
-    tray?.popUpContextMenu(menu);
-  });
-
-  // Keep the menu available for platforms that use right-click by default.
-  tray.setContextMenu(menu);
-}
-
-function handleDeepLink(url: string): void {
-  try {
-    const parsed = new URL(url);
-    // Forward deep link data to renderer
-    const win = mainWindow;
-    if (win && !win.isDestroyed()) {
-      win.webContents.send("deep-link", {
-        host: parsed.host,
-        pathname: parsed.pathname,
-        params: Object.fromEntries(parsed.searchParams.entries()),
-      });
-    }
-  } catch (err) {
-    console.warn("[main] Failed to parse deep link URL:", url, err);
-  }
 }
 
 // macOS: handle protocol URL via open-url event
 app.on("open-url", (event, url) => {
   event.preventDefault();
-  handleDeepLink(url);
+  handleDeepLink(url, st.mainWindow);
 });
 
 // Windows/Linux: second instance receives the URL in argv
@@ -248,12 +90,11 @@ if (!gotTheLock) {
   app.quit();
 } else {
   app.on("second-instance", (_event, argv) => {
-    // The deep link URL is the last argv entry
     const url = argv.find((arg) => arg.startsWith(`${DEEP_LINK_PROTOCOL}://`));
     if (url) {
-      handleDeepLink(url);
+      handleDeepLink(url, st.mainWindow);
     }
-    void showMainWindow();
+    void showWin();
   });
 }
 
@@ -264,68 +105,58 @@ app.on("window-all-closed", () => {
 });
 
 app.on("activate", () => {
-  void showMainWindow();
+  void showWin();
 });
 
-// Last-resort synchronous kill: if the process exits without proper cleanup,
-// force-kill the gateway process tree so nothing lingers as an orphan.
+// Last-resort synchronous kill on process exit.
 process.on("exit", () => {
-  if (gatewayPid) {
+  if (st.gatewayPid) {
     try {
-      platform.killProcessTree(gatewayPid);
+      platform.killProcessTree(st.gatewayPid);
     } catch {
       // Already dead — nothing to do.
     }
-    gatewayPid = null;
+    st.gatewayPid = null;
   }
 });
 
-let isQuitting = false;
 app.on("before-quit", (event) => {
-  if (isQuitting) {
+  if (st.isQuitting) {
     return;
   }
-  // Prevent the default quit so we can await async cleanup first.
-  isQuitting = true;
+  st.isQuitting = true;
   event.preventDefault();
 
   disposeAutoUpdater();
-  stopGatewayChild()
+  stopGatewayChild(st, platform)
     .then(() => {
-      if (gatewayStateDir) {
-        removeGatewayPid(gatewayStateDir);
+      if (st.gatewayStateDir) {
+        removeGatewayPid(st.gatewayStateDir);
       }
     })
     .finally(() => {
-      // Now let the app actually quit (isQuitting flag prevents re-entry).
       app.quit();
     });
 });
 
 void app.whenReady().then(async () => {
-  // The second instance (deep-link handler) calls app.quit() before ready,
-  // but on Windows app.quit() is async and whenReady() can still fire.
-  // Guard against the second instance running startup code (which would
-  // kill the first instance's gateway via killOrphanedGateway).
+  // Guard: second instance on Windows can reach whenReady after app.quit().
   if (!gotTheLock) {
     return;
   }
   const userData = app.getPath("userData");
   const stateDir = path.join(userData, "openclaw");
-  gatewayStateDir = stateDir;
+  st.gatewayStateDir = stateDir;
   const whisperDataDir = path.join(userData, "whisper");
   const logsDir = path.join(userData, "logs");
-  logsDirForUi = logsDir;
+  st.logsDirForUi = logsDir;
 
-  // Kill any orphaned gateway process left over from a previous crash / force-quit.
+  // Clean up orphaned gateway processes from previous crash / force-quit.
   const killedPid = killOrphanedGateway(stateDir);
   if (killedPid) {
     console.log(`[main] Cleaned up orphaned gateway process (PID ${killedPid})`);
   }
-
-  // Temporary: force-kill all lingering openclaw-gateway processes to prevent
-  // zombie instances. Safe because we are about to spawn a fresh one.
-  // TODO: remove after 1-2 releases once the orphan cleanup above is proven reliable.
+  // TODO: remove after 1-2 releases once orphan cleanup is proven reliable.
   try {
     platform.killAllByName("openclaw-gateway");
     console.log("[main] killed lingering openclaw-gateway processes");
@@ -333,13 +164,10 @@ void app.whenReady().then(async () => {
     // No matching processes found — expected.
   }
 
-  // Remove stale gateway lock file so the new spawn can acquire it.
   const configPath = path.join(stateDir, "openclaw.json");
   removeStaleGatewayLock(configPath);
 
   const openclawDir = app.isPackaged ? resolveBundledOpenClawDir() : resolveRepoRoot(MAIN_DIR);
-  // In dev, prefer a real Node binary. Spawning the Gateway via the Electron binary (process.execPath)
-  // can create an extra bouncing Dock icon on macOS.
   const nodeBin = app.isPackaged
     ? resolveBundledNodeBin()
     : (process.env.OPENCLAW_DESKTOP_NODE_BIN || "node").trim() || "node";
@@ -364,111 +192,51 @@ void app.whenReady().then(async () => {
     appPath: app.getAppPath(),
     mainDir: MAIN_DIR,
   });
-  const preloadPath = resolvePreloadPath(MAIN_DIR);
-  preloadPathForWindow = preloadPath;
-  rendererIndexForWindow = rendererIndex;
+  st.preloadPath = resolvePreloadPath(MAIN_DIR);
+  st.rendererIndex = rendererIndex;
 
-  await ensureMainWindow();
+  await ensureWin();
   ensureTray();
 
-  // Kill any lingering update splash from the previous version's restart.
   killUpdateSplash();
-
-  // Initialize auto-updater in packaged builds only.
   if (app.isPackaged) {
-    initAutoUpdater(() => mainWindow);
+    initAutoUpdater(() => st.mainWindow);
   }
 
-  // Consent is stored in the same per-user state dir as the embedded gateway config.
   const consentPath = path.join(stateDir, "consent.json");
-  consentAccepted = readConsentAccepted(consentPath);
+  st.consentAccepted = readConsentAccepted(consentPath);
 
   const stderrTail = createTailBuffer(24_000);
-
-  const startGateway = async (opts?: { silent?: boolean }) => {
-    if (gateway) {
-      return;
-    }
-    const nextWin = await ensureMainWindow();
-    if (!opts?.silent) {
-      broadcastGatewayState(nextWin, { kind: "starting", port, logsDir, token });
-    }
-    gateway = spawnGateway({
-      port,
-      logsDir,
-      stateDir,
-      configPath,
-      token,
-      openclawDir,
-      nodeBin,
-      gogBin,
-      jqBin,
-      memoBin,
-      remindctlBin,
-      obsidianCliBin,
-      ghBin,
-      whisperCliBin,
-      whisperDataDir,
-      electronRunAsNode: nodeBin === process.execPath,
-      stderrTail,
-    });
-
-    // Track the PID for orphan cleanup (process.on('exit') guard + PID file for next launch).
-    const thisPid = gateway.pid ?? null;
-    gatewayPid = thisPid;
-    if (thisPid) {
-      writeGatewayPid(stateDir, thisPid);
-    }
-    gateway.on("exit", (code, signal) => {
-      const expected = isQuitting || gatewayPid !== thisPid;
-      console.log(
-        `[main] gateway exited: code=${code} signal=${signal} pid=${thisPid} expected=${expected}`
-      );
-      if (!expected) {
-        console.warn(
-          `[main] gateway exited unexpectedly. stderr tail:\n${stderrTail.read().trim() || "<empty>"}`
-        );
-      }
-      // Only clear if this is still the active gateway — avoids a race where
-      // the old process's exit event fires after a new gateway has been spawned,
-      // which would null out the new PID and leave it un-killable on quit.
-      if (gatewayPid === thisPid) {
-        gateway = null;
-        gatewayPid = null;
-        removeGatewayPid(stateDir);
-      }
-    });
-
-    const startupTimeoutMs = platform.gatewaySpawnOptions().startupTimeoutMs;
-    const ok = await waitForPortOpen("127.0.0.1", port, startupTimeoutMs);
-    if (!ok) {
-      const timeoutSec = startupTimeoutMs / 1000;
-      const details = [
-        `Gateway did not open the port within ${timeoutSec}s.`,
-        "",
-        `openclawDir: ${openclawDir}`,
-        `nodeBin: ${nodeBin}`,
-        `stderr (tail):`,
-        stderrTail.read().trim() || "<empty>",
-        "",
-        `See logs in: ${logsDir}`,
-      ].join("\n");
-      broadcastGatewayState(nextWin, { kind: "failed", port, logsDir, details, token });
-      return;
-    }
-
-    // Keep the Electron window on the React renderer. The legacy Control UI is embedded in an iframe
-    // and can be switched to/from the native pages without losing the top-level navigation.
-    broadcastGatewayState(nextWin, { kind: "ready", port, logsDir, url, token });
-  };
+  const startGateway = createGatewayStarter({
+    state: st,
+    platform,
+    stderrTail,
+    ensureWindow: ensureWin,
+    port,
+    logsDir,
+    stateDir,
+    configPath,
+    getToken: () => token,
+    url,
+    openclawDir,
+    nodeBin,
+    gogBin,
+    jqBin,
+    memoBin,
+    remindctlBin,
+    obsidianCliBin,
+    ghBin,
+    whisperCliBin,
+    whisperDataDir,
+  });
 
   registerIpcHandlers({
-    getMainWindow: () => mainWindow,
-    getGatewayState: () => gatewayState,
-    getLogsDir: () => logsDirForUi,
-    getConsentAccepted: () => consentAccepted,
+    getMainWindow: () => st.mainWindow,
+    getGatewayState: () => st.gatewayState,
+    getLogsDir: () => st.logsDirForUi,
+    getConsentAccepted: () => st.consentAccepted,
     acceptConsent: async () => {
-      consentAccepted = true;
+      st.consentAccepted = true;
       writeConsentAccepted(consentPath);
     },
     startGateway,
@@ -483,7 +251,7 @@ void app.whenReady().then(async () => {
     ghBin,
     whisperCliBin,
     whisperDataDir,
-    stopGatewayChild,
+    stopGatewayChild: () => stopGatewayChild(st, platform),
     getGatewayToken: () => token,
     setGatewayToken: (t: string) => {
       token = t;
@@ -491,7 +259,7 @@ void app.whenReady().then(async () => {
   });
 
   registerTerminalIpcHandlers({
-    getMainWindow: () => mainWindow,
+    getMainWindow: () => st.mainWindow,
     stateDir,
     openclawDir,
     nodeBin,
@@ -503,35 +271,5 @@ void app.whenReady().then(async () => {
     ghBin,
   });
 
-  // Always start the gateway on launch — consent is handled in the renderer
-  // after the gateway is ready (loading screen shows while gateway starts).
   await startGateway();
 });
-
-function readConsentAccepted(consentPath: string): boolean {
-  try {
-    if (!fs.existsSync(consentPath)) {
-      return false;
-    }
-    const raw = fs.readFileSync(consentPath, "utf-8");
-    const parsed = JSON.parse(raw) as unknown;
-    if (!parsed || typeof parsed !== "object") {
-      return false;
-    }
-    const obj = parsed as { accepted?: unknown };
-    return obj.accepted === true;
-  } catch (err) {
-    console.warn("[main] readConsentAccepted failed:", err);
-    return false;
-  }
-}
-
-function writeConsentAccepted(consentPath: string): void {
-  try {
-    fs.mkdirSync(path.dirname(consentPath), { recursive: true });
-    const payload = { accepted: true, acceptedAt: new Date().toISOString() };
-    fs.writeFileSync(consentPath, `${JSON.stringify(payload, null, 2)}\n`, "utf-8");
-  } catch (err) {
-    console.warn("[main] writeConsentAccepted failed:", err);
-  }
-}

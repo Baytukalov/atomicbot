@@ -5,7 +5,7 @@ import {
   extractText,
   extractToolCalls,
   loadChatHistory,
-} from "@store/slices/chatSlice";
+} from "@store/slices/chat/chatSlice";
 import { HIDDEN_TOOL_NAMES } from "../components/ToolCallCard";
 
 type ChatEvent = {

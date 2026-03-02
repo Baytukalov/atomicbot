@@ -8,7 +8,7 @@ import {
   restoreMode,
   storeAuthToken,
   type AuthSliceState,
-} from "../slices/authSlice";
+} from "../slices/auth/authSlice";
 
 const REFRESH_INTERVAL_MS = 15_000;
 const REFRESH_COOLDOWN_MS = 15_000;

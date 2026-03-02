@@ -19,7 +19,7 @@
     "prepare:runtimes": "npm run prepare:node && npm run prepare:gog:all && npm run prepare:jq:all && npm run prepare:memo:all && npm run prepare:remindctl:all && npm run prepare:obsidian-cli:all && npm run prepare:gh:all && npm run prepare:whisper-cli:all",
     "rebuild": "electron-rebuild -f -w node-pty",
     "dev": "npm run rebuild && npm run build:all && electron .",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && esbuild dist/preload.js --bundle --platform=node --format=cjs --outfile=dist/preload.js --allow-overwrite --external:electron",
     "build:renderer": "vite build --config renderer/vite.config.ts",
     "prepare:all": "npm run prepare:openclaw && npm run prepare:runtimes",
     "prepare:openclaw": "node scripts/prepare-openclaw-bundle.mjs",

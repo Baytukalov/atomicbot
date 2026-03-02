@@ -2,7 +2,7 @@
 import { renderHook, act } from "@testing-library/react";
 import { cleanup } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { authActions } from "@store/slices/authSlice";
+import { authActions } from "@store/slices/auth/authSlice";
 import { usePaidStatusBridge } from "./usePaidStatusBridge";
 
 type DeepLinkCb = (payload: {
@@ -28,7 +28,7 @@ vi.mock("@store/hooks", () => ({
   useAppSelector: (selector: (st: unknown) => unknown) => selector({ auth: mockAuthState }),
 }));
 
-vi.mock("@store/slices/authSlice", async (importOriginal) => {
+vi.mock("@store/slices/auth/authSlice", async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>;
   return {
     ...actual,

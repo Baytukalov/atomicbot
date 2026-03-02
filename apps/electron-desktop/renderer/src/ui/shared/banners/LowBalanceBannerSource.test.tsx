@@ -25,7 +25,7 @@ vi.mock("@store/hooks", () => ({
   useAppSelector: (selector: (st: unknown) => unknown) => selector({ auth: mockAuthState }),
 }));
 
-vi.mock("@store/slices/authSlice", () => ({
+vi.mock("@store/slices/auth/authSlice", () => ({
   createAddonCheckout: (payload: unknown) => mockCreateAddonCheckout(payload),
 }));
 

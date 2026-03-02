@@ -3,7 +3,7 @@ import { Navigate, NavLink, Outlet, useOutletContext } from "react-router-dom";
 import { useGatewayRpc } from "@gateway/context";
 import { useAppDispatch, useAppSelector } from "@store/hooks";
 import { configActions, reloadConfig, type ConfigSnapshot } from "@store/slices/configSlice";
-import type { SetupMode } from "@store/slices/authSlice";
+import type { SetupMode } from "@store/slices/auth/authSlice";
 import type { GatewayState } from "@main/types";
 import { HeroPageLayout } from "@shared/kit";
 import s from "./SettingsPage.module.css";

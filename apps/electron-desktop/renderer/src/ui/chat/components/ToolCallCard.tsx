@@ -4,7 +4,7 @@ import type {
   UiToolResult,
   LiveToolCall,
   UiMessageAttachment,
-} from "@store/slices/chatSlice";
+} from "@store/slices/chat/chatSlice";
 import { ChatAttachmentCard, getFileTypeLabel } from "./ChatAttachmentCard";
 import s from "./ToolCallCard.module.css";
 

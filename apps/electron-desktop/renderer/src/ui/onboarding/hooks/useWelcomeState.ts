@@ -3,7 +3,7 @@ import type { NavigateFunction } from "react-router-dom";
 import { useGatewayRpc } from "@gateway/context";
 import { useAppDispatch } from "@store/hooks";
 import { setOnboarded } from "@store/slices/onboardingSlice";
-import { authActions } from "@store/slices/authSlice";
+import { authActions } from "@store/slices/auth/authSlice";
 import { persistDesktopMode } from "../../shared/persistMode";
 import type { GatewayState } from "@main/types";
 import { routes } from "../../app/routes";

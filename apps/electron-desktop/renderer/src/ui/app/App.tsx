@@ -20,7 +20,7 @@ import { LoadingScreen } from "../onboarding/LoadingScreen";
 import { Brand } from "@shared/kit";
 import { GatewayRpcProvider } from "@gateway/context";
 import { useAppDispatch, useAppSelector } from "@store/hooks";
-import { restoreMode } from "@store/slices/authSlice";
+import { restoreMode } from "@store/slices/auth/authSlice";
 import { initGatewayState } from "@store/slices/gatewaySlice";
 import { loadOnboardingFromStorage } from "@store/slices/onboardingSlice";
 import type { GatewayState } from "@main/types";

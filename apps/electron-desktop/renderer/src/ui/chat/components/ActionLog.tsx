@@ -1,5 +1,5 @@
 import React from "react";
-import type { UiToolCall, UiToolResult, LiveToolCall } from "@store/slices/chatSlice";
+import type { UiToolCall, UiToolResult, LiveToolCall } from "@store/slices/chat/chatSlice";
 import { ToolCallCard } from "./ToolCallCard";
 import { LiveToolCallCardItem, getToolLabel } from "./ToolCallCard";
 import { HIDDEN_TOOL_NAMES } from "./ToolCallCard";

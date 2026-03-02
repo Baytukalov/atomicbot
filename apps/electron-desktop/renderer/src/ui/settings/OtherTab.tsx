@@ -10,7 +10,7 @@ import {
   authActions,
   clearAuth,
   persistMode,
-} from "@store/slices/authSlice";
+} from "@store/slices/auth/authSlice";
 import { reloadConfig } from "@store/slices/configSlice";
 import { errorToMessage, addToastError } from "@shared/toast";
 import { routes } from "../app/routes";

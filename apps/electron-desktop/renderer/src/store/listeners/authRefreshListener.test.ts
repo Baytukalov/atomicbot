@@ -1,6 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { authReducer, authActions } from "../slices/authSlice";
+import { authReducer, authActions } from "../slices/auth/authSlice";
 import {
   authRefreshListenerMiddleware,
   resetAuthRefreshListenerForTests,

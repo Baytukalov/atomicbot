@@ -77,11 +77,11 @@ import { ConsentScreen } from "../onboarding/ConsentScreen";
 import { ChatComposer } from "../chat/components/ChatComposer";
 import { Sidebar } from "../sidebar/Sidebar";
 import { SettingsPage } from "../settings/SettingsPage";
-import { chatReducer } from "@store/slices/chatSlice";
+import { chatReducer } from "@store/slices/chat/chatSlice";
 import { configReducer } from "@store/slices/configSlice";
 import { gatewayReducer } from "@store/slices/gatewaySlice";
 import { onboardingReducer } from "@store/slices/onboardingSlice";
-import { authReducer } from "@store/slices/authSlice";
+import { authReducer } from "@store/slices/auth/authSlice";
 
 // ---------------------------------------------------------------------------
 // Helpers

@@ -3,7 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
 import { expect } from "vitest";
-import { chatReducer } from "@store/slices/chatSlice";
+import { chatReducer } from "@store/slices/chat/chatSlice";
 import { configReducer } from "@store/slices/configSlice";
 import { gatewayReducer } from "@store/slices/gatewaySlice";
 import { onboardingReducer } from "@store/slices/onboardingSlice";

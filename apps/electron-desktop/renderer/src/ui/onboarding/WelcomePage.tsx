@@ -1,7 +1,7 @@
 import React from "react";
 import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "@store/hooks";
-import { clearAuth } from "@store/slices/authSlice";
+import { clearAuth } from "@store/slices/auth/authSlice";
 import type { GatewayState } from "@main/types";
 import { routes } from "../app/routes";
 import { GlassCard, HeroPageLayout, PrimaryButton } from "@shared/kit";
