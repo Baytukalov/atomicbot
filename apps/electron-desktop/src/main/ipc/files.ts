@@ -5,9 +5,9 @@ import { ipcMain, shell } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 
-import type { RegisterParams } from "./types";
+import type { FileHandlerParams } from "./types";
 
-export function registerFileHandlers(params: RegisterParams) {
+export function registerFileHandlers(params: FileHandlerParams) {
   ipcMain.handle("open-logs", async () => {
     const logsDir = params.getLogsDir();
     if (!logsDir) {

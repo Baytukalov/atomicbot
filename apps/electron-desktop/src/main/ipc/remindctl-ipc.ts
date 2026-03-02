@@ -5,12 +5,12 @@ import { ipcMain } from "electron";
 import fs from "node:fs";
 
 import type { ExecResult } from "../../shared/types";
-import type { RegisterParams } from "./types";
+import type { RemindctlHandlerParams } from "./types";
 import { createBinaryNotFoundResult, runCommand } from "./exec";
 
 const PREPARE_CMD = "cd apps/electron-desktop && npm run prepare:remindctl:all";
 
-export function registerRemindctlHandlers(params: RegisterParams) {
+export function registerRemindctlHandlers(params: RemindctlHandlerParams) {
   ipcMain.handle("remindctl-authorize", async () => {
     const remindctlBin = params.remindctlBin;
     if (!fs.existsSync(remindctlBin)) {

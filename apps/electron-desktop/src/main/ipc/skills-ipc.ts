@@ -10,7 +10,7 @@ import { randomBytes } from "node:crypto";
 import JSZip from "jszip";
 
 import type { CustomSkillMeta } from "../../shared/types";
-import type { RegisterParams } from "./types";
+import type { SkillHandlerParams } from "./types";
 
 /**
  * Parse SKILL.md frontmatter to extract name, description, and emoji.
@@ -120,7 +120,7 @@ export async function listCustomSkillsFromDir(skillsDir: string): Promise<Custom
   return skills;
 }
 
-export function registerSkillHandlers(params: RegisterParams) {
+export function registerSkillHandlers(params: SkillHandlerParams) {
   const workspaceSkillsDir = path.join(params.stateDir, "workspace", "skills");
 
   ipcMain.handle("install-custom-skill", async (_evt, p: { data?: unknown }) => {

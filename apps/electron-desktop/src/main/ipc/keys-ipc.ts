@@ -10,9 +10,9 @@ import {
   writeAuthProfilesStoreAtomic,
 } from "../keys/authProfilesStore";
 import type { AuthProfilesStore } from "../keys/authProfilesStore";
-import type { RegisterParams } from "./types";
+import type { KeyHandlerParams } from "./types";
 
-export function registerKeyHandlers(params: RegisterParams) {
+export function registerKeyHandlers(params: KeyHandlerParams) {
   ipcMain.handle("auth-set-api-key", async (_evt, p: { provider?: unknown; apiKey?: unknown }) => {
     const provider = typeof p?.provider === "string" ? p.provider.trim() : "";
     const apiKey = typeof p?.apiKey === "string" ? p.apiKey : "";

@@ -14,9 +14,9 @@
 import { ipcMain, shell } from "electron";
 
 import { upsertOAuthProfile } from "../keys/authProfilesStore";
-import type { RegisterParams } from "./types";
+import type { OAuthHandlerParams } from "./types";
 
-export function registerOAuthHandlers(params: RegisterParams) {
+export function registerOAuthHandlers(params: OAuthHandlerParams) {
   ipcMain.handle("oauth:login", async (_evt, p: { provider?: unknown }) => {
     const providerId = typeof p?.provider === "string" ? p.provider.trim() : "";
     if (!providerId) {

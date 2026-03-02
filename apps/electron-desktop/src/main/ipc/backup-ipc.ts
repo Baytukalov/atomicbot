@@ -16,7 +16,7 @@ import { promisify } from "node:util";
 
 import JSON5 from "json5";
 import JSZip from "jszip";
-import type { RegisterParams } from "./types";
+import type { BackupHandlerParams } from "./types";
 import { readGatewayTokenFromConfig } from "../gateway/config";
 
 const execFileAsync = promisify(execFile);
@@ -287,7 +287,7 @@ async function readBackupMeta(backupRoot: string): Promise<BackupMeta> {
   }
 }
 
-export function registerBackupHandlers(params: RegisterParams) {
+export function registerBackupHandlers(params: BackupHandlerParams) {
   const {
     stateDir,
     stopGatewayChild,

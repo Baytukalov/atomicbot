@@ -5,10 +5,10 @@ import { ipcMain } from "electron";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 
-import type { RegisterParams } from "./types";
+import type { MemoHandlerParams } from "./types";
 import { createBinaryNotFoundResult } from "./exec";
 
-export function registerMemoHandlers(params: RegisterParams) {
+export function registerMemoHandlers(params: MemoHandlerParams) {
   ipcMain.handle("memo-check", async () => {
     const memoBin = params.memoBin;
     if (!fs.existsSync(memoBin)) {

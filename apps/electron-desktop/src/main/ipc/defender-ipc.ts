@@ -11,7 +11,7 @@ import { execFile } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import type { RegisterParams } from "./types";
+import type { DefenderHandlerParams } from "./types";
 
 type DefenderStatus = {
   /** Whether exclusions have already been applied (or were dismissed permanently). */
@@ -81,7 +81,7 @@ function buildExclusionScript(stateDir: string): string {
   return inner;
 }
 
-export function registerDefenderHandlers(params: RegisterParams) {
+export function registerDefenderHandlers(params: DefenderHandlerParams) {
   if (process.platform !== "win32") {
     // Register no-op handlers so the renderer doesn't get "No handler" errors
     // when calling from non-Windows platforms during development.

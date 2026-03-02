@@ -6,12 +6,12 @@ import fs from "node:fs";
 import path from "node:path";
 
 import type { ExecResult } from "../../shared/types";
-import type { RegisterParams } from "./types";
+import type { GhHandlerParams } from "./types";
 import { createBinaryNotFoundResult, runCommand, runSyncCheck } from "./exec";
 
 const PREPARE_CMD = "cd apps/electron-desktop && npm run prepare:gh:all";
 
-export function registerGhHandlers(params: RegisterParams) {
+export function registerGhHandlers(params: GhHandlerParams) {
   ipcMain.handle("gh-check", async () => {
     const ghBin = params.ghBin;
     if (!fs.existsSync(ghBin)) {

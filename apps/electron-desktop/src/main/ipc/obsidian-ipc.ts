@@ -8,7 +8,7 @@ import path from "node:path";
 
 import type { ExecResult } from "../../shared/types";
 import type { ObsidianVaultEntry } from "../../shared/types";
-import type { RegisterParams } from "./types";
+import type { ObsidianHandlerParams } from "./types";
 import { createBinaryNotFoundResult, runCommand, runSyncCheck } from "./exec";
 
 const PREPARE_CMD = "cd apps/electron-desktop && npm run prepare:obsidian-cli:all";
@@ -64,7 +64,7 @@ export function parseObsidianVaultsFromJson(payload: unknown): ObsidianVaultEntr
   return out;
 }
 
-export function registerObsidianHandlers(params: RegisterParams) {
+export function registerObsidianHandlers(params: ObsidianHandlerParams) {
   ipcMain.handle("obsidian-cli-check", async () => {
     const obsidianCliBin = params.obsidianCliBin;
     if (!fs.existsSync(obsidianCliBin)) {

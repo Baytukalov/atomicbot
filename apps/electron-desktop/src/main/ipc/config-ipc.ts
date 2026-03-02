@@ -5,9 +5,9 @@ import { app, ipcMain } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 
-import type { RegisterParams } from "./types";
+import type { ConfigHandlerParams } from "./types";
 
-export function registerConfigHandlers(params: RegisterParams) {
+export function registerConfigHandlers(params: ConfigHandlerParams) {
   ipcMain.handle("gateway-get-info", async () => ({ state: params.getGatewayState() }));
 
   ipcMain.handle("consent-get", async () => ({ accepted: params.getConsentAccepted() }));
