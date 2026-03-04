@@ -56,7 +56,7 @@ test.describe("Settings page", () => {
     await expect(page.locator('[aria-label="Settings page"]')).toBeVisible();
 
     const tabNav = page.locator('[aria-label="Settings sections"]');
-    for (const tabName of ["Connection & AI Models", "Messengers", "Skills", "Voice", "Other"]) {
+    for (const tabName of ["AI Models", "Messengers", "Skills", "Voice", "Other"]) {
       await expect(tabNav.getByText(tabName)).toBeVisible();
     }
   });
@@ -65,7 +65,7 @@ test.describe("Settings page", () => {
     test.setTimeout(60_000);
     const tabNav = page.locator('[aria-label="Settings sections"]');
 
-    await tabNav.getByText("Connection & AI Models").click();
+    await tabNav.getByText("AI Models").click();
     await expect(page.locator('button[aria-haspopup="listbox"]').first()).toBeVisible({
       timeout: 15_000,
     });
@@ -85,7 +85,7 @@ test.describe("Settings page", () => {
   test("change default model via settings", async () => {
     test.setTimeout(60_000);
     const tabNav = page.locator('[aria-label="Settings sections"]');
-    await tabNav.getByText("Connection & AI Models").click();
+    await tabNav.getByText("AI Models").click();
     await page.waitForTimeout(1_000);
 
     // Open the Model dropdown (RichSelect)
@@ -128,7 +128,7 @@ test.describe("Settings page", () => {
     test.setTimeout(60_000);
 
     const tabNav = page.locator('[aria-label="Settings sections"]');
-    await tabNav.getByText("Connection & AI Models").click();
+    await tabNav.getByText("AI Models").click();
     await page.waitForTimeout(1_000);
 
     // Open the Provider dropdown and select the second provider

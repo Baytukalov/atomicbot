@@ -182,7 +182,7 @@ test.describe("Backup roundtrip (create -> mutate -> restore -> verify)", () => 
     await navigateToSettings(page);
 
     const tabNav = page.locator('[aria-label="Settings sections"]');
-    await tabNav.getByText("Connection & AI Models").click();
+    await tabNav.getByText("AI Models").click();
     await page.waitForTimeout(1_000);
 
     // In the combined tab, a configured provider shows "API key configured" or "Connected" badge

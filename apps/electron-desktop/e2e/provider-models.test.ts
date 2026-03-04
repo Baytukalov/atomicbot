@@ -87,12 +87,12 @@ test.describe("Provider addition, model listing, and model switching", () => {
 
   // ── Add second provider via Settings UI ───────────────────
 
-  test("navigate to Connection & AI Models and add second provider", async () => {
+  test("navigate to AI Models and add second provider", async () => {
     test.setTimeout(60_000);
     await navigateToSettings(page);
 
     const tabNav = page.locator('[aria-label="Settings sections"]');
-    await tabNav.getByText("Connection & AI Models").click();
+    await tabNav.getByText("AI Models").click();
     await page.waitForTimeout(1_000);
 
     const displayName = PROVIDER_DISPLAY_NAMES[secondCreds!.provider] ?? secondCreds!.provider;
@@ -169,7 +169,7 @@ test.describe("Provider addition, model listing, and model switching", () => {
   test("model dropdown includes models for current provider", async () => {
     test.setTimeout(60_000);
     const tabNav = page.locator('[aria-label="Settings sections"]');
-    await tabNav.getByText("Connection & AI Models").click();
+    await tabNav.getByText("AI Models").click();
     await page.waitForTimeout(2_000);
 
     // Wait for models to load — the trigger text changes from "Select model…"

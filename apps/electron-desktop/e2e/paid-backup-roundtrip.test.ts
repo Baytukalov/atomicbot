@@ -89,7 +89,7 @@ test.describe("Paid backup roundtrip (paid -> self -> paid)", () => {
     await navigateToSettings(page);
 
     const tabNav = page.locator('[aria-label="Settings sections"]');
-    await tabNav.getByText("Connection & AI Models").click();
+    await tabNav.getByText("AI Models").click();
     await page.waitForTimeout(1_000);
 
     const toggle = page.locator('[aria-label="Connection mode"]');

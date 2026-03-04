@@ -199,9 +199,10 @@ describe("Smoke render tests", () => {
       </TestShell>
     );
     expect(screen.getByRole("heading", { name: "Settings" })).toBeTruthy();
-    expect(screen.getByText("Connection & AI Models")).toBeTruthy();
+    expect(screen.getByText("AI Models")).toBeTruthy();
     expect(screen.getByText("Messengers")).toBeTruthy();
     expect(screen.getByText("Skills")).toBeTruthy();
+    expect(screen.getByText("Voice")).toBeTruthy();
     expect(screen.getByText("Other")).toBeTruthy();
   });
 });

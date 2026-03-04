@@ -135,6 +135,8 @@ vi.mock("@shared/kit", () => ({
         {children}
       </div>
     ) : null,
+  InfoTooltip: ({ text }: { text: string }) => <span title={text} />,
+  SplashLogo: () => <span data-testid="splash-logo" />,
 }));
 
 vi.mock("@shared/billing/AnimatedBalance", () => ({
@@ -252,7 +254,7 @@ describe("AccountTab logout confirmation", () => {
     mockAuthState.lastRefreshAt = Date.now();
 
     render(<AccountTab />);
-    expect(screen.getByText("Subscribe to get started")).not.toBeNull();
+    expect(screen.getByText("Atomic Bot Subscription")).not.toBeNull();
     expect(screen.getByText(/Subscribe \$/)).not.toBeNull();
 
     // Restore for other tests

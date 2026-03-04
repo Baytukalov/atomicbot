@@ -105,18 +105,18 @@ test.describe("Settings account tab (paid mode)", () => {
     await waitForChatPage(page);
   });
 
-  test("navigate to settings and see Connection & AI Models tab", async () => {
+  test("navigate to settings and see AI Models tab", async () => {
     test.setTimeout(30_000);
     await navigateToSettings(page);
 
     const tabNav = page.locator('[aria-label="Settings sections"]');
-    await expect(tabNav.getByText("Connection & AI Models")).toBeVisible();
+    await expect(tabNav.getByText("AI Models")).toBeVisible();
   });
 
   test("Connection toggle shows Atomic Bot Account as active", async () => {
     test.setTimeout(15_000);
     const tabNav = page.locator('[aria-label="Settings sections"]');
-    await tabNav.getByText("Connection & AI Models").click();
+    await tabNav.getByText("AI Models").click();
     await page.waitForTimeout(1_000);
 
     const toggle = page.locator('[aria-label="Connection mode"]');
