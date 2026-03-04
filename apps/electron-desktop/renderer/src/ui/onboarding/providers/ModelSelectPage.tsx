@@ -6,7 +6,6 @@ import {
   TIER_INFO,
   formatModelMeta,
   getModelTier,
-  sortModelsByProviderTierName,
 } from "@shared/models/modelPresentation";
 
 export function ModelSelectPage(props: {
@@ -14,6 +13,7 @@ export function ModelSelectPage(props: {
   activeStep: number;
   models: ModelEntry[];
   filterProvider?: string;
+  defaultModelId?: string;
   loading: boolean;
   error: string | null;
   onSelect: (modelId: string) => void;
@@ -22,14 +22,27 @@ export function ModelSelectPage(props: {
 }) {
   const [selected, setSelected] = React.useState<string | null>(null);
 
-  // Filter and sort models by provider and tier
   const filteredModels = React.useMemo(() => {
     let models = props.models;
     if (props.filterProvider) {
       models = models.filter((m) => m.provider === props.filterProvider);
     }
-    return sortModelsByProviderTierName(models);
-  }, [props.models, props.filterProvider]);
+    const pinId = props.defaultModelId;
+    const TIER_RANK: Record<string, number> = { ultra: 0, pro: 1, fast: 2 };
+    return models.slice().sort((a, b) => {
+      if (pinId) {
+        const aPin = a.id.includes(pinId) ? 1 : 0;
+        const bPin = b.id.includes(pinId) ? 1 : 0;
+        if (aPin !== bPin) return bPin - aPin;
+      }
+      const tierA = getModelTier(a);
+      const tierB = getModelTier(b);
+      const aRank = tierA ? (TIER_RANK[tierA] ?? 99) : 99;
+      const bRank = tierB ? (TIER_RANK[tierB] ?? 99) : 99;
+      if (aRank !== bRank) return aRank - bRank;
+      return a.name.localeCompare(b.name);
+    });
+  }, [props.models, props.filterProvider, props.defaultModelId]);
 
   useEffect(() => {
     if (filteredModels.length > 0) {

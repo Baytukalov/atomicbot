@@ -79,6 +79,7 @@ export function getModelTier(model: ModelEntry): ModelTier | null {
 
   if (model.provider === "openrouter") {
     // OpenRouter model IDs can vary by sub-provider; match by stable name/ID fragments.
+    // Claude
     if (haystack.includes("claude") && haystack.includes("opus") && haystack.includes("4.6")) {
       return "ultra";
     }
@@ -88,6 +89,34 @@ export function getModelTier(model: ModelEntry): ModelTier | null {
     if (haystack.includes("claude") && haystack.includes("haiku") && haystack.includes("4.5")) {
       return "fast";
     }
+    // GPT
+    if (haystack.includes("gpt") && haystack.includes("5.2")) {
+      return "ultra";
+    }
+    if (haystack.includes("gpt") && haystack.includes("5.1")) {
+      return "pro";
+    }
+    if (haystack.includes("gpt") && haystack.includes("mini")) {
+      return "fast";
+    }
+    // Gemini
+    if (haystack.includes("gemini") && haystack.includes("2.5") && haystack.includes("pro")) {
+      return "ultra";
+    }
+    if (haystack.includes("gemini") && haystack.includes("2.5") && haystack.includes("flash")) {
+      return "pro";
+    }
+    if (haystack.includes("gemini 3 flash") && haystack.includes("preview")) {
+      return "fast";
+    }
+    // Grok
+    if (haystack.includes("grok") && haystack.includes("4") && haystack.includes("fast")) {
+      return "fast";
+    }
+    if (haystack.includes("grok") && haystack.includes("4")) {
+      return "pro";
+    }
+    // Kimi/Moonshot
     if (haystack.includes("kimi") && (haystack.includes("2.5") || haystack.includes("k2.5"))) {
       return "pro";
     }

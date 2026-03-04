@@ -35,6 +35,7 @@ const localStorageShim = {
 const MODE_LS_KEY = "openclaw-desktop-mode";
 const AUTH_TOKEN_LS_KEY = "openclaw-auth-token";
 const BACKUP_LS_KEY = "openclaw-self-managed-backup";
+const PAID_BACKUP_LS_KEY = "openclaw-paid-backup";
 
 // ── Mock desktop API ────────────────────────────────────────────────────────
 
@@ -514,6 +515,85 @@ describe("switchToSubscription thunk", () => {
     const backupAfterSecond = JSON.parse(storageMap.get(BACKUP_LS_KEY)!);
     expect(backupAfterSecond.credentials.profiles["anthropic:default"].key).toBe("sk-ant-real");
   });
+
+  it("restores paid backup when JWT is valid", async () => {
+    const paidBackup = {
+      authToken: { jwt: "paid-jwt", email: "paid@test.com", userId: "pu1" },
+      credentials: {
+        profiles: { "openrouter:default": { provider: "openrouter", mode: "api_key" } },
+        order: { openrouter: ["openrouter:default"] },
+      },
+      configAuth: {
+        profiles: { "openrouter:default": { provider: "openrouter", mode: "api_key" } },
+        order: { openrouter: ["openrouter:default"] },
+      },
+      configModel: {
+        primary: "openrouter/anthropic/claude-sonnet-4.6",
+        models: { "openrouter/anthropic/claude-sonnet-4.6": {} },
+      },
+      savedAt: "2026-03-01T00:00:00.000Z",
+    };
+    storageMap.set(PAID_BACKUP_LS_KEY, JSON.stringify(paidBackup));
+
+    mockBackendApi.getStatus.mockResolvedValueOnce({
+      hasKey: true,
+      balance: null,
+      deployment: null,
+      subscription: null,
+    });
+
+    const store = createTestStore();
+    const mockRequest = createMockRequest();
+    await store.dispatch(switchToSubscription({ request: mockRequest }));
+
+    expect(store.getState().auth.jwt).toBe("paid-jwt");
+    expect(store.getState().auth.email).toBe("paid@test.com");
+    expect(store.getState().auth.userId).toBe("pu1");
+
+    const persisted = JSON.parse(storageMap.get(AUTH_TOKEN_LS_KEY)!);
+    expect(persisted.jwt).toBe("paid-jwt");
+
+    expect(mockApi.authWriteProfiles).toHaveBeenCalledWith({
+      profiles: paidBackup.credentials.profiles,
+      order: paidBackup.credentials.order,
+    });
+
+    expect(storageMap.has(PAID_BACKUP_LS_KEY)).toBe(false);
+  });
+
+  it("discards paid backup when JWT is expired (backend rejects)", async () => {
+    const paidBackup = {
+      authToken: { jwt: "expired-jwt", email: "old@test.com", userId: "ou1" },
+      credentials: {
+        profiles: { "openrouter:default": { provider: "openrouter" } },
+        order: { openrouter: ["openrouter:default"] },
+      },
+      configAuth: {},
+      configModel: { primary: "openrouter/anthropic/claude-sonnet-4.6" },
+      savedAt: "2026-01-01T00:00:00.000Z",
+    };
+    storageMap.set(PAID_BACKUP_LS_KEY, JSON.stringify(paidBackup));
+
+    mockBackendApi.getStatus.mockRejectedValueOnce(new Error("Unauthorized"));
+
+    const store = createTestStore();
+    const mockRequest = createMockRequest();
+    await store.dispatch(switchToSubscription({ request: mockRequest }));
+
+    expect(store.getState().auth.jwt).toBeNull();
+    expect(store.getState().auth.email).toBeNull();
+    expect(storageMap.has(AUTH_TOKEN_LS_KEY)).toBe(false);
+    expect(storageMap.has(PAID_BACKUP_LS_KEY)).toBe(false);
+  });
+
+  it("does not attempt restore when no paid backup exists", async () => {
+    const store = createTestStore();
+    const mockRequest = createMockRequest();
+    await store.dispatch(switchToSubscription({ request: mockRequest }));
+
+    expect(mockBackendApi.getStatus).not.toHaveBeenCalled();
+    expect(store.getState().auth.jwt).toBeNull();
+  });
 });
 
 // ── switchToSelfManaged thunk ───────────────────────────────────────────────
@@ -577,6 +657,79 @@ describe("switchToSelfManaged thunk", () => {
     expect(patchBody.auth.profiles).toBeNull();
     expect(patchBody.auth.order).toBeNull();
     expect(patchBody.agents.defaults.model.primary).toBe("");
+  });
+
+  it("saves paid backup before clearing auth when JWT is present", async () => {
+    mockApi.authReadProfiles.mockResolvedValue({
+      profiles: { "openrouter:default": { provider: "openrouter", mode: "api_key" } },
+      order: { openrouter: ["openrouter:default"] },
+    });
+
+    storageMap.set(
+      AUTH_TOKEN_LS_KEY,
+      JSON.stringify({ jwt: "paid-jwt", email: "paid@test.com", userId: "pu1" })
+    );
+
+    const store = createTestStore();
+    store.dispatch(authActions.setAuth({ jwt: "paid-jwt", email: "paid@test.com", userId: "pu1" }));
+
+    const mockRequest = createMockRequest();
+    await store.dispatch(switchToSelfManaged({ request: mockRequest })).unwrap();
+
+    const paidBackup = JSON.parse(storageMap.get(PAID_BACKUP_LS_KEY)!);
+    expect(paidBackup.authToken).toEqual({
+      jwt: "paid-jwt",
+      email: "paid@test.com",
+      userId: "pu1",
+    });
+    expect(paidBackup.credentials.profiles).toHaveProperty("openrouter:default");
+    expect(paidBackup.configAuth.profiles).toHaveProperty("anthropic:default");
+    expect(paidBackup.configModel.primary).toBe("anthropic/claude-sonnet-4.6");
+    expect(paidBackup.savedAt).toBeDefined();
+  });
+
+  it("does not save paid backup when no JWT is present", async () => {
+    const store = createTestStore();
+    const mockRequest = createMockRequest();
+    await store.dispatch(switchToSelfManaged({ request: mockRequest })).unwrap();
+
+    expect(storageMap.has(PAID_BACKUP_LS_KEY)).toBe(false);
+  });
+
+  it("does not overwrite existing paid backup on second call (idempotent)", async () => {
+    mockApi.authReadProfiles.mockResolvedValue({
+      profiles: { "openrouter:default": { provider: "openrouter", key: "sk-or-real" } },
+      order: { openrouter: ["openrouter:default"] },
+    });
+
+    storageMap.set(
+      AUTH_TOKEN_LS_KEY,
+      JSON.stringify({ jwt: "jwt-first", email: "first@test.com", userId: "u1" })
+    );
+
+    const store = createTestStore();
+    store.dispatch(
+      authActions.setAuth({ jwt: "jwt-first", email: "first@test.com", userId: "u1" })
+    );
+
+    const mockRequest = createMockRequest();
+    await store.dispatch(switchToSelfManaged({ request: mockRequest })).unwrap();
+
+    const backupAfterFirst = JSON.parse(storageMap.get(PAID_BACKUP_LS_KEY)!);
+    expect(backupAfterFirst.authToken.jwt).toBe("jwt-first");
+
+    storageMap.set(
+      AUTH_TOKEN_LS_KEY,
+      JSON.stringify({ jwt: "jwt-second", email: "second@test.com", userId: "u2" })
+    );
+    store.dispatch(
+      authActions.setAuth({ jwt: "jwt-second", email: "second@test.com", userId: "u2" })
+    );
+
+    await store.dispatch(switchToSelfManaged({ request: mockRequest })).unwrap();
+
+    const backupAfterSecond = JSON.parse(storageMap.get(PAID_BACKUP_LS_KEY)!);
+    expect(backupAfterSecond.authToken.jwt).toBe("jwt-first");
   });
 });
 
@@ -710,6 +863,26 @@ describe("handleLogout thunk", () => {
     expect(store.getState().auth.jwt).toBeNull();
     expect(storageMap.get(MODE_LS_KEY)).toBe("paid");
     expect(storageMap.get(BACKUP_LS_KEY)).toBeDefined();
+  });
+
+  it("clears paid backup on logout", async () => {
+    const paidBackup = {
+      authToken: { jwt: "paid-jwt", email: "paid@test.com", userId: "pu1" },
+      credentials: { profiles: {}, order: {} },
+      configAuth: {},
+      configModel: {},
+      savedAt: "2026-03-01T00:00:00.000Z",
+    };
+    storageMap.set(PAID_BACKUP_LS_KEY, JSON.stringify(paidBackup));
+
+    const store = createTestStore();
+    store.dispatch(authActions.setAuth({ jwt: "sub-jwt", email: "u@t.com", userId: "u1" }));
+
+    const mockRequest = createMockRequest();
+    await store.dispatch(handleLogout({ request: mockRequest })).unwrap();
+
+    expect(storageMap.has(PAID_BACKUP_LS_KEY)).toBe(false);
+    expect(store.getState().auth.jwt).toBeNull();
   });
 });
 

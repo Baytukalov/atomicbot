@@ -1,8 +1,9 @@
-import type { PersistedAuthToken, SelfManagedBackup, SetupMode } from "./auth-types";
+import type { PaidBackup, PersistedAuthToken, SelfManagedBackup, SetupMode } from "./auth-types";
 
 const MODE_LS_KEY = "openclaw-desktop-mode";
 const AUTH_TOKEN_LS_KEY = "openclaw-auth-token";
 const BACKUP_LS_KEY = "openclaw-self-managed-backup";
+const PAID_BACKUP_LS_KEY = "openclaw-paid-backup";
 
 export function persistMode(mode: SetupMode): void {
   try {
@@ -71,6 +72,35 @@ export function saveBackup(backup: SelfManagedBackup): void {
 export function clearBackup(): void {
   try {
     localStorage.removeItem(BACKUP_LS_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+export function readPaidBackup(): PaidBackup | null {
+  try {
+    const raw = localStorage.getItem(PAID_BACKUP_LS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const token = parsed.authToken as Record<string, unknown> | undefined;
+    if (!token || typeof token.jwt !== "string") return null;
+    return parsed as unknown as PaidBackup;
+  } catch {
+    return null;
+  }
+}
+
+export function savePaidBackup(backup: PaidBackup): void {
+  try {
+    localStorage.setItem(PAID_BACKUP_LS_KEY, JSON.stringify(backup));
+  } catch (err) {
+    console.warn("[authSlice] Failed to save paid backup:", err);
+  }
+}
+
+export function clearPaidBackup(): void {
+  try {
+    localStorage.removeItem(PAID_BACKUP_LS_KEY);
   } catch {
     // ignore
   }

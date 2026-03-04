@@ -132,10 +132,12 @@ export function AccountModelsTab(props: {
   const modelOptions: RichOption<string>[] = React.useMemo(() => {
     if (isPaidMode) {
       const TIER_RANK: Record<string, number> = { ultra: 0, pro: 1, fast: 2 };
-      const withTiers = state.sortedModels.map((m) => ({
-        model: m,
-        tier: getModelTier(m),
-      }));
+      const withTiers = state.sortedModels
+        .filter((m) => m.provider === "openrouter")
+        .map((m) => ({
+          model: m,
+          tier: getModelTier(m),
+        }));
       withTiers.sort((a, b) => {
         const aRank = a.tier ? (TIER_RANK[a.tier] ?? 99) : 99;
         const bRank = b.tier ? (TIER_RANK[b.tier] ?? 99) : 99;

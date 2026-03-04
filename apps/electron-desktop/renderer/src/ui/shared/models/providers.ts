@@ -5,6 +5,7 @@ export type ModelProvider =
   | "openai"
   | "openai-codex"
   | "openrouter"
+  | "venice"
   | "xai"
   | "zai"
   | "minimax"
@@ -37,6 +38,7 @@ export const PROVIDER_ICONS: Record<ModelProvider, string> = {
   xai: "xai.svg",
   zai: "zai.svg",
   openrouter: "openrouter.svg",
+  venice: "venice.svg",
   moonshot: "moonshot.svg",
   "kimi-coding": "kimi-coding.svg",
 };
@@ -121,6 +123,14 @@ export const MODEL_PROVIDERS: ModelProviderInfo[] = [
     helpText: "Get your API key from the Kimi Coding Platform.",
   },
   {
+    id: "venice",
+    name: "Venice AI",
+    description: "Privacy-focused AI with uncensored models",
+    placeholder: "ven_...",
+    helpUrl: "https://venice.ai/settings/api",
+    helpText: "Get your API key from Venice AI Settings.",
+  },
+  {
     id: "xai",
     name: "xAI (Grok)",
     description: "High-performance reasoning model by xAI with web search capabilities",
@@ -153,6 +163,7 @@ export const MODEL_PROVIDER_BY_ID: Record<ModelProvider, ModelProviderInfo> = {
   nvidia: MODEL_PROVIDERS.find((p) => p.id === "nvidia")!,
   openai: MODEL_PROVIDERS.find((p) => p.id === "openai")!,
   "openai-codex": MODEL_PROVIDERS.find((p) => p.id === "openai-codex")!,
+  venice: MODEL_PROVIDERS.find((p) => p.id === "venice")!,
   xai: MODEL_PROVIDERS.find((p) => p.id === "xai")!,
   zai: MODEL_PROVIDERS.find((p) => p.id === "zai")!,
   minimax: MODEL_PROVIDERS.find((p) => p.id === "minimax")!,

@@ -61,6 +61,11 @@ function buildValidationSpec(provider: string, apiKey: string): ProviderValidati
         url: "https://integrate.api.nvidia.com/v1/models",
         headers: { Authorization: `Bearer ${apiKey}` },
       };
+    case "venice":
+      return {
+        url: "https://api.venice.ai/api/v1/models",
+        headers: { Authorization: `Bearer ${apiKey}` },
+      };
     default:
       return null;
   }

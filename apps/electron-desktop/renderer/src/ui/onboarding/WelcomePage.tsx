@@ -149,6 +149,7 @@ export function WelcomePage({ state }: { state: Extract<GatewayState, { kind: "r
               activeStep={PAID_FLOW.steps.model}
               models={paid.model.models}
               filterProvider="openrouter"
+              defaultModelId="gemini-3-flash-preview"
               loading={paid.model.modelsLoading}
               error={paid.model.modelsError}
               onSelect={(modelId) => void paid.model.onSelect(modelId)}

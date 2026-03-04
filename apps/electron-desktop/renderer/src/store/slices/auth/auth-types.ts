@@ -70,3 +70,20 @@ export type ConfigSnapshot = {
 };
 
 export type PersistedAuthToken = { jwt: string; email: string; userId: string };
+
+export type PaidBackup = {
+  authToken: PersistedAuthToken;
+  credentials: {
+    profiles: Record<string, unknown>;
+    order: Record<string, string[]>;
+  };
+  configAuth: {
+    profiles?: Record<string, unknown>;
+    order?: Record<string, unknown>;
+  };
+  configModel: {
+    primary?: string;
+    models?: Record<string, unknown>;
+  };
+  savedAt: string;
+};

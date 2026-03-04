@@ -38,6 +38,7 @@ export function getConfiguredProviders(cfg: ConfigData | undefined): Set<ModelPr
       normalized === "nvidia" ||
       normalized === "openai" ||
       normalized === "openai-codex" ||
+      normalized === "venice" ||
       normalized === "xai" ||
       normalized === "zai" ||
       normalized === "minimax" ||

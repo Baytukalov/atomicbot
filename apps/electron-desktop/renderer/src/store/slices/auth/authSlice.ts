@@ -17,18 +17,22 @@ import type {
   AuthRefreshReason,
   AuthSliceState,
   ConfigSnapshot,
+  PaidBackup,
   SelfManagedBackup,
 } from "./auth-types";
 import { DEFAULT_AUTO_TOP_UP_SETTINGS } from "./auth-types";
 import {
   clearBackup,
+  clearPaidBackup,
   clearPersistedAuthToken,
   persistAuthToken,
   persistMode,
   readBackup,
+  readPaidBackup,
   readPersistedAuthToken,
   readPersistedMode,
   saveBackup,
+  savePaidBackup,
 } from "./auth-persistence";
 import {
   extractAuth,
@@ -102,6 +106,8 @@ export const clearAuth = createAsyncThunk("auth/clear", async () => {
 /**
  * Switch from self-managed to subscription (paid) mode.
  * Backs up credentials + config to localStorage, then clears them.
+ * If a paid backup exists (from a previous paid session), validates the JWT
+ * via a backend call and restores the full paid state on success.
  */
 export const switchToSubscription = createAsyncThunk(
   "auth/switchToSubscription",
@@ -175,18 +181,114 @@ export const switchToSubscription = createAsyncThunk(
 
     thunkApi.dispatch(authActions.setMode("paid"));
     persistMode("paid");
+
+    // Attempt to restore a previously saved paid session
+    const paidBackup = readPaidBackup();
+    if (paidBackup) {
+      let jwtValid = false;
+      try {
+        await backendApi.getStatus(paidBackup.authToken.jwt);
+        jwtValid = true;
+      } catch {
+        console.warn("[authSlice] Paid backup JWT is expired or invalid, discarding backup");
+      }
+
+      if (jwtValid) {
+        persistAuthToken(paidBackup.authToken);
+        thunkApi.dispatch(authActions.setAuth(paidBackup.authToken));
+
+        // Restore paid credentials (OpenRouter/OpenAI keys)
+        if (api?.authWriteProfiles) {
+          try {
+            await api.authWriteProfiles({
+              profiles: paidBackup.credentials.profiles,
+              order: paidBackup.credentials.order,
+            });
+          } catch (err) {
+            console.warn("[authSlice] Failed to restore paid auth profiles:", err);
+          }
+        }
+
+        // Restore paid config (auth profiles, model)
+        try {
+          const snap = await request<ConfigSnapshot>("config.get", {});
+          const paidBaseHash = getBaseHash(snap);
+          if (paidBaseHash) {
+            const patch: Record<string, unknown> = {
+              auth: {
+                profiles: paidBackup.configAuth.profiles ?? null,
+                order: paidBackup.configAuth.order ?? null,
+              },
+            };
+            if (paidBackup.configModel.primary) {
+              patch.agents = {
+                defaults: {
+                  model: { primary: paidBackup.configModel.primary },
+                  models: paidBackup.configModel.models ?? null,
+                },
+              };
+            }
+            await request("config.patch", {
+              baseHash: paidBaseHash,
+              raw: JSON.stringify(patch, null, 2),
+              note: "Switch to subscription: restore paid config from backup",
+            });
+          }
+        } catch (err) {
+          console.warn("[authSlice] Failed to restore paid config:", err);
+        }
+      }
+
+      clearPaidBackup();
+    }
   }
 );
 
 /**
  * Switch from subscription (paid) back to self-managed mode.
- * Clears subscription credentials, restores backup if available.
+ * Saves paid state (JWT, credentials, config) to localStorage before clearing,
+ * then restores self-managed backup if available.
  */
 export const switchToSelfManaged = createAsyncThunk(
   "auth/switchToSelfManaged",
   async ({ request }: { request: GatewayRequest }, thunkApi) => {
     const api = getDesktopApiOrNull();
     const backup = readBackup();
+
+    // Save paid snapshot before clearing (skip if one already exists for idempotency)
+    const authToken = readPersistedAuthToken();
+    if (authToken && !readPaidBackup()) {
+      let paidCredentials: PaidBackup["credentials"] = { profiles: {}, order: {} };
+      if (api?.authReadProfiles) {
+        try {
+          paidCredentials = await api.authReadProfiles();
+        } catch (err) {
+          console.warn("[authSlice] Failed to read paid auth profiles for backup:", err);
+        }
+      }
+
+      let paidConfigAuth: PaidBackup["configAuth"] = {};
+      let paidConfigModel: PaidBackup["configModel"] = {};
+      try {
+        const snap = await request<ConfigSnapshot>("config.get", {});
+        const cfg = (snap.config && typeof snap.config === "object" ? snap.config : {}) as Record<
+          string,
+          unknown
+        >;
+        paidConfigAuth = extractAuth(cfg);
+        paidConfigModel = extractModel(cfg);
+      } catch (err) {
+        console.warn("[authSlice] Failed to read paid config for backup:", err);
+      }
+
+      savePaidBackup({
+        authToken,
+        credentials: paidCredentials,
+        configAuth: paidConfigAuth,
+        configModel: paidConfigModel,
+        savedAt: new Date().toISOString(),
+      });
+    }
 
     if (api?.authWriteProfiles) {
       try {
@@ -320,11 +422,13 @@ export const applySubscriptionKeys = createAsyncThunk(
 );
 
 /**
- * Log out: keep paid mode, clear auth token, reset config/auth to subscription baseline.
+ * Log out: keep paid mode, clear auth token and paid backup,
+ * reset config/auth to subscription baseline.
  */
 export const handleLogout = createAsyncThunk(
   "auth/handleLogout",
   async ({ request }: { request: GatewayRequest }, thunkApi) => {
+    clearPaidBackup();
     await thunkApi.dispatch(switchToSubscription({ request })).unwrap();
     await thunkApi.dispatch(clearAuth()).unwrap();
     await thunkApi.dispatch(reloadConfig({ request }));

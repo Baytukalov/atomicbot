@@ -5,13 +5,16 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import {
   clearBackup,
+  clearPaidBackup,
   clearPersistedAuthToken,
   persistAuthToken,
   persistMode,
   readBackup,
+  readPaidBackup,
   readPersistedAuthToken,
   readPersistedMode,
   saveBackup,
+  savePaidBackup,
 } from "./auth-persistence";
 
 // ── localStorage shim ───────────────────────────────────────────────────────
@@ -114,5 +117,51 @@ describe("saveBackup / readBackup / clearBackup", () => {
     saveBackup(backup);
     clearBackup();
     expect(readBackup()).toBeNull();
+  });
+});
+
+// ── savePaidBackup / readPaidBackup / clearPaidBackup ────────────────────────
+
+describe("savePaidBackup / readPaidBackup / clearPaidBackup", () => {
+  const paidBackup = {
+    authToken: { jwt: "paid-jwt", email: "paid@test.com", userId: "pu1" },
+    credentials: {
+      profiles: { "openrouter:default": { provider: "openrouter", mode: "api_key" } },
+      order: { openrouter: ["openrouter:default"] },
+    },
+    configAuth: {
+      profiles: { "openrouter:default": { provider: "openrouter", mode: "api_key" } },
+      order: { openrouter: ["openrouter:default"] },
+    },
+    configModel: { primary: "openrouter/anthropic/claude-sonnet-4.6" },
+    savedAt: "2026-03-01T00:00:00.000Z",
+  };
+
+  it("saves and reads paid backup", () => {
+    savePaidBackup(paidBackup);
+    expect(readPaidBackup()).toEqual(paidBackup);
+  });
+
+  it("returns null when no paid backup exists", () => {
+    expect(readPaidBackup()).toBeNull();
+  });
+
+  it("returns null for invalid JSON", () => {
+    storageMap.set("openclaw-paid-backup", "bad-json");
+    expect(readPaidBackup()).toBeNull();
+  });
+
+  it("returns null when authToken.jwt is missing", () => {
+    storageMap.set(
+      "openclaw-paid-backup",
+      JSON.stringify({ authToken: { email: "a@b.com" }, credentials: {} })
+    );
+    expect(readPaidBackup()).toBeNull();
+  });
+
+  it("clears paid backup", () => {
+    savePaidBackup(paidBackup);
+    clearPaidBackup();
+    expect(readPaidBackup()).toBeNull();
   });
 });
