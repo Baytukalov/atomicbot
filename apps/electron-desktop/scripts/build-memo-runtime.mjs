@@ -220,7 +220,7 @@ async function main() {
       "import importlib.util, glob, os, pathlib",
       "sp = next(p for p in importlib.util.find_spec('chardet').submodule_search_locations)",
       "sp_root = str(pathlib.Path(sp).parent)",
-      "mods = [os.path.splitext(os.path.basename(f))[0] for f in glob.glob(os.path.join(sp_root, '*__mypyc*'))]",
+      "mods = [os.path.basename(f).split('.')[0] for f in glob.glob(os.path.join(sp_root, '*__mypyc*'))]",
       "print('\\n'.join(mods))",
     ].join("; "),
   ]);
