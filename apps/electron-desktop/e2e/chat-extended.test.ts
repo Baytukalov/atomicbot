@@ -123,10 +123,12 @@ test.describe("Chat — extended interactions", () => {
     // Wait for the popover menu to appear
     const deleteBtn = sessionItem.locator('[role="menuitem"]').filter({ hasText: "Delete" });
     await deleteBtn.waitFor({ state: "visible", timeout: 5_000 });
-
-    // Accept the confirm dialog before clicking delete
-    page.on("dialog", (dialog) => void dialog.accept());
     await deleteBtn.click();
+
+    // UI shows a custom ConfirmDeleteDialog — click its Delete button
+    const confirmDialog = page.locator('[aria-label="Delete session"]');
+    await confirmDialog.waitFor({ state: "visible", timeout: 5_000 });
+    await confirmDialog.getByRole("button", { name: "Delete" }).click();
 
     // Session count should decrease
     await page.waitForTimeout(2_000);
