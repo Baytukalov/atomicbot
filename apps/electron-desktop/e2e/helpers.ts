@@ -60,8 +60,24 @@ export async function acceptConsentOnly(page: Page): Promise<void> {
 }
 
 export async function waitForSetupModePage(page: Page): Promise<void> {
-  const el = page.locator('[aria-label="Setup mode selection"]');
-  await el.waitFor({ state: "visible", timeout: 30_000 });
+  const setupMode = page.locator('[aria-label="Setup mode selection"]');
+  const retryBtn = page.getByRole("button", { name: "Retry" });
+
+  // ensureExtendedConfig may trigger a gateway restart (auth/gateway config patch),
+  // causing a transient "Setup failed" screen. Poll and click Retry when it appears.
+  const deadline = Date.now() + 90_000;
+  while (Date.now() < deadline) {
+    if (await setupMode.isVisible()) {
+      return;
+    }
+    if (await retryBtn.isVisible()) {
+      await retryBtn.click();
+      await page.waitForTimeout(5_000);
+      continue;
+    }
+    await page.waitForTimeout(500);
+  }
+  await setupMode.waitFor({ state: "visible", timeout: 10_000 });
 }
 
 export async function selectSelfManaged(page: Page): Promise<void> {
@@ -116,14 +132,28 @@ export async function enterApiKey(page: Page, apiKey: string): Promise<void> {
   const input = container.locator("input").first();
   await input.click();
   await input.fill(apiKey);
-  // Let React process the onChange before clicking the button
   await page.waitForTimeout(500);
+
   const btn = container.getByRole("button", { name: "Continue" });
-  await btn.waitFor({ state: "visible" });
-  await btn.click();
-  // Verify the click triggered validation/navigation by waiting for
-  // either model-select page or validation state change
-  await page.waitForTimeout(300);
+  const modelSelect = page.locator('[aria-label="Model selection"]');
+
+  // patchAuthProfile changes auth.* which triggers a gateway restart.
+  // The in-flight loadModels RPC may hang — retry the Continue click.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await btn.waitFor({ state: "visible" });
+    await btn.click();
+    try {
+      await modelSelect.waitFor({ state: "visible", timeout: 20_000 });
+      return;
+    } catch {
+      // Gateway restart likely interrupted the RPC; wait for reconnect and retry.
+      await page.waitForTimeout(3_000);
+      const stillOnApiKey = await container.isVisible();
+      if (!stillOnApiKey) {
+        return;
+      }
+    }
+  }
 }
 
 export async function waitForModelSelect(page: Page): Promise<void> {
@@ -228,7 +258,7 @@ export async function simulateStripeSuccessDeepLink(app: ElectronApplication): P
 
 // ---- Gateway RPC via WebSocket (runs inside renderer context) ----
 
-export async function gatewayRpc<T = unknown>(
+async function gatewayRpcOnce<T = unknown>(
   page: Page,
   method: string,
   params?: unknown
@@ -331,6 +361,26 @@ export async function gatewayRpc<T = unknown>(
     },
     { method, params }
   ) as Promise<T>;
+}
+
+// Gateway may restart after config patches (auth.*, gateway.*); retry with backoff.
+export async function gatewayRpc<T = unknown>(
+  page: Page,
+  method: string,
+  params?: unknown
+): Promise<T> {
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await gatewayRpcOnce<T>(page, method, params);
+    } catch (err) {
+      if (attempt === maxAttempts) {
+        throw err;
+      }
+      await page.waitForTimeout(2_000 * attempt);
+    }
+  }
+  throw new Error("gatewayRpc: unreachable");
 }
 
 export type ConfigSnapshot = {
