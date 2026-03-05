@@ -148,7 +148,7 @@ export function extractTarGz(archivePath, extractDir) {
   if (
     process.platform === "win32" &&
     res.status !== 0 &&
-    /unrecognized option|unknown option/i.test(String(res.stderr || ""))
+    /unrecognized option|unknown option|is not supported/i.test(String(res.stderr || ""))
   ) {
     res = spawnSync("tar", baseArgs, { encoding: "utf-8" });
   }

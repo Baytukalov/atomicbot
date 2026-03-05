@@ -2,7 +2,7 @@ import React from "react";
 import { settingsStyles as ps } from "../SettingsPage";
 import sit from "./SkillsIntegrationsTab.module.css";
 
-import { TextInput } from "@shared/kit";
+import { TextInput, ConfirmDialog } from "@shared/kit";
 import type { GatewayState } from "@main/types";
 import { useSkillsStatus } from "./useSkillsStatus";
 import { useCustomSkills } from "./useCustomSkills";
@@ -70,7 +70,7 @@ export function SkillsIntegrationsTab(props: {
         customSkills={custom.customSkills}
         statuses={statuses}
         onOpenModal={modal.openModal}
-        onRemoveCustomSkill={custom.handleRemoveCustomSkill}
+        onRemoveCustomSkill={custom.requestRemoveCustomSkill}
       />
 
       {/* ── Skill configuration modals ────────────────────────── */}
@@ -89,6 +89,17 @@ export function SkillsIntegrationsTab(props: {
         open={custom.showUploadModal}
         onClose={() => custom.setShowUploadModal(false)}
         onInstalled={custom.handleCustomSkillInstalled}
+      />
+
+      {/* ── Confirm remove custom skill ────────────────────── */}
+      <ConfirmDialog
+        open={custom.pendingRemove !== null}
+        title={`Remove skill "${custom.pendingRemove?.name ?? ""}"?`}
+        subtitle="This will delete the skill files."
+        confirmLabel="Remove"
+        danger
+        onConfirm={() => void custom.confirmRemoveCustomSkill()}
+        onCancel={custom.cancelRemoveCustomSkill}
       />
     </div>
   );

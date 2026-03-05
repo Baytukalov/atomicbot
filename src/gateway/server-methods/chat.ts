@@ -132,14 +132,6 @@ function sanitizeChatHistoryContentBlock(block: unknown): { block: unknown; chan
     delete entry.thinkingSignature;
     changed = true;
   }
-  const type = typeof entry.type === "string" ? entry.type : "";
-  if (type === "image" && typeof entry.data === "string") {
-    const bytes = Buffer.byteLength(entry.data, "utf8");
-    delete entry.data;
-    entry.omitted = true;
-    entry.bytes = bytes;
-    changed = true;
-  }
   return { block: changed ? entry : block, changed };
 }
 

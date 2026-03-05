@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from "@store/hooks";
 import { authActions, clearAuth, persistMode } from "@store/slices/auth/authSlice";
 import { reloadConfig } from "@store/slices/configSlice";
 import { errorToMessage } from "@shared/toast";
+import { ConfirmDialog } from "@shared/kit";
 import { routes } from "../app/routes";
 import { settingsStyles as ps } from "./SettingsPage";
 import { openExternal } from "@shared/utils/openExternal";
@@ -18,6 +19,7 @@ import pkg from "../../../../package.json";
 export function OtherTab({ onError }: { onError: (msg: string | null) => void }) {
   const [launchAtStartup, setLaunchAtStartup] = React.useState(false);
   const [resetBusy, setResetBusy] = React.useState(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = React.useState(false);
   const [terminalSidebar, setTerminalSidebar] = useTerminalSidebarVisible();
   const [backupBusy, setBackupBusy] = React.useState(false);
   const [restoreModalOpen, setRestoreModalOpen] = React.useState(false);
@@ -28,7 +30,6 @@ export function OtherTab({ onError }: { onError: (msg: string | null) => void })
 
   const appVersion = pkg.version || "0.0.0";
 
-  // Load the current launch-at-login state on mount.
   React.useEffect(() => {
     const api = getDesktopApiOrNull();
     if (!api?.getLaunchAtLogin) {
@@ -48,7 +49,6 @@ export function OtherTab({ onError }: { onError: (msg: string | null) => void })
       try {
         await api.setLaunchAtLogin(enabled);
       } catch (err) {
-        // Revert on failure.
         setLaunchAtStartup(!enabled);
         onError(errorToMessage(err));
       }
@@ -56,17 +56,11 @@ export function OtherTab({ onError }: { onError: (msg: string | null) => void })
     [onError]
   );
 
-  const resetAndClose = React.useCallback(async () => {
+  const confirmResetAndClose = React.useCallback(async () => {
+    setResetConfirmOpen(false);
     const api = getDesktopApiOrNull();
     if (!api) {
       onError("Desktop API not available");
-      return;
-    }
-    const ok = window.confirm(
-      "All local data will be deleted and Google Workspace will be disconnected. The app will close and you’ll need to set it up again."
-    );
-    void getDesktopApiOrNull()?.focusWindow();
-    if (!ok) {
       return;
     }
     onError(null);
@@ -324,13 +318,23 @@ export function OtherTab({ onError }: { onError: (msg: string | null) => void })
               type="button"
               className={s.UiSettingsOtherDangerButton}
               disabled={resetBusy}
-              onClick={() => void resetAndClose()}
+              onClick={() => setResetConfirmOpen(true)}
             >
               {resetBusy ? "Resetting..." : "Reset and sign out"}
             </button>
           </div>
         </div>
       </section>
+
+      <ConfirmDialog
+        open={resetConfirmOpen}
+        title="Reset and sign out?"
+        subtitle="All local data will be deleted and Google Workspace will be disconnected. The app will close and you'll need to set it up again."
+        confirmLabel="Reset"
+        danger
+        onConfirm={() => void confirmResetAndClose()}
+        onCancel={() => setResetConfirmOpen(false)}
+      />
     </div>
   );
 }

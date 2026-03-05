@@ -1,0 +1,210 @@
+// @vitest-environment jsdom
+import React from "react";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { render, screen, cleanup, waitFor } from "@testing-library/react";
+
+const mockDispatch = vi.fn();
+const mockSaveDefaultModel = vi.fn().mockResolvedValue(undefined);
+const mockSetProviderFilter = vi.fn();
+const mockIsProviderConfigured = vi.fn().mockReturnValue(false);
+
+let mockAuthMode = "self-managed";
+let mockProviderFilter: string | null = null;
+let mockActiveModelId: string | null = null;
+let mockActiveProviderKey: string | null = null;
+let mockSortedModels: Array<{ id: string; name: string; provider: string }> = [];
+let mockModelsLoading = false;
+let mockModelBusy = false;
+
+vi.mock("@store/hooks", () => ({
+  useAppDispatch: () => mockDispatch,
+  useAppSelector: (selector: (st: unknown) => unknown) =>
+    selector({ auth: { mode: mockAuthMode } }),
+}));
+
+vi.mock("@store/slices/auth/authSlice", () => ({
+  switchToSubscription: vi.fn(),
+  switchToSelfManaged: vi.fn(),
+}));
+
+vi.mock("@store/slices/configSlice", () => ({
+  reloadConfig: vi.fn(),
+}));
+
+vi.mock("@shared/toast", () => ({
+  addToastError: vi.fn(),
+}));
+
+vi.mock("@shared/models/providers", () => ({
+  MODEL_PROVIDERS: [
+    { id: "openai", name: "OpenAI", description: "GPT models" },
+    { id: "anthropic", name: "Anthropic", description: "Claude models" },
+  ],
+  MODEL_PROVIDER_BY_ID: {
+    openai: { id: "openai", name: "OpenAI", description: "GPT models" },
+    anthropic: { id: "anthropic", name: "Anthropic", description: "Claude models" },
+  },
+  resolveProviderIconUrl: (id: string) => `/icons/${id}.svg`,
+}));
+
+vi.mock("@shared/models/modelPresentation", () => ({
+  getModelTier: () => null,
+  formatModelMeta: () => null,
+  TIER_INFO: {},
+  sortModelsByProviderTierName: (m: unknown[]) => m,
+}));
+
+vi.mock("@ipc/desktopApi", () => ({
+  getDesktopApiOrNull: () => null,
+}));
+
+vi.mock("@ui/settings/account/useAccountState", () => ({
+  useAccountState: () => ({ mode: "self-managed" }),
+}));
+
+vi.mock("../providers/useModelProvidersState", () => ({
+  useModelProvidersState: () => ({
+    providerFilter: mockProviderFilter,
+    setProviderFilter: mockSetProviderFilter,
+    activeModelId: mockActiveModelId,
+    activeProviderKey: mockActiveProviderKey,
+    sortedModels: mockSortedModels,
+    modelsLoading: mockModelsLoading,
+    modelBusy: mockModelBusy,
+    busyProvider: null,
+    isProviderConfigured: mockIsProviderConfigured,
+    saveDefaultModel: mockSaveDefaultModel,
+    saveProviderApiKey: vi.fn(),
+    saveProviderSetupToken: vi.fn(),
+    pasteFromClipboard: vi.fn(),
+  }),
+}));
+
+vi.mock("../account/AccountTab", () => ({
+  AccountTab: () => <div data-testid="account-tab" />,
+}));
+
+vi.mock("./InlineApiKey", () => ({
+  InlineApiKey: (props: { provider: { id: string } }) => (
+    <div data-testid="inline-api-key">{props.provider.id}</div>
+  ),
+}));
+
+import { AccountModelsTab } from "./AccountModelsTab";
+
+const defaultProps = {
+  gw: { request: vi.fn().mockResolvedValue({}), connected: true },
+  configSnap: { hash: "abc123", config: {} },
+  reload: vi.fn().mockResolvedValue(undefined),
+  onError: vi.fn(),
+};
+
+describe("AccountModelsTab (self-managed mode)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockAuthMode = "self-managed";
+    mockProviderFilter = null;
+    mockActiveModelId = null;
+    mockActiveProviderKey = null;
+    mockSortedModels = [];
+    mockModelsLoading = false;
+    mockModelBusy = false;
+  });
+
+  afterEach(cleanup);
+
+  it("renders provider and model dropdowns", () => {
+    render(<AccountModelsTab {...defaultProps} />);
+
+    expect(screen.getByText("Provider")).not.toBeNull();
+    expect(screen.getByText("Model")).not.toBeNull();
+
+    const triggers = screen.getAllByRole("button", { expanded: false });
+    const listboxTriggers = triggers.filter((b) => b.getAttribute("aria-haspopup") === "listbox");
+    expect(listboxTriggers.length).toBe(2);
+  });
+
+  it("auto-selects provider from active model on first load", () => {
+    mockActiveProviderKey = "openai";
+    mockProviderFilter = null;
+
+    render(<AccountModelsTab {...defaultProps} />);
+
+    expect(mockSetProviderFilter).toHaveBeenCalledWith("openai");
+  });
+
+  it("auto-selects first model when provider changes and current model does not belong", async () => {
+    mockProviderFilter = "anthropic";
+    mockActiveModelId = "openai/gpt-4";
+    mockSortedModels = [
+      { id: "claude-3", name: "Claude 3", provider: "anthropic" },
+      { id: "claude-3-haiku", name: "Claude 3 Haiku", provider: "anthropic" },
+    ];
+
+    render(<AccountModelsTab {...defaultProps} />);
+
+    await waitFor(() => {
+      expect(mockSaveDefaultModel).toHaveBeenCalledWith("anthropic/claude-3");
+    });
+  });
+
+  it("does NOT auto-select model if current model already belongs to provider", () => {
+    mockProviderFilter = "anthropic";
+    mockActiveModelId = "anthropic/claude-3";
+    mockSortedModels = [
+      { id: "claude-3", name: "Claude 3", provider: "anthropic" },
+      { id: "claude-3-haiku", name: "Claude 3 Haiku", provider: "anthropic" },
+    ];
+
+    render(<AccountModelsTab {...defaultProps} />);
+
+    expect(mockSaveDefaultModel).not.toHaveBeenCalled();
+  });
+
+  it("model dropdown is disabled when no provider is selected", () => {
+    mockProviderFilter = null;
+
+    render(<AccountModelsTab {...defaultProps} />);
+
+    const triggers = screen
+      .getAllByRole("button")
+      .filter((b) => b.getAttribute("aria-haspopup") === "listbox");
+    const modelTrigger = triggers[1]!;
+    expect(modelTrigger.hasAttribute("disabled")).toBe(true);
+  });
+
+  it("shows 'Select provider first' placeholder when no provider", () => {
+    mockProviderFilter = null;
+
+    render(<AccountModelsTab {...defaultProps} />);
+
+    expect(screen.getByText("Select provider first")).not.toBeNull();
+  });
+
+  it("shows 'No models available' when provider selected but no models", () => {
+    mockProviderFilter = "openai";
+    mockSortedModels = [];
+
+    render(<AccountModelsTab {...defaultProps} />);
+
+    expect(screen.getByText("No models available")).not.toBeNull();
+  });
+
+  it("shows InlineApiKey when provider is selected", () => {
+    mockProviderFilter = "openai";
+
+    render(<AccountModelsTab {...defaultProps} />);
+
+    expect(screen.getByTestId("inline-api-key")).not.toBeNull();
+    expect(screen.getByText("openai")).not.toBeNull();
+  });
+
+  it("renders connection toggle with both options", () => {
+    render(<AccountModelsTab {...defaultProps} />);
+
+    const toggle = screen.getByRole("radiogroup", { name: "Connection mode" });
+    expect(toggle).not.toBeNull();
+    expect(screen.getByText("Atomic Bot API key")).not.toBeNull();
+    expect(screen.getByText("Own API key")).not.toBeNull();
+  });
+});

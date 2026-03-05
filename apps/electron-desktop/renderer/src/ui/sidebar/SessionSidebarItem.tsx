@@ -1,4 +1,5 @@
 import React from "react";
+import { ConfirmDialog } from "@shared/kit";
 import s from "./SessionSidebarItem.module.css";
 
 export type SessionSidebarItemProps = {
@@ -44,54 +45,6 @@ function IconTrash({ className }: { className?: string }) {
     >
       <path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M6 7v4M8 7v4M10 7v4M4 4l.5 8a1 1 0 0 0 1 1h5a1 1 0 0 0 1-1L12 4" />
     </svg>
-  );
-}
-
-function ConfirmDeleteDialog(props: {
-  title: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  React.useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        props.onCancel();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [props.onCancel]);
-
-  return (
-    <div
-      className="UiModalOverlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Delete session"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          props.onCancel();
-        }
-      }}
-    >
-      <div className={s.ConfirmDialog}>
-        <p className={s.ConfirmDialog__text}>Delete session &ldquo;{props.title}&rdquo;?</p>
-        <p className={s.ConfirmDialog__sub}>This will remove the session from history.</p>
-        <div className={s.ConfirmDialog__actions}>
-          <button type="button" className={s.ConfirmDialog__cancel} onClick={props.onCancel}>
-            Cancel
-          </button>
-          <button
-            type="button"
-            className={s.ConfirmDialog__confirm}
-            onClick={props.onConfirm}
-            autoFocus
-          >
-            Delete
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -201,13 +154,15 @@ export const SessionSidebarItem = React.memo(function SessionSidebarItem({
           </div>
         </button>
       </li>
-      {confirmOpen && (
-        <ConfirmDeleteDialog
-          title={title}
-          onConfirm={handleConfirmDelete}
-          onCancel={handleCancelDelete}
-        />
-      )}
+      <ConfirmDialog
+        open={confirmOpen}
+        title={`Delete session \u201C${title}\u201D?`}
+        subtitle="This will remove the session from history."
+        confirmLabel="Delete"
+        danger
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </>
   );
 });

@@ -1,7 +1,10 @@
 /**
  * Lightweight API key validation against each provider's real endpoint.
- * Makes a single cheap GET request (usually /models) and inspects the HTTP status.
+ * Makes a single cheap request (usually GET /models) and inspects the HTTP status.
  * 200 → valid, 401/403 → invalid, anything else → treated as a network/server error.
+ *
+ * Some providers (e.g. NVIDIA) need a POST with an empty body: auth is checked
+ * before body validation, so 401 = bad key, 422 = key valid but body invalid.
  */
 
 const VALIDATION_TIMEOUT_MS = 10_000;
@@ -9,6 +12,15 @@ const VALIDATION_TIMEOUT_MS = 10_000;
 type ProviderValidationSpec = {
   url: string;
   headers: Record<string, string>;
+  method?: "GET" | "POST";
+  body?: string;
+  /** Extra HTTP statuses (besides 2xx) that prove the key is valid. */
+  validStatuses?: number[];
+  /**
+   * When set, validation is header-based: the key is valid if this response
+   * header is present (useful for public endpoints that add auth-only headers).
+   */
+  validResponseHeader?: string;
 };
 
 function buildValidationSpec(provider: string, apiKey: string): ProviderValidationSpec | null {
@@ -58,13 +70,16 @@ function buildValidationSpec(provider: string, apiKey: string): ProviderValidati
       };
     case "nvidia":
       return {
-        url: "https://integrate.api.nvidia.com/v1/models",
+        url: "https://api.ngc.nvidia.com/v2/orgs",
         headers: { Authorization: `Bearer ${apiKey}` },
       };
     case "venice":
       return {
-        url: "https://api.venice.ai/api/v1/models",
-        headers: { Authorization: `Bearer ${apiKey}` },
+        url: "https://api.venice.ai/api/v1/chat/completions",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        method: "POST",
+        body: JSON.stringify({ model: "llama-3.3-70b", messages: [] }),
+        validStatuses: [400, 422],
       };
     default:
       return null;
@@ -93,12 +108,20 @@ export async function validateProviderApiKey(
 
   try {
     const res = await fetch(spec.url, {
-      method: "GET",
+      method: spec.method ?? "GET",
       headers: spec.headers,
+      body: spec.body,
       signal: AbortSignal.timeout(VALIDATION_TIMEOUT_MS),
     });
 
-    if (res.ok) {
+    if (spec.validResponseHeader) {
+      const hasHeader = res.headers.get(spec.validResponseHeader) !== null;
+      return hasHeader
+        ? { valid: true }
+        : { valid: false, error: "Invalid API key. Please check and try again." };
+    }
+
+    if (res.ok || spec.validStatuses?.includes(res.status)) {
       return { valid: true };
     }
 

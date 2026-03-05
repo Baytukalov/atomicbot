@@ -102,11 +102,7 @@ export function sanitizeToolResult(result: unknown): unknown {
       return { ...entry, text: truncateToolText(entry.text) };
     }
     if (type === "image") {
-      const data = typeof entry.data === "string" ? entry.data : undefined;
-      const bytes = data ? data.length : undefined;
-      const cleaned = { ...entry };
-      delete cleaned.data;
-      return { ...cleaned, bytes, omitted: true };
+      return entry;
     }
     return entry;
   });

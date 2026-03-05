@@ -102,4 +102,49 @@ describe("validateProviderApiKey", () => {
       expect.anything()
     );
   });
+
+  it("validates venice key via POST /chat/completions with model, treats 400 as valid", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue({ ok: false, status: 400 } as Response);
+
+    const result = await validateProviderApiKey("venice", "ven-key");
+    expect(result).toEqual({ valid: true });
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://api.venice.ai/api/v1/chat/completions",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({ Authorization: "Bearer ven-key" }),
+        body: expect.stringContaining("llama-3.3-70b"),
+      })
+    );
+  });
+
+  it("rejects venice key on 401", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue({ ok: false, status: 401 } as Response);
+
+    const result = await validateProviderApiKey("venice", "bad-key");
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("Invalid API key");
+  });
+
+  it("uses NGC /v2/orgs endpoint for nvidia key validation", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue({ ok: true, status: 200 } as Response);
+
+    const result = await validateProviderApiKey("nvidia", "nvapi-test");
+    expect(result).toEqual({ valid: true });
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://api.ngc.nvidia.com/v2/orgs",
+      expect.objectContaining({
+        method: "GET",
+        headers: expect.objectContaining({ Authorization: "Bearer nvapi-test" }),
+      })
+    );
+  });
+
+  it("rejects nvidia key on 401", async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue({ ok: false, status: 401 } as Response);
+
+    const result = await validateProviderApiKey("nvidia", "bad-key");
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("Invalid API key");
+  });
 });

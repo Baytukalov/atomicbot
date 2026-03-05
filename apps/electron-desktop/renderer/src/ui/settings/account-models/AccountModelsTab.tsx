@@ -188,6 +188,18 @@ export function AccountModelsTab(props: {
     [state.saveDefaultModel]
   );
 
+  // Auto-select first model when provider changes and current model doesn't belong to it
+  React.useEffect(() => {
+    if (
+      !isPaidMode &&
+      selectedProvider &&
+      modelOptions.length > 0 &&
+      !modelOptions.some((opt) => opt.value === state.activeModelId)
+    ) {
+      handleModelChange(modelOptions[0]!.value);
+    }
+  }, [isPaidMode, selectedProvider, modelOptions, state.activeModelId, handleModelChange]);
+
   const handleOAuthSuccess = React.useCallback(() => {
     void props.reload();
   }, [props.reload]);

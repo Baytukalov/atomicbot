@@ -5,6 +5,7 @@ export { TextInput, CheckboxRow, UiCheckbox, SelectDropdown } from "./forms";
 export { PrimaryButton, SecondaryButton, ActionButton, ButtonRow } from "./buttons";
 export { InlineError, FooterText } from "./feedback";
 export { Modal } from "./Modal";
+export { ConfirmDialog } from "./ConfirmDialog";
 
 export { FeatureCta, type FeatureStatus } from "./FeatureCta";
 export { OnboardingDots } from "./OnboardingDots";

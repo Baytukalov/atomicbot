@@ -19,6 +19,66 @@ import { HIDDEN_TOOL_NAMES } from "./ToolCallCard";
 import { ActionLog } from "./ActionLog";
 import am from "./AssistantMessage.module.css";
 import ct from "../ChatTranscript.module.css";
+import tc from "./ToolCallCard.module.css";
+
+/** Collect all image attachments from tool results for standalone display. */
+function collectToolResultImages(toolResults: UiToolResult[] | undefined): UiMessageAttachment[] {
+  if (!toolResults) return [];
+  const images: UiMessageAttachment[] = [];
+  for (const r of toolResults) {
+    if (!r.attachments) continue;
+    for (const att of r.attachments) {
+      if (att.dataUrl && att.mimeType?.startsWith("image/")) {
+        images.push(att);
+      }
+    }
+  }
+  return images;
+}
+
+function downloadDataUrl(dataUrl: string, mimeType: string) {
+  const ext = mimeType.split("/")[1]?.replace("jpeg", "jpg") ?? "png";
+  const a = document.createElement("a");
+  a.href = dataUrl;
+  a.download = `image-${Date.now()}.${ext}`;
+  a.click();
+}
+
+/** Render images from tool results as standalone chat-level blocks. */
+function ToolResultImageBlock({ images }: { images: UiMessageAttachment[] }) {
+  if (images.length === 0) return null;
+  return (
+    <div className={tc.ToolResultImageBlock}>
+      {images.map((att, idx) => (
+        <div key={`tri-${idx}`} className={tc.ToolResultImageWrap}>
+          <img src={att.dataUrl} alt="" className={tc.ToolResultImg} />
+          <button
+            type="button"
+            className={tc.ToolResultDownloadBtn}
+            title="Download image"
+            onClick={() => downloadDataUrl(att.dataUrl!, att.mimeType ?? "image/png")}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 type DisplayMessage = {
   id: string;
@@ -151,6 +211,10 @@ export function ChatMessageList(props: {
               }
             }
 
+            const toolGroupImages = collectToolResultImages(
+              item.msgs.flatMap((m) => m.toolResults ?? [])
+            );
+
             return (
               <div
                 key={key}
@@ -158,6 +222,7 @@ export function ChatMessageList(props: {
               >
                 <div className={am["UiChatBubble-assistant"]}>
                   <ActionLog cards={flatCards} />
+                  <ToolResultImageBlock images={toolGroupImages} />
                 </div>
               </div>
             );
@@ -177,6 +242,8 @@ export function ChatMessageList(props: {
               result: m.toolResults?.[index],
             })) ?? [];
 
+          const assistantImages = collectToolResultImages(m.toolResults);
+
           return (
             <div
               key={getMessageKey(m)}
@@ -184,6 +251,8 @@ export function ChatMessageList(props: {
             >
               <div className={am["UiChatBubble-assistant"]}>
                 {flatCards.length > 0 ? <ActionLog cards={flatCards} /> : null}
+
+                <ToolResultImageBlock images={assistantImages} />
 
                 {m.text ? (
                   <div className="UiChatText UiMarkdown">

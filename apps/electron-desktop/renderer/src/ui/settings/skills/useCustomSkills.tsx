@@ -15,8 +15,11 @@ export type CustomSkillMeta = {
 export function useCustomSkills(onError: (value: string | null) => void) {
   const [customSkills, setCustomSkills] = React.useState<CustomSkillMeta[]>([]);
   const [showUploadModal, setShowUploadModal] = React.useState(false);
+  const [pendingRemove, setPendingRemove] = React.useState<{
+    dirName: string;
+    name: string;
+  } | null>(null);
 
-  // Load custom skills on mount.
   React.useEffect(() => {
     const api = getDesktopApiOrNull();
     if (!api?.listCustomSkills) {
@@ -59,36 +62,42 @@ export function useCustomSkills(onError: (value: string | null) => void) {
     );
   }, []);
 
-  const handleRemoveCustomSkill = React.useCallback(
-    async (dirName: string, name: string) => {
-      const confirmed = window.confirm(
-        `Remove skill "${name}"?\n\nThis will delete the skill files.`
-      );
-      void getDesktopApiOrNull()?.focusWindow();
-      if (!confirmed) {
-        return;
-      }
+  const requestRemoveCustomSkill = React.useCallback((dirName: string, name: string) => {
+    setPendingRemove({ dirName, name });
+  }, []);
 
-      const api = getDesktopApiOrNull();
-      if (!api?.removeCustomSkill) {
-        return;
-      }
+  const confirmRemoveCustomSkill = React.useCallback(async () => {
+    if (!pendingRemove) {
+      return;
+    }
+    const { dirName } = pendingRemove;
+    setPendingRemove(null);
 
-      const res = await api.removeCustomSkill(dirName);
-      if (res.ok) {
-        setCustomSkills((prev) => prev.filter((s) => s.dirName !== dirName));
-      } else {
-        onError(res.error || "Failed to remove skill");
-      }
-    },
-    [onError]
-  );
+    const api = getDesktopApiOrNull();
+    if (!api?.removeCustomSkill) {
+      return;
+    }
+
+    const res = await api.removeCustomSkill(dirName);
+    if (res.ok) {
+      setCustomSkills((prev) => prev.filter((s) => s.dirName !== dirName));
+    } else {
+      onError(res.error || "Failed to remove skill");
+    }
+  }, [pendingRemove, onError]);
+
+  const cancelRemoveCustomSkill = React.useCallback(() => {
+    setPendingRemove(null);
+  }, []);
 
   return {
     customSkills,
     showUploadModal,
     setShowUploadModal,
     handleCustomSkillInstalled,
-    handleRemoveCustomSkill,
+    requestRemoveCustomSkill,
+    pendingRemove,
+    confirmRemoveCustomSkill,
+    cancelRemoveCustomSkill,
   };
 }

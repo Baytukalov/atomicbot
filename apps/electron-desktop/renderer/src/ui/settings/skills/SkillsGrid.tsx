@@ -14,7 +14,7 @@ export function SkillsGrid(props: {
   customSkills: CustomSkillMeta[];
   statuses: Record<SkillId, SkillStatus>;
   onOpenModal: (id: SkillId) => void;
-  onRemoveCustomSkill: (dirName: string, name: string) => Promise<void>;
+  onRemoveCustomSkill: (dirName: string, name: string) => void;
 }) {
   const { searchQuery, customSkills, statuses, onOpenModal, onRemoveCustomSkill } = props;
 
