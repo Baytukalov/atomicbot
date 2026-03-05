@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 import sm from "@ui/settings/skills/modals/SkillModal.module.css";
 import { ActionButton, TextInput } from "@shared/kit";
@@ -11,6 +11,8 @@ export function TelegramTokenStep(props: {
   isConnected: boolean;
   onSave: () => void;
 }) {
+  const [error, setError] = useState("");
+
   return (
     <div className={sm.UiSkillModalField}>
       <label className={sm.UiSkillModalLabel}>Bot token</label>
@@ -24,19 +26,29 @@ export function TelegramTokenStep(props: {
           <TextInput
             type="password"
             value={props.botToken}
-            onChange={props.setBotToken}
+            onChange={(e) => {
+              setError("");
+              props.setBotToken(e);
+            }}
             placeholder={
               props.hasExistingToken ? "••••••••  (leave empty to keep)" : "123456:ABCDEF..."
             }
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
+            isError={error}
           />
         </div>
         <ActionButton
           variant="primary"
-          disabled={props.busy || (!props.botToken.trim() && !props.isConnected)}
-          onClick={props.onSave}
+          disabled={props.busy}
+          onClick={() => {
+            if (!props.botToken.trim() && !props.isConnected) {
+              setError("Bot token is required.");
+              return;
+            }
+            props.onSave();
+          }}
         >
           {props.busy ? "…" : props.isConnected ? "Update" : "Connect"}
         </ActionButton>
