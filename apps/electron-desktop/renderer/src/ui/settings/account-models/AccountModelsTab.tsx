@@ -7,10 +7,10 @@
  *
  * @deprecated Scheduled for removal.
  */
-import React from "react";
+import React, { useState } from "react";
 
 import { useAppDispatch, useAppSelector } from "@store/hooks";
-import { switchToSubscription, switchToSelfManaged } from "@store/slices/auth/authSlice";
+import { switchToSubscription, switchToSelfManaged, SetupMode } from "@store/slices/auth/authSlice";
 import { reloadConfig, type ConfigData } from "@store/slices/configSlice";
 import { addToastError } from "@shared/toast";
 
@@ -89,6 +89,7 @@ export function AccountModelsTab(props: {
   const accountState = useAccountState();
   const authMode = useAppSelector((st) => st.auth.mode);
   const isPaidMode = authMode === "paid";
+  const [tabMode, setTabMode] = useState<SetupMode | null>(authMode);
 
   const [modeSwitchBusy, setModeSwitchBusy] = React.useState(false);
 
@@ -197,6 +198,8 @@ export function AccountModelsTab(props: {
 
   const handleConnectionSelect = React.useCallback(
     async (mode: "paid" | "self-managed") => {
+      setTabMode(mode);
+
       if ((mode === "paid") === isPaidMode) return;
 
       setModeSwitchBusy(true);
@@ -234,12 +237,14 @@ export function AccountModelsTab(props: {
     [isPaidMode, dispatch, props, state.setProviderFilter]
   );
 
+  const isLoading = modeSwitchBusy || accountState.loading;
+
   return (
     <div className={s.root}>
       <div className={s.title}>AI Models</div>
 
       <ConnectionToggle
-        isPaid={isPaidMode}
+        isPaid={tabMode === "paid"}
         disabled={modeSwitchBusy}
         onSelect={handleConnectionSelect}
       />
@@ -247,7 +252,8 @@ export function AccountModelsTab(props: {
       {isPaidMode &&
         accountState.mode === "paid" &&
         accountState.jwt &&
-        !accountState.needsSubscription && (
+        !accountState.needsSubscription &&
+        !isLoading && (
           <>
             <div className={s.dropdownGroup}>
               <div className={s.dropdownLabel}>Model</div>
@@ -267,7 +273,7 @@ export function AccountModelsTab(props: {
           </>
         )}
 
-      {!isPaidMode && (
+      {!isPaidMode && !isLoading && (
         <>
           <div className={s.dropdownRow}>
             <div className={s.dropdownGroup}>
@@ -302,32 +308,33 @@ export function AccountModelsTab(props: {
               />
             </div>
           </div>
-          {selectedProvider && modelOptions.length === 0 && !state.modelsLoading ? (
+
+          {selectedProvider && modelOptions.length === 0 && !state.modelsLoading && (
             <div className={s.noModelsHint}>
               {!isSelectedProviderConfigured
                 ? "Add an API key below to load models for this provider."
                 : "No models loaded. Try restarting the app to refresh the model catalog."}
             </div>
-          ) : null}
+          )}
+
+          {/* Self-managed: inline API key entry */}
+          {selectedProviderInfo && (
+            <InlineApiKey
+              provider={selectedProviderInfo}
+              configured={state.isProviderConfigured(selectedProvider!)}
+              busy={state.busyProvider === selectedProvider}
+              onSave={state.saveProviderApiKey}
+              onSaveSetupToken={state.saveProviderSetupToken}
+              onPaste={state.pasteFromClipboard}
+              configHash={configHash}
+              onOAuthSuccess={handleOAuthSuccess}
+            />
+          )}
         </>
       )}
 
-      {/* Self-managed: inline API key entry */}
-      {!isPaidMode && selectedProviderInfo ? (
-        <InlineApiKey
-          provider={selectedProviderInfo}
-          configured={state.isProviderConfigured(selectedProvider!)}
-          busy={state.busyProvider === selectedProvider}
-          onSave={state.saveProviderApiKey}
-          onSaveSetupToken={state.saveProviderSetupToken}
-          onPaste={state.pasteFromClipboard}
-          configHash={configHash}
-          onOAuthSuccess={handleOAuthSuccess}
-        />
-      ) : null}
-
       {/* Paid: account / billing content */}
-      {isPaidMode ? <AccountTab /> : null}
+      {isPaidMode && <AccountTab />}
     </div>
   );
 }

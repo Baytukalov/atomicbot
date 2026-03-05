@@ -179,9 +179,6 @@ export const switchToSubscription = createAsyncThunk(
       }
     }
 
-    thunkApi.dispatch(authActions.setMode("paid"));
-    persistMode("paid");
-
     // Attempt to restore a previously saved paid session
     const paidBackup = readPaidBackup();
     if (paidBackup) {
@@ -195,7 +192,7 @@ export const switchToSubscription = createAsyncThunk(
 
       if (jwtValid) {
         persistAuthToken(paidBackup.authToken);
-        thunkApi.dispatch(authActions.setAuth(paidBackup.authToken));
+        await thunkApi.dispatch(authActions.setAuth(paidBackup.authToken));
 
         // Restore paid credentials (OpenRouter/OpenAI keys)
         if (api?.authWriteProfiles) {
@@ -241,6 +238,9 @@ export const switchToSubscription = createAsyncThunk(
 
       clearPaidBackup();
     }
+
+    await thunkApi.dispatch(authActions.setMode("paid"));
+    persistMode("paid");
   }
 );
 
@@ -339,7 +339,7 @@ export const switchToSelfManaged = createAsyncThunk(
 
     await thunkApi.dispatch(clearAuth());
 
-    thunkApi.dispatch(authActions.setMode("self-managed"));
+    await thunkApi.dispatch(authActions.setMode("self-managed"));
     persistMode("self-managed");
 
     clearBackup();

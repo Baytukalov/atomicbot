@@ -2,7 +2,6 @@
 
 .root {
   margin-top: 12px;
-  max-width: 600px;
 }
 
 /* ── Connection mode toggle ──────────────────────────── */
@@ -54,7 +53,6 @@
 
 .connectionOption:disabled {
   cursor: not-allowed;
-  opacity: 0.5;
 }
 
 /* ── Paid account section divider ────────────────────── */

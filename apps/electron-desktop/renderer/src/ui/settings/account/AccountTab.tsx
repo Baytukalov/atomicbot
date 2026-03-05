@@ -320,8 +320,35 @@ function BalanceDashboard(props: {
 
 // ── Main component ────────────────────────────────────────────────
 
+function AccountLoadingCard() {
+  return (
+    <div className={s.root}>
+      <div className={s.loadingCard}>
+        <span className="UiButtonSpinner" aria-hidden="true" />
+        <h3 className={s.loadingTitle}>Loading account…</h3>
+        <p className={s.loadingSubtitle}>Fetching subscription and balance.</p>
+      </div>
+    </div>
+  );
+}
+
 export function AccountTab() {
   const state = useAccountState();
+  const [authChecked, setAuthChecked] = React.useState(false);
+
+  React.useEffect(() => {
+    setAuthChecked(true);
+  }, []);
+
+  const showLoader =
+    state.mode === "paid" &&
+    (!authChecked ||
+      (state.jwt && state.loading) ||
+      (state.jwt && state.needsSubscription && state.subscriptionPrice === null));
+
+  if (showLoader) {
+    return <AccountLoadingCard />;
+  }
 
   const footer = state.jwt ? (
     <AccountFooter

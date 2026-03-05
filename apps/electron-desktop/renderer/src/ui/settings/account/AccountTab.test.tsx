@@ -22,6 +22,7 @@ const mockAuthState = {
   balance: null,
   subscription: { status: "active", currentPeriodEnd: "2026-03-01", stripeSubscriptionId: "sub_1" },
   lastRefreshAt: Date.now(),
+  loading: false,
   topUpPending: false,
   balancePolling: false,
   autoTopUp: {
@@ -248,14 +249,16 @@ describe("AccountTab logout confirmation", () => {
     });
   });
 
-  it("shows subscribe prompt when no subscription and status loaded", () => {
+  it("shows subscribe prompt when no subscription and status loaded", async () => {
     mockAuthState.subscription = null;
     mockAuthState.balance = null;
     mockAuthState.lastRefreshAt = Date.now();
 
     render(<AccountTab />);
-    expect(screen.getByText("Atomic Bot Subscription")).not.toBeNull();
-    expect(screen.getByText(/Subscribe \$/)).not.toBeNull();
+    await waitFor(() => {
+      expect(screen.getByText("Atomic Bot Subscription")).not.toBeNull();
+      expect(screen.getByText(/Subscribe \$/)).not.toBeNull();
+    });
 
     // Restore for other tests
     mockAuthState.subscription = {
