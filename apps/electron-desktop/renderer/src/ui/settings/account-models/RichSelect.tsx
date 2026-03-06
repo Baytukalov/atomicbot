@@ -114,7 +114,7 @@ export function RichSelect<T extends string>(props: {
     <div className={s.wrapper} ref={wrapperRef}>
       <button
         type="button"
-        className={`${s.trigger} ${props.disabledStyles ? s.triggerDisabled : ""}`}
+        className={`glass-effect ${s.trigger} ${props.disabledStyles ? s.triggerDisabled : ""}`}
         onClick={() => !props.disabled && setOpen(!open)}
         disabled={props.disabled}
         aria-haspopup="listbox"

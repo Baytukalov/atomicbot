@@ -39,11 +39,11 @@ type TabDef = { path: string; label: string; tab: SettingsTabId };
 
 const ALL_TABS: TabDef[] = [
   { path: "account", label: "Account", tab: "account" },
+  { path: "skills", label: "Skills", tab: "skills-integrations" },
   { path: "account-models", label: "AI Models", tab: "account-models" },
   { path: "ai-models", label: "AI Models", tab: "model" },
   { path: "ai-providers", label: "AI Providers", tab: "providers" },
   { path: "messengers", label: "Messengers", tab: "connectors" },
-  { path: "skills", label: "Skills", tab: "skills-integrations" },
   { path: "voice", label: "Voice", tab: "voice" },
   { path: "other", label: "Other", tab: "other" },
 ];
@@ -207,5 +207,5 @@ export function SettingsPage({ state }: { state: Extract<GatewayState, { kind: "
 }
 
 export function SettingsIndexRedirect() {
-  return <Navigate to="/settings/account-models" replace />;
+  return <Navigate to="/settings/skills" replace />;
 }

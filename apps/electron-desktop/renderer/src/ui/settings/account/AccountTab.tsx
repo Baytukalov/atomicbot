@@ -193,7 +193,7 @@ function BalanceDashboard(props: {
 
   return (
     <div className={s.root}>
-      <div className={s.balanceCard}>
+      <div className={s.balanceCard + " glass-effect"}>
         <div className={s.balanceHeader}>
           <h3 className={s.balanceTitle}>Balance</h3>
           <button
@@ -390,7 +390,7 @@ export function AccountTab() {
 
   return (
     <div className={s.root}>
-      <div className={s.balanceCard}>
+      <div className={s.balanceCard + " glass-effect"}>
         <h3 className={s.balanceTitle}>Account</h3>
         <p className={s.selfManagedHint}>
           You are in self-managed mode. Switch to subscription in the Other tab to use managed AI

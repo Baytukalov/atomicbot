@@ -197,6 +197,17 @@
   background: rgba(255, 255, 255, 0.04);
   border-radius: var(--radius-md, 10px);
   padding: 14px;
+
+  background:
+    linear-gradient(#323232, #323232) padding-box,
+    linear-gradient(
+        150deg,
+        rgba(255, 255, 255, 0.24) 0%,
+        rgba(255, 255, 255, 0) 50%,
+        rgba(255, 255, 255, 0.24) 100%
+      )
+      border-box;
+  border: 1px solid transparent;
 }
 
 .statLabel {

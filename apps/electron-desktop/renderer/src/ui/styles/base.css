@@ -243,3 +243,16 @@ pre {
     opacity: 1;
   }
 }
+
+.glass-effect {
+  background:
+    linear-gradient(var(--bg-elevated), var(--bg-elevated)) padding-box,
+    linear-gradient(
+        150deg,
+        rgba(255, 255, 255, 0.24) 0%,
+        rgba(255, 255, 255, 0) 50%,
+        rgba(255, 255, 255, 0.24) 100%
+      )
+      border-box;
+  border: 1px solid transparent;
+}
