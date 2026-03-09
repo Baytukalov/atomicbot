@@ -30,7 +30,7 @@
     FindWindow $R1 "#32770" "" $HWNDPARENT $R1
     ${if} $R1 != 0
       GetDlgItem $R2 $R1 1000
-      SendMessage $R2 ${WM_SETTEXT} 0 "STR:Installing, please wait... This may take up to 30 minutes."
+      SendMessage $R2 ${WM_SETTEXT} 0 "STR:Installing, please wait... This may take up to 15 minutes."
     ${endif}
   ${endif}
 !macroend
