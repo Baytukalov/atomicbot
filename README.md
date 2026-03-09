@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="apps/electron-desktop/assets/icon-sm.png" alt="Atomic Bot" width="128">
+<img src="apps/electron-desktop/assets/icon.png" alt="Atomic Bot" width="128">
 
 # Atomic Bot
 
@@ -8,10 +8,16 @@
 
 One app. All your AI models. All your tools. All your messengers.
 
-**[Get Atomic Bot](https://atomicbot.ai)** · **[Download for macOS](https://atomicbot.ai)** · **[Download for Windows](https://atomicbot.ai)**
+[![npm version](https://img.shields.io/npm/v/openclaw?style=flat-square&color=cb3837)](https://www.npmjs.com/package/openclaw)
+[![CI](https://img.shields.io/github/actions/workflow/status/openclaw/openclaw/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/openclaw/openclaw/actions/workflows/ci.yml)
+[![license](https://img.shields.io/github/license/openclaw/openclaw?style=flat-square)](https://github.com/openclaw/openclaw/blob/main/LICENSE)
 
-[![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-000?style=for-the-badge&logo=apple&logoColor=white)](https://atomicbot.ai)
-[![Windows](https://img.shields.io/badge/Windows-x64-0078D4?style=for-the-badge&logo=windows11&logoColor=white)](https://atomicbot.ai)
+**[Get Atomic Bot](https://atomicbot.ai)** · **[Download for macOS](https://github.com/AtomicBot-ai/atomicbot/releases/latest)** · **[Download for Windows](https://github.com/AtomicBot-ai/atomicbot/releases/latest)**
+
+[![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/AtomicBot-ai/atomicbot/releases/latest)
+[![Windows](https://img.shields.io/badge/Windows-x64-0078D4?style=for-the-badge&logo=windows11&logoColor=white)](https://github.com/AtomicBot-ai/atomicbot/releases/latest)
+
+<img src="https://private-user-images.githubusercontent.com/50599367/560352633-29cdd26d-c30b-4b8e-8c88-a018ed262c7f.gif" alt="Atomic Bot demo" width="720">
 
 </div>
 
@@ -129,7 +135,8 @@ Export your entire configuration as a ZIP snapshot. Restore it on a new machine 
 ## Links
 
 - **Website** — [atomicbot.ai](https://atomicbot.ai)
-- **Support** — [atomicbot.ai](https://atomicbot.ai)
+- **Releases** — [GitHub Releases](https://github.com/AtomicBot-ai/atomicbot/releases)
+- **Support** — [GitHub Issues](https://github.com/openclaw/openclaw/issues)
 
 ## Open source foundation
 
