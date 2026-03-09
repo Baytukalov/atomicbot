@@ -17,7 +17,7 @@ One app. All your AI models. All your tools. All your messengers.
 [![macOS](https://img.shields.io/badge/macOS-Apple%20Silicon-000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/AtomicBot-ai/atomicbot/releases/latest)
 [![Windows](https://img.shields.io/badge/Windows-x64-0078D4?style=for-the-badge&logo=windows11&logoColor=white)](https://github.com/AtomicBot-ai/atomicbot/releases/latest)
 
-<img src="https://private-user-images.githubusercontent.com/50599367/560352633-29cdd26d-c30b-4b8e-8c88-a018ed262c7f.gif" alt="Atomic Bot demo" width="720">
+<img src="https://github-production-user-asset-6210df.s3.amazonaws.com/50599367/560363961-1251a1da-7910-4bd9-ab39-aca5f3f7478d.gif?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAVCODYLSA53PQK4ZA%2F20260309%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260309T145046Z&X-Amz-Expires=300&X-Amz-Signature=d5b0688e56a422ea7c61190b8fb99977aedc2ed9019aa55a47506805f0f54d46&X-Amz-SignedHeaders=host" alt="Atomic Bot demo" width="720">
 
 </div>
 
