@@ -6,20 +6,15 @@ import rehypeKatex from "rehype-katex";
 
 import am from "./AssistantMessage.module.css";
 import ct from "../ChatTranscript.module.css";
+import { LoadingPhrase } from "./LoadingPhrase";
 
-/** Typing-dots indicator (used while waiting for the first response). */
+/** Typing indicator with rotating phrases and shimmer (used while waiting for the first response). */
 export function TypingIndicator(props: { classNameRoot?: string } = {}) {
   return (
     <div className={`${ct.UiChatRow} ${am["UiChatRow-assistant"]} ${props.classNameRoot ?? ""}`}>
       <div className={`${am["UiChatBubble-assistant"]} ${am["UiChatBubble-stream"]}`}>
         <div className="UiChatBubbleMeta">
-          <span className="UiChatPending">
-            <span className={am.UiChatTypingDots} aria-label="typing">
-              <span />
-              <span />
-              <span />
-            </span>
-          </span>
+          <LoadingPhrase />
         </div>
       </div>
     </div>
@@ -36,15 +31,6 @@ export function AssistantStreamBubble(props: {
   return (
     <div className={`${ct.UiChatRow} ${am["UiChatRow-assistant"]} ${props.classNameRoot ?? ""}`}>
       <div className={`${am["UiChatBubble-assistant"]} ${am["UiChatBubble-stream"]}`}>
-        <div className="UiChatBubbleMeta">
-          <span className="UiChatPending">
-            <span className={am.UiChatTypingDots} aria-label="typing">
-              <span />
-              <span />
-              <span />
-            </span>
-          </span>
-        </div>
         {props.text ? (
           <div className="UiChatText UiMarkdown">
             <Markdown
