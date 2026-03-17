@@ -2,7 +2,8 @@ import React from "react";
 
 import gw from "../connections/GoogleWorkspace.module.css";
 import { openExternal } from "@shared/utils/openExternal";
-import { GlassCard, HeroPageLayout, PrimaryButton, TextInput } from "@shared/kit";
+import { GlassCard, HeroPageLayout, OnboardingDots, PrimaryButton, TextInput } from "@shared/kit";
+import layoutStyles from "../OnboardingStepLayout.module.css";
 import { DEFAULT_GOG_SERVICES } from "../hooks/constants";
 import { UiCheckbox } from "@shared/kit/forms";
 import connectGoogleImage from "@assets/connect-google.png";
@@ -64,12 +65,13 @@ export function GogPage(props: {
   onRunAuthList: () => Promise<unknown>;
   onFinish: () => void;
   onSkip?: () => void;
+  onBack: () => void;
+  totalSteps: number;
+  activeStep: number;
   finishText?: string;
   skipText?: string;
 }) {
   const skip = props.onSkip ?? props.onFinish;
-  const finishText = props.finishText ?? "Continue";
-  const skipText = props.skipText ?? "Skip";
   const [connected, setConnected] = React.useState(false);
   const [errorText, setErrorText] = React.useState("");
   const [services, setServices] = React.useState<Record<string, boolean>>(() => {
@@ -108,7 +110,23 @@ export function GogPage(props: {
   }, [props, servicesCsv]);
 
   return (
-    <HeroPageLayout variant="compact" align="center" aria-label="Google Workspace setup">
+    <HeroPageLayout
+      variant="compact"
+      align="center"
+      aria-label="Google Workspace setup"
+      className={layoutStyles.UiSetupLayout}
+    >
+      <div className={layoutStyles.UiSetupHeader}>
+        <div className={layoutStyles.UiSetupHeaderButton}>
+          <button className="UiTextButton" type="button" onClick={props.onBack}>
+            Back
+          </button>
+        </div>
+        <div className={layoutStyles.UiSetupHeaderCenter}>
+          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
+        </div>
+        <div className={layoutStyles.UiSetupHeaderRight} />
+      </div>
       <GlassCard className={`${gw.card} UiGlassCardOnboarding`}>
         <div className="UiSectionTitle">Google Workspace</div>
         <div className="UiContentWrapper scrollable">
@@ -216,9 +234,7 @@ export function GogPage(props: {
         </div>
 
         <div className={gw.bottomRow}>
-          <button className="UiTextButton" onClick={skip} type="button" disabled={props.gogBusy}>
-            {skipText}
-          </button>
+          <div />
           <div className={gw.actions}>
             <PrimaryButton
               size={"sm"}

@@ -361,6 +361,9 @@ export function renderSharedFlowRoutes({
             onRunAuthList={() => fs.onGogAuthList()}
             onFinish={nav.goSkills}
             onSkip={nav.goSkills}
+            onBack={nav.goSkills}
+            totalSteps={steps.totalSteps}
+            activeStep={steps.steps.skills}
             skipText="Back"
           />
         }

@@ -68,7 +68,7 @@ export function SetupReviewPage(props: {
         <div className={layoutStyles.UiSetupHeaderCenter}>
           <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
         </div>
-        <div className={layoutStyles.UiSetupHeaderButton}>
+        <div className={layoutStyles.UiSetupHeaderRight}>
           {props.onSkip ? (
             <button className="UiTextButton" type="button" onClick={props.onSkip}>
               Skip

@@ -1,12 +1,7 @@
 import React from "react";
 
-import {
-  GlassCard,
-  HeroPageLayout,
-  OnboardingDots,
-  PrimaryButton,
-  SecondaryButton,
-} from "@shared/kit";
+import { GlassCard, HeroPageLayout, OnboardingDots, PrimaryButton } from "@shared/kit";
+import layoutStyles from "../OnboardingStepLayout.module.css";
 import telegramIcon from "@assets/messangers/Telegram.svg";
 import slackIcon from "@assets/set-up-skills/Slack.svg";
 
@@ -81,9 +76,28 @@ export function ConnectionsSetupPage(props: {
   const totalSteps = props.totalSteps ?? 5;
   const activeStep = props.activeStep ?? 4;
   return (
-    <HeroPageLayout variant="compact" align="center" aria-label="Connections setup">
+    <HeroPageLayout
+      variant="compact"
+      align="center"
+      aria-label="Connections setup"
+      className={layoutStyles.UiSetupLayout}
+    >
+      <div className={layoutStyles.UiSetupHeader}>
+        <div className={layoutStyles.UiSetupHeaderButton}>
+          <button className="UiTextButton" type="button" onClick={props.onBack}>
+            Back
+          </button>
+        </div>
+        <div className={layoutStyles.UiSetupHeaderCenter}>
+          <OnboardingDots totalSteps={totalSteps} activeStep={activeStep} />
+        </div>
+        <div className={layoutStyles.UiSetupHeaderRight}>
+          <button className="UiTextButton" type="button" onClick={props.onSkip}>
+            Skip
+          </button>
+        </div>
+      </div>
       <GlassCard className="UiSkillsCard UiGlassCardOnboarding">
-        <OnboardingDots totalSteps={totalSteps} activeStep={activeStep} />
         <div className="UiSectionTitle">Set Up Connections</div>
         <div className="UiSectionSubtitle">
           Connect chat apps so you can talk to OpenClaw from anywhere
@@ -115,14 +129,9 @@ export function ConnectionsSetupPage(props: {
         </div>
 
         <div className="UiSkillsBottomRow">
-          <button className="UiTextButton" onClick={props.onBack} type="button">
-            Back
-          </button>
+          <div />
           <div className="UiSkillsBottomActions">
-            <SecondaryButton size={"sm"} onClick={props.onSkip}>
-              Skip
-            </SecondaryButton>
-            <PrimaryButton size={"sm"} onClick={props.onContinue}>
+            <PrimaryButton size="sm" onClick={props.onContinue}>
               Continue
             </PrimaryButton>
           </div>
