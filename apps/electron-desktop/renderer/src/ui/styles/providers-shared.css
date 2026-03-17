@@ -11,12 +11,12 @@
   appearance: none;
   background: none;
   border: 0;
-  padding: 8px 6px;
   color: rgba(230, 237, 243, 0.72);
   font-size: 15px;
   line-height: 20px;
   cursor: pointer;
   transition: color var(--transition-base);
+  padding: 0;
 }
 
 .UiTextButton:hover:enabled {
