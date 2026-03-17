@@ -75,8 +75,13 @@ export function Sidebar() {
   const { open: openUpgradePaywall } = useUpgradePaywall();
   const authMode = useAppSelector((s) => s.auth.mode);
   const subscription = useAppSelector((s) => s.auth.subscription);
+  const authLoading = useAppSelector((s) => s.auth.loading);
+  const lastRefreshAt = useAppSelector((s) => s.auth.lastRefreshAt);
+  const authLoaded = !authLoading && (authMode !== "paid" || lastRefreshAt !== null);
   const showUpgradePlan =
-    authMode === "paid" && (subscription === null || subscription.status === "canceled");
+    authLoaded &&
+    authMode === "paid" &&
+    (subscription === null || subscription.status === "canceled");
   const optimisticFromState =
     (location.state as { optimisticNewSession?: OptimisticSession } | null)?.optimisticNewSession ??
     null;

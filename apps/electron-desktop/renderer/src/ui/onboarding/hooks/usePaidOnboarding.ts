@@ -17,6 +17,7 @@ import {
   fetchDesktopStatus,
   patchAutoTopUpSettings,
 } from "@store/slices/auth/authSlice";
+import { upgradePaywallActions } from "@store/slices/upgradePaywallSlice";
 import { setOnboarded } from "@store/slices/onboardingSlice";
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
 import { backendApi, type SubscriptionPriceInfo } from "@ipc/backendApi";
@@ -343,7 +344,10 @@ export function usePaidOnboarding({ navigate }: PaidOnboardingInput) {
       setAuthError("Authentication failed — missing token data");
       setAuthBusy(false);
     },
-    onStripeSuccess: nav.goSuccess,
+    onStripeSuccess: () => {
+      dispatch(upgradePaywallActions.close());
+      nav.goSuccess();
+    },
   });
 
   return {

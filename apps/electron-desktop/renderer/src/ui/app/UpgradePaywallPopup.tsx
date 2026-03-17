@@ -6,13 +6,25 @@ import { CloseIcon } from "@shared/kit/icons";
 import { UpgradePaywallContent } from "@ui/app/UpgradePaywallContent";
 import s from "./UpgradePaywallPopup.module.css";
 
+function isSubscriptionActive(subscription: { status: string } | null): boolean {
+  return subscription !== null && subscription.status !== "canceled";
+}
+
 export function UpgradePaywallPopup() {
   const dispatch = useAppDispatch();
   const isOpen = useAppSelector((state) => state.upgradePaywall.isOpen);
+  const subscription = useAppSelector((state) => state.auth.subscription);
 
   const close = useCallback(() => {
     dispatch(upgradePaywallActions.close());
   }, [dispatch]);
+
+  // Close popup when payment has completed (subscription becomes active).
+  useEffect(() => {
+    if (isOpen && isSubscriptionActive(subscription)) {
+      close();
+    }
+  }, [isOpen, subscription, close]);
 
   useEffect(() => {
     if (!isOpen) return;
