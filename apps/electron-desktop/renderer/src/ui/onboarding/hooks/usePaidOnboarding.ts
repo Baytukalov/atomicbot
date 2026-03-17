@@ -345,8 +345,10 @@ export function usePaidOnboarding({ navigate }: PaidOnboardingInput) {
       setAuthBusy(false);
     },
     onStripeSuccess: () => {
-      dispatch(upgradePaywallActions.close());
-      nav.goSuccess();
+      void dispatch(fetchDesktopStatus()).finally(() => {
+        dispatch(upgradePaywallActions.close());
+        nav.goSuccess();
+      });
     },
   });
 
