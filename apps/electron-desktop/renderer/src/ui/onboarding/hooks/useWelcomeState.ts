@@ -1,6 +1,7 @@
 import React from "react";
 import type { NavigateFunction } from "react-router-dom";
 import { useGatewayRpc } from "@gateway/context";
+import { getDesktopApiOrNull } from "@ipc/desktopApi";
 import { useAppDispatch } from "@store/hooks";
 import { setOnboarded } from "@store/slices/onboardingSlice";
 import { authActions } from "@store/slices/auth/authSlice";
@@ -158,11 +159,13 @@ export function useWelcomeState({ state, navigate }: WelcomeStateInput) {
       const info = MODEL_PROVIDER_BY_ID[provider];
       if (info?.authType === "oauth") {
         nav.goOAuthProvider();
+      } else if (info?.authType === "ollama") {
+        nav.goOllamaSetup();
       } else {
         nav.goApiKey();
       }
     },
-    [nav.goApiKey, nav.goOAuthProvider, setError]
+    [nav.goApiKey, nav.goOAuthProvider, nav.goOllamaSetup, setError]
   );
 
   const onOAuthSuccess = React.useCallback(
@@ -216,6 +219,58 @@ export function useWelcomeState({ state, navigate }: WelcomeStateInput) {
       }
     },
     [selectedProvider, saveApiKey, loadModels, nav.goModelSelect, setError]
+  );
+
+  const onOllamaSubmit = React.useCallback(
+    async (params: { baseUrl: string; apiKey: string; mode: string }) => {
+      setApiKeyBusy(true);
+      setError(null);
+      try {
+        const snap = await loadConfig();
+        const baseHash =
+          typeof snap.hash === "string" && snap.hash.trim() ? snap.hash.trim() : null;
+        if (!baseHash) {
+          throw new Error("Missing config base hash");
+        }
+        await getDesktopApiOrNull()?.setApiKey("ollama", params.apiKey);
+        await gw.request("config.patch", {
+          baseHash,
+          raw: JSON.stringify(
+            {
+              models: {
+                providers: {
+                  ollama: {
+                    baseUrl: params.baseUrl,
+                    api: "ollama",
+                    apiKey: "OLLAMA_API_KEY", // pragma: allowlist secret
+                    models: [],
+                  },
+                },
+              },
+              auth: {
+                profiles: {
+                  "ollama:default": { provider: "ollama", mode: "api_key" },
+                },
+                order: {
+                  ollama: ["ollama:default"],
+                },
+              },
+            },
+            null,
+            2
+          ),
+          note: "Welcome: configure Ollama provider",
+        });
+        await gw.request("secrets.reload", {});
+        await loadModels();
+        nav.goModelSelect();
+      } catch (err) {
+        setError(errorToMessage(err));
+      } finally {
+        setApiKeyBusy(false);
+      }
+    },
+    [gw, loadConfig, loadModels, nav.goModelSelect, setError]
   );
 
   const onSetupTokenSubmit = React.useCallback(
@@ -314,6 +369,7 @@ export function useWelcomeState({ state, navigate }: WelcomeStateInput) {
     finish,
     goMediaUnderstanding,
     onApiKeySubmit,
+    onOllamaSubmit,
     onSetupTokenSubmit,
     onModelSelect,
     onOAuthSuccess,

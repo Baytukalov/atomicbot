@@ -338,6 +338,59 @@ export function useModelProvidersState(props: {
     [props, loadFreshBaseHash, refreshKeyConfiguredProviders]
   );
 
+  const saveOllamaProvider = React.useCallback(
+    async (params: { baseUrl: string; apiKey: string; mode: string }) => {
+      props.onError(null);
+      setBusyProvider("ollama");
+      try {
+        const baseHash = await loadFreshBaseHash();
+        await getDesktopApiOrNull()?.setApiKey("ollama", params.apiKey);
+        // Patch both the provider config block and the auth profile
+        await props.gw.request("config.patch", {
+          baseHash,
+          raw: JSON.stringify(
+            {
+              models: {
+                providers: {
+                  ollama: {
+                    baseUrl: params.baseUrl,
+                    api: "ollama",
+                    apiKey: "OLLAMA_API_KEY", // pragma: allowlist secret
+                    models: [],
+                  },
+                },
+              },
+              auth: {
+                profiles: {
+                  "ollama:default": { provider: "ollama", mode: "api_key" },
+                },
+                order: {
+                  ollama: ["ollama:default"],
+                },
+              },
+            },
+            null,
+            2
+          ),
+          note: "Settings: configure Ollama provider",
+        });
+        await props.gw.request("secrets.reload", {});
+        await props.reload();
+        await refreshKeyConfiguredProviders();
+        // Gateway needs a moment to discover Ollama models after config change
+        await loadModels();
+        setTimeout(() => void loadModels(), 3000);
+        setModalProvider(null);
+        props.onProviderConfigured?.("ollama");
+      } catch (err) {
+        props.onError(errorToMessage(err));
+      } finally {
+        setBusyProvider(null);
+      }
+    },
+    [props, loadFreshBaseHash, refreshKeyConfiguredProviders]
+  );
+
   const clearSessionModelOverrides = React.useCallback(async () => {
     try {
       const listResult = await props.gw.request<{
@@ -429,6 +482,8 @@ export function useModelProvidersState(props: {
     pasteFromClipboard,
     saveProviderApiKey,
     saveProviderSetupToken,
+    saveOllamaProvider,
+    loadModels,
     saveDefaultModel,
     toggleProviderFilter,
   };

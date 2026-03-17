@@ -8,6 +8,7 @@ import { GlassCard, HeroPageLayout, PrimaryButton } from "@shared/kit";
 import { addToastError } from "@shared/toast";
 import { ApiKeyPage } from "./providers/ApiKeyPage";
 import { OAuthProviderPage } from "./providers/OAuthProviderPage";
+import { OllamaSetupPage } from "./providers/OllamaSetupPage";
 import { SetupModePage } from "./providers/SetupModePage";
 import { ModelSelectPage } from "./providers/ModelSelectPage";
 import { ProviderSelectPage } from "./providers/ProviderSelectPage";
@@ -248,6 +249,20 @@ export function WelcomePage({ state }: { state: Extract<GatewayState, { kind: "r
             ) : (
               <Navigate to={`${routes.welcome}/provider-select`} replace />
             )
+          }
+        />
+
+        <Route
+          path="ollama-setup"
+          element={
+            <OllamaSetupPage
+              totalSteps={SELF_FLOW.totalSteps}
+              activeStep={SELF_FLOW.steps.apiKey}
+              busy={welcome.apiKeyBusy}
+              error={welcome.error}
+              onSubmit={(params) => void welcome.onOllamaSubmit(params)}
+              onBack={welcome.goProviderSelect}
+            />
           }
         />
 

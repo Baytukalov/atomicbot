@@ -345,6 +345,8 @@ export function AccountModelsTab(props: {
               busy={state.busyProvider === selectedProvider}
               onSave={state.saveProviderApiKey}
               onSaveSetupToken={state.saveProviderSetupToken}
+              onSaveOllama={state.saveOllamaProvider}
+              onRefreshModels={state.loadModels}
               onPaste={state.pasteFromClipboard}
               configHash={configHash}
               onOAuthSuccess={handleOAuthSuccess}

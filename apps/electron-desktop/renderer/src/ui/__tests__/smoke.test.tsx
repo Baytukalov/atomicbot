@@ -82,6 +82,7 @@ import { configReducer } from "@store/slices/configSlice";
 import { gatewayReducer } from "@store/slices/gatewaySlice";
 import { onboardingReducer } from "@store/slices/onboardingSlice";
 import { authReducer } from "@store/slices/auth/authSlice";
+import { upgradePaywallReducer } from "@store/slices/upgradePaywallSlice";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -96,6 +97,7 @@ function createTestStore() {
       gateway: gatewayReducer,
       onboarding: onboardingReducer,
       auth: authReducer,
+      upgradePaywall: upgradePaywallReducer,
     },
   });
 }

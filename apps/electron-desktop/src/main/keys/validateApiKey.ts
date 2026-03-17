@@ -81,6 +81,11 @@ function buildValidationSpec(provider: string, apiKey: string): ProviderValidati
         body: JSON.stringify({ model: "llama-3.3-70b", messages: [] }),
         validStatuses: [400, 422],
       };
+    case "ollama":
+      return {
+        url: "http://127.0.0.1:11434/api/tags",
+        headers: apiKey && apiKey !== "ollama-local" ? { Authorization: `Bearer ${apiKey}` } : {},
+      };
     default:
       return null;
   }

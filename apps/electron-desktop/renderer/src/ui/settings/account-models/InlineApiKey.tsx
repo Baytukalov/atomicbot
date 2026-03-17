@@ -12,6 +12,7 @@ import { ActionButton, TextInput, Modal, CheckIcon } from "@shared/kit";
 import { openExternal } from "@shared/utils/openExternal";
 import type { ModelProviderInfo, ModelProvider } from "@shared/models/providers";
 import { OAuthModalContent } from "../providers/OAuthModalContent";
+import { InlineOllamaConfig } from "./InlineOllamaConfig";
 import s from "./AccountModelsTab.module.css";
 
 type AuthMode = "api_key" | "setup_token";
@@ -43,6 +44,8 @@ export function InlineApiKey(props: {
   busy: boolean;
   onSave: (provider: ModelProvider, key: string) => Promise<void>;
   onSaveSetupToken: (provider: ModelProvider, token: string) => Promise<void>;
+  onSaveOllama?: (params: { baseUrl: string; apiKey: string; mode: string }) => void;
+  onRefreshModels?: () => Promise<void>;
   onPaste: () => Promise<string>;
   configHash: string | null;
   onOAuthSuccess: () => void;
@@ -50,6 +53,7 @@ export function InlineApiKey(props: {
   const { provider, configured, busy } = props;
 
   const isOAuth = provider.authType === "oauth";
+  const isOllama = provider.authType === "ollama";
   const hasTokenMode = supportsSetupToken(provider.id);
 
   const [editing, setEditing] = React.useState(false);
@@ -168,6 +172,17 @@ export function InlineApiKey(props: {
           ) : null}
         </Modal>
       </div>
+    );
+  }
+
+  if (isOllama && props.onSaveOllama) {
+    return (
+      <InlineOllamaConfig
+        provider={provider}
+        busy={busy}
+        onSave={props.onSaveOllama}
+        onRefreshModels={props.onRefreshModels}
+      />
     );
   }
 

@@ -94,6 +94,10 @@ export function useWelcomeNavigation(navigate: NavigateFunction) {
     goSkills();
   }, [goConnections, goSkills]);
 
+  const goOllamaSetup = useCallback(() => {
+    void navigate(`${routes.welcome}/ollama-setup`);
+  }, [navigate]);
+
   const goObsidianPage = useCallback(() => {
     void navigate(`${routes.welcome}/obsidian`);
   }, [navigate]);
@@ -101,6 +105,7 @@ export function useWelcomeNavigation(navigate: NavigateFunction) {
   return {
     goApiKey,
     goOAuthProvider,
+    goOllamaSetup,
     goAppleNotes,
     goAppleReminders,
     goConnections,

@@ -2,6 +2,7 @@ export type ModelProvider =
   | "anthropic"
   | "google"
   | "nvidia"
+  | "ollama"
   | "openai"
   | "openai-codex"
   | "openrouter"
@@ -25,7 +26,7 @@ export type ModelProviderInfo = {
   helpTitle?: string;
   helpText?: string;
   /** Authentication type. Defaults to "api_key" when omitted. */
-  authType?: "api_key" | "oauth";
+  authType?: "api_key" | "oauth" | "ollama";
 };
 
 export const PROVIDER_ICONS: Record<ModelProvider, string> = {
@@ -36,6 +37,7 @@ export const PROVIDER_ICONS: Record<ModelProvider, string> = {
   google: "gemini.svg",
   nvidia: "nvidia.svg",
   minimax: "minimax.svg",
+  ollama: "ollama.svg",
   xai: "xai.svg",
   zai: "zai.svg",
   openrouter: "openrouter.svg",
@@ -88,6 +90,16 @@ export const MODEL_PROVIDERS: ModelProviderInfo[] = [
     placeholder: "nvapi-...",
     helpUrl: "https://build.nvidia.com/explore/discover",
     helpText: "Get your free API key from NVIDIA Build.",
+  },
+  {
+    id: "ollama",
+    name: "Ollama",
+    description: "Run AI models locally or use Ollama Cloud for remote inference",
+    privacyFirst: true,
+    placeholder: "ollama-api-key...",
+    helpUrl: "https://ollama.com",
+    helpText: "Run models locally or sign in to Ollama Cloud.",
+    authType: "ollama",
   },
   {
     id: "venice",
@@ -163,6 +175,7 @@ export const MODEL_PROVIDER_BY_ID: Record<ModelProvider, ModelProviderInfo> = {
   openrouter: MODEL_PROVIDERS.find((p) => p.id === "openrouter")!,
   google: MODEL_PROVIDERS.find((p) => p.id === "google")!,
   nvidia: MODEL_PROVIDERS.find((p) => p.id === "nvidia")!,
+  ollama: MODEL_PROVIDERS.find((p) => p.id === "ollama")!,
   openai: MODEL_PROVIDERS.find((p) => p.id === "openai")!,
   "openai-codex": MODEL_PROVIDERS.find((p) => p.id === "openai-codex")!,
   venice: MODEL_PROVIDERS.find((p) => p.id === "venice")!,

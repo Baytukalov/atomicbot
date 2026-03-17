@@ -7,6 +7,7 @@ const mockDispatch = vi.fn();
 const mockSaveDefaultModel = vi.fn().mockResolvedValue(undefined);
 const mockSetProviderFilter = vi.fn();
 const mockIsProviderConfigured = vi.fn().mockReturnValue(false);
+const mockSaveOllamaProvider = vi.fn().mockResolvedValue(undefined);
 
 let mockAuthMode = "self-managed";
 let mockProviderFilter: string | null = null;
@@ -76,6 +77,7 @@ vi.mock("../providers/useModelProvidersState", () => ({
     saveDefaultModel: mockSaveDefaultModel,
     saveProviderApiKey: vi.fn(),
     saveProviderSetupToken: vi.fn(),
+    saveOllamaProvider: mockSaveOllamaProvider,
     pasteFromClipboard: vi.fn(),
   }),
 }));
@@ -84,10 +86,17 @@ vi.mock("../account/AccountTab", () => ({
   AccountTab: () => <div data-testid="account-tab" />,
 }));
 
+let capturedInlineApiKeyProps: Record<string, unknown> = {};
+
 vi.mock("./InlineApiKey", () => ({
-  InlineApiKey: (props: { provider: { id: string } }) => (
-    <div data-testid="inline-api-key">{props.provider.id}</div>
-  ),
+  InlineApiKey: (props: { provider: { id: string }; onSaveOllama?: unknown }) => {
+    capturedInlineApiKeyProps = props;
+    return (
+      <div data-testid="inline-api-key" data-has-ollama-save={!!props.onSaveOllama}>
+        {props.provider.id}
+      </div>
+    );
+  },
 }));
 
 import { AccountModelsTab } from "./AccountModelsTab";
@@ -109,6 +118,7 @@ describe("AccountModelsTab (self-managed mode)", () => {
     mockSortedModels = [];
     mockModelsLoading = false;
     mockModelBusy = false;
+    capturedInlineApiKeyProps = {};
   });
 
   afterEach(cleanup);
@@ -209,5 +219,13 @@ describe("AccountModelsTab (self-managed mode)", () => {
     expect(toggle).not.toBeNull();
     expect(screen.getByText("Atomic Subscription")).not.toBeNull();
     expect(screen.getByText("Your own API key")).not.toBeNull();
+  });
+
+  it("passes onSaveOllama prop to InlineApiKey", () => {
+    mockProviderFilter = "openai";
+
+    render(<AccountModelsTab {...defaultProps} />);
+
+    expect(capturedInlineApiKeyProps.onSaveOllama).toBe(mockSaveOllamaProvider);
   });
 });

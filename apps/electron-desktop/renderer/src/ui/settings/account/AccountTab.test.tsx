@@ -146,6 +146,15 @@ vi.mock("@shared/billing/AnimatedBalance", () => ({
   ),
 }));
 
+vi.mock("@ui/app/UpgradePaywallContent", () => ({
+  UpgradePaywallContent: () => (
+    <div>
+      <span>Atomic Bot Subscription</span>
+      <button type="button">Subscribe $5/mo</button>
+    </div>
+  ),
+}));
+
 vi.mock("@shared/billing/AutoTopUpControl", () => ({
   AutoTopUpControl: ({
     onPatch,

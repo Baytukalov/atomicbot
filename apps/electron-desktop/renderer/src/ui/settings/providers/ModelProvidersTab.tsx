@@ -13,6 +13,7 @@ import type { ConfigData } from "@store/slices/configSlice";
 import { ProviderTile } from "./ProviderTile";
 import { ApiKeyModalContent } from "./ApiKeyModalContent";
 import { OAuthModalContent } from "./OAuthModalContent";
+import { OllamaModalContent } from "./OllamaModalContent";
 import { ModelsView } from "./ModelsView";
 import { useModelProvidersState } from "./useModelProvidersState";
 
@@ -78,7 +79,11 @@ export function ModelProvidersTab(props: {
         open={!!state.modalProviderInfo}
         onClose={() => state.setModalProvider(null)}
         aria-label={
-          state.modalProviderInfo?.authType === "oauth" ? "Sign in to provider" : "Enter API key"
+          state.modalProviderInfo?.authType === "oauth"
+            ? "Sign in to provider"
+            : state.modalProviderInfo?.authType === "ollama"
+              ? "Configure Ollama"
+              : "Enter API key"
         }
       >
         {state.modalProviderInfo ? (
@@ -94,6 +99,13 @@ export function ModelProvidersTab(props: {
                   navigate(`/settings/ai-models?provider=${providerId}`);
                 }
               }}
+              onClose={() => state.setModalProvider(null)}
+            />
+          ) : state.modalProviderInfo.authType === "ollama" ? (
+            <OllamaModalContent
+              provider={state.modalProviderInfo}
+              busy={state.busyProvider === state.modalProviderInfo.id}
+              onSave={(params) => void state.saveOllamaProvider(params)}
               onClose={() => state.setModalProvider(null)}
             />
           ) : (
