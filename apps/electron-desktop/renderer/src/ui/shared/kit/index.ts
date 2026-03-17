@@ -11,3 +11,4 @@ export { FeatureCta, type FeatureStatus } from "./FeatureCta";
 export { OnboardingDots } from "./OnboardingDots";
 export { CopyIcon, CheckIcon, MicrophoneIcon, SendIcon } from "./icons";
 export { InfoTooltip } from "./InfoTooltip";
+export { Toggle } from "./Toggle";

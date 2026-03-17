@@ -8,8 +8,8 @@ export async function createMainWindow(params: {
   const win = new BrowserWindow({
     width: 950,
     height: 650,
-    minWidth: 900,
-    minHeight: 600,
+    minWidth: 950,
+    minHeight: 650,
     ...(params.iconPath ? { icon: params.iconPath } : {}),
 
     backgroundColor: "#0b0f14",

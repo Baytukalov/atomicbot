@@ -165,8 +165,7 @@ export function CloseIcon({ className, size = 12 }: { className?: string; size?:
       viewBox="0 0 12 12"
     >
       <path
-        fill="#fff"
-        fill-opacity=".4"
+        fill="currentColor"
         d="M1.47.24a.86.86 0 0 0-1.2 1.21L4.8 6 .26 10.53a.86.86 0 1 0 1.21 1.2L6.01 7.2l4.54 4.54a.86.86 0 0 0 1.2-1.21L7.23 5.99l4.54-4.54a.86.86 0 0 0-1.21-1.2L6 4.77z"
       />
     </svg>
