@@ -5,14 +5,7 @@ import type { OptimisticSession } from "../chat/hooks/optimisticSessionContext";
 import { useOptimisticSession } from "../chat/hooks/optimisticSessionContext";
 import { routes } from "../app/routes";
 import { addToastError } from "@shared/toast";
-import {
-  IconCloud,
-  IconModels,
-  IconPlus,
-  IconSkills,
-  OpenClawIcon,
-  SidebarLogo,
-} from "@shared/kit/icons";
+import { IconModels, IconPlus, IconSkills, OpenClawIcon, SidebarLogo } from "@shared/kit/icons";
 import { SessionSidebarItem } from "./SessionSidebarItem";
 import { cleanDerivedTitle } from "../chat/hooks/messageParser";
 import { useTerminalSidebarVisible } from "@shared/hooks/useTerminalSidebarVisible";
