@@ -207,12 +207,6 @@ export function Sidebar() {
           </span>
           AI Models
         </NavLink>
-        <NavLink to={`${routes.settings}/server`} className={css.UiChatSidebarNavLink}>
-          <span className={css.UiChatSidebarSettingsIcon} aria-hidden="true">
-            <IconCloud />
-          </span>
-          VPS Instance
-        </NavLink>
         <NavLink to={routes.legacy} className={css.UiChatSidebarNavLink}>
           <span className={css.UiChatSidebarSettingsIcon} aria-hidden="true">
             <OpenClawIcon />
