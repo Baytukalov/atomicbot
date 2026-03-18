@@ -5,8 +5,14 @@ import type { OptimisticSession } from "../chat/hooks/optimisticSessionContext";
 import { useOptimisticSession } from "../chat/hooks/optimisticSessionContext";
 import { routes } from "../app/routes";
 import { addToastError } from "@shared/toast";
-import { SplashLogo } from "@shared/kit";
-import { OpenClawIcon } from "@shared/kit/icons";
+import {
+  IconCloud,
+  IconModels,
+  IconPlus,
+  IconSkills,
+  OpenClawIcon,
+  SidebarLogo,
+} from "@shared/kit/icons";
 import { SessionSidebarItem } from "./SessionSidebarItem";
 import { cleanDerivedTitle } from "../chat/hooks/messageParser";
 import { useTerminalSidebarVisible } from "@shared/hooks/useTerminalSidebarVisible";
@@ -179,24 +185,50 @@ export function Sidebar() {
 
   return (
     <aside className={css.UiChatSidebar} aria-label="Chat sessions">
-      <button
-        type="button"
-        className={css.UiChatSidebarNewSession}
-        onClick={handleNewSession}
-        aria-label="New session"
-      >
-        <SplashLogo size={20} />
-        New session
-      </button>
+      <div className={css.UiChatSidebarHeader}>
+        <SidebarLogo />
+      </div>
+      <div className={css.UiChatSidebarBody}>
+        <div onClick={handleNewSession} className={css.UiChatSidebarNavLink}>
+          <span className={css.UiChatSidebarSettingsIcon} aria-hidden="true">
+            <IconPlus />
+          </span>
+          New task
+        </div>
+        <NavLink to={`${routes.settings}/skills`} className={css.UiChatSidebarNavLink}>
+          <span className={css.UiChatSidebarSettingsIcon} aria-hidden="true">
+            <IconSkills />
+          </span>
+          Skills
+        </NavLink>
+        <NavLink to={`${routes.settings}/account-models`} className={css.UiChatSidebarNavLink}>
+          <span className={css.UiChatSidebarSettingsIcon} aria-hidden="true">
+            <IconModels />
+          </span>
+          AI Models
+        </NavLink>
+        <NavLink to={`${routes.settings}/server`} className={css.UiChatSidebarNavLink}>
+          <span className={css.UiChatSidebarSettingsIcon} aria-hidden="true">
+            <IconCloud />
+          </span>
+          VPS Instance
+        </NavLink>
+        <NavLink to={routes.legacy} className={css.UiChatSidebarNavLink}>
+          <span className={css.UiChatSidebarSettingsIcon} aria-hidden="true">
+            <OpenClawIcon />
+          </span>
+          Dashboard
+        </NavLink>
+      </div>
 
       <div className={css.UiChatSidebarSessions}>
-        <h2 className={css.UiChatSidebarSessionsTitle}>Sessions</h2>
+        <h2 className={css.UiChatSidebarSessionsTitle}>Tasks</h2>
         {loading && !optimistic ? (
           <div className={css.UiChatSidebarSubtitle}>Loading...</div>
         ) : (
           <ul className={css.UiChatSidebarSessionList} role="list">
             {!sessions.length && !optimistic && (
-              <div className={css.UiChatSidebarSubtitle}>No sessions yet</div>
+              <div className={css.UiChatSidebarSubtitle}>No tasks yet</div>
             )}
             {(optimistic
               ? [
@@ -246,14 +278,6 @@ export function Sidebar() {
             Upgrade plan
           </button>
         )}
-
-        <NavLink to={routes.legacy} className={css.UiChatSidebarSettings}>
-          <span className={css.UiChatSidebarSettingsIcon} aria-hidden="true">
-            <OpenClawIcon />
-          </span>
-          Dashboard
-        </NavLink>
-
         {showTerminal && (
           <NavLink to={routes.terminal} className={css.UiChatSidebarSettings} aria-label="Terminal">
             <span className={css.UiChatSidebarSettingsIcon} aria-hidden="true">
