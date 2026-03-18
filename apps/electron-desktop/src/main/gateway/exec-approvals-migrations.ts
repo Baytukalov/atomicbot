@@ -62,51 +62,98 @@ function mergeAllowlistEntries(
   return next;
 }
 
-// Common safe read-only / navigation patterns that should not require approval.
-const DEFAULT_SAFE_ALLOWLIST_PATTERNS = [
+// Common safe patterns (cross-platform).
+// Each Unix binary also gets a .exe variant so the allowlist works on Windows.
+const UNIX_SAFE_BINS = [
   // Navigation / read
-  "**/ls",
-  "**/cat",
-  "**/pwd",
-  "**/echo",
-  "**/head",
-  "**/tail",
-  "**/wc",
-  "**/file",
-  "**/which",
-  "**/whoami",
-  "**/date",
-  "**/uname",
-  "**/env",
-  "**/printenv",
-  "**/hostname",
+  "ls",
+  "cat",
+  "pwd",
+  "echo",
+  "head",
+  "tail",
+  "wc",
+  "file",
+  "which",
+  "whoami",
+  "date",
+  "uname",
+  "env",
+  "printenv",
+  "hostname",
   // Search
-  "**/grep",
-  "**/rg",
-  "**/find",
-  "**/fd",
-  "**/ag",
-  "**/fzf",
+  "grep",
+  "rg",
+  "find",
+  "fd",
+  "ag",
+  "fzf",
   // Git
-  "**/git",
+  "git",
   // Directory
-  "**/mkdir",
-  "**/tree",
-  "**/du",
-  "**/df",
-  "**/dirname",
-  "**/basename",
-  "**/realpath",
-  // Text processing
-  "**/sort",
-  "**/uniq",
-  "**/cut",
-  "**/tr",
-  "**/sed",
-  "**/awk",
-  "**/diff",
-  "**/less",
-  "**/more",
+  "mkdir",
+  "tree",
+  "du",
+  "df",
+  "dirname",
+  "basename",
+  "realpath",
+  // Text processingтам   "sort", "uniq", "cut", "tr", "sed", "awk", "diff", "less", "more",
+];
+
+// Windows-native standalone executables (not PowerShell cmdlets).
+// Note: PowerShell cmdlets (Get-ChildItem etc.) are not standalone binaries;
+// they run inside pwsh/powershell which is handled as a shell wrapper by exec policy.
+const WINDOWS_ONLY_BINS = [
+  // File system / info
+  "dir",
+  "type",
+  "where",
+  "findstr",
+  "attrib",
+  "icacls",
+  "xcopy",
+  "robocopy",
+  "move",
+  "copy",
+  "del",
+  "ren",
+  "mklink",
+  // System info
+  "systeminfo",
+  "tasklist",
+  "ver",
+  "hostname",
+  "whoami",
+  "wmic",
+  // Networking (read-only diagnostics)
+  "ipconfig",
+  "nslookup",
+  "ping",
+  "tracert",
+  "netstat",
+  "pathping",
+  // Environment / shell
+  "set",
+  "setx",
+  "cmd",
+  "start",
+  "timeout",
+  // Package managers / dev tools
+  "winget",
+  "choco",
+  "scoop",
+  // Utilities
+  "clip",
+  "certutil",
+  "reg",
+  "sc",
+  "schtasks",
+];
+
+const DEFAULT_SAFE_ALLOWLIST_PATTERNS = [
+  ...UNIX_SAFE_BINS.flatMap((bin) => [`**/${bin}`, `**/${bin}.exe`]),
+  ...WINDOWS_ONLY_BINS.flatMap((bin) => [`**/${bin}`, `**/${bin}.exe`]),
 ];
 
 const EXEC_APPROVALS_MIGRATIONS: ExecApprovalsMigration[] = [
