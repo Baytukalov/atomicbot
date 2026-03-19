@@ -3,7 +3,7 @@ import { PostHog } from "posthog-node";
 // Inlined at build time by scripts/define-main-env.mjs via esbuild --define.
 // In dev, loaded from .env by that same script (or from the shell environment).
 const POSTHOG_API_KEY = process.env.POSTHOG_API_KEY ?? "";
-const POSTHOG_HOST = "https://eu.i.posthog.com";
+const POSTHOG_HOST = "https://us.i.posthog.com";
 
 let client: PostHog | null = null;
 let currentUserId: string | null = null;

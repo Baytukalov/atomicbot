@@ -2,7 +2,7 @@ import posthog from "posthog-js";
 
 // Injected by Vite at build time from VITE_POSTHOG_API_KEY in .env.
 const POSTHOG_API_KEY = import.meta.env.VITE_POSTHOG_API_KEY ?? "";
-const POSTHOG_HOST = "https://eu.i.posthog.com";
+const POSTHOG_HOST = "https://us.i.posthog.com";
 
 let initialized = false;
 let currentUserId: string | null = null;
