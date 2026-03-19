@@ -85,6 +85,7 @@ export function AccountModelsTab(props: {
   configSnap: ConfigSnapshotLike | null;
   reload: () => Promise<void>;
   onError: (value: string | null) => void;
+  noTitle?: boolean;
 }) {
   const dispatch = useAppDispatch();
   const accountState = useAccountState();
@@ -263,7 +264,7 @@ export function AccountModelsTab(props: {
 
   return (
     <div className={s.root}>
-      <div className={s.title}>AI Models</div>
+      {!props.noTitle && <div className={s.title}>AI Models</div>}
 
       <ConnectionToggle
         isPaid={tabMode === "paid"}
