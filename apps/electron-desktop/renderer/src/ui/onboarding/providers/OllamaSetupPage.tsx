@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 
 import { GlassCard, HeroPageLayout, OnboardingDots, PrimaryButton, TextInput } from "@shared/kit";
+import layoutStyles from "@ui/onboarding/OnboardingStepLayout.module.css";
 
 export type OllamaMode = "local" | "cloud";
 
@@ -59,9 +60,19 @@ export function OllamaSetupPage(props: {
 
   return (
     <HeroPageLayout variant="compact" align="center" aria-label="Ollama setup">
-      <GlassCard className="UiApiKeyCard UiGlassCardOnboarding">
-        <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
+      <div className={layoutStyles.UiSetupHeader}>
+        <div className={layoutStyles.UiSetupHeaderButton}>
+          <button className="UiTextButton" type="button" onClick={props.onBack}>
+            Back
+          </button>
+        </div>
+        <div className={layoutStyles.UiSetupHeaderCenter}>
+          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
+        </div>
+        <div className={layoutStyles.UiSetupHeaderRight} />
+      </div>
 
+      <GlassCard className="UiApiKeyCard UiGlassCardOnboarding">
         <div className="UiApiKeyTitle">Configure Ollama</div>
         <div className="UiApiKeySubtitle">
           {mode === "local"
@@ -150,9 +161,7 @@ export function OllamaSetupPage(props: {
         <div className="UiApiKeySpacer" aria-hidden="true" />
 
         <div className="UiApiKeyButtonRow">
-          <button className="UiTextButton" disabled={isBusy} onClick={props.onBack} type="button">
-            Back
-          </button>
+          <div />
           <div style={{ display: "flex", gap: 8 }}>
             <button
               className="UiTextButton"
