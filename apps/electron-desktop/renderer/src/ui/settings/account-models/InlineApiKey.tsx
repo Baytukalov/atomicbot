@@ -146,7 +146,21 @@ export function InlineApiKey(props: {
         <div className={s.apiKeyLabel}>Authentication</div>
         {configured ? (
           <div className={s.apiKeyConfiguredRow}>
-            <span className={s.apiKeyConfiguredBadge}>Connected</span>
+            <div
+              className="UiApiKeySubtitle"
+              style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}
+            >
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  flexShrink: 0,
+                  background: "#22c55e",
+                }}
+              />
+              <span>Connected</span>
+            </div>
             <ActionButton onClick={() => setOauthModalOpen(true)}>Reconnect</ActionButton>
           </div>
         ) : (
