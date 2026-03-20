@@ -6,6 +6,20 @@ import { useOnboardingStepEvent } from "@analytics/use-onboarding-step-event";
 export type OllamaMode = "local" | "cloud";
 
 const OLLAMA_DEFAULT_BASE_URL = "http://127.0.0.1:11434";
+const OLLAMA_SETUP_STEPS_HEIGHT = 96;
+const OLLAMA_SETUP_STEPS: Record<OllamaMode, string[]> = {
+  local: [
+    "Download Ollama from ollama.com",
+    "Launch it and download an AI model",
+    "Test the connection and start using it in Atomic Bot",
+  ],
+  cloud: [
+    "Download Ollama from ollama.com",
+    "Launch it and download an AI model",
+    "Create an API key in your Ollama Dashboard",
+    "Paste it below and start using it in Atomic Bot",
+  ],
+};
 
 type ConnectionStatus = "idle" | "testing" | "ok" | "error";
 
@@ -64,7 +78,7 @@ export function OllamaSetupPage(props: {
       <GlassCard className="UiApiKeyCard UiGlassCardOnboarding">
         <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
 
-        <div className="UiApiKeyTitle">Configure Ollama</div>
+        <div className="UiApiKeyTitle">Use your local or cloud AI models with Ollama</div>
         <div className="UiApiKeySubtitle">
           {mode === "local"
             ? "Connect to a local Ollama instance running on your machine."
@@ -89,6 +103,21 @@ export function OllamaSetupPage(props: {
             Cloud + Local
           </button>
         </div>
+
+        <ol
+          className="UiApiKeySubtitle"
+          style={{
+            margin: "0 0 12px",
+            paddingLeft: 20,
+            display: "grid",
+            gap: 6,
+            height: OLLAMA_SETUP_STEPS_HEIGHT,
+          }}
+        >
+          {OLLAMA_SETUP_STEPS[mode].map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
 
         <div className="UiApiKeyInputRow">
           <TextInput
