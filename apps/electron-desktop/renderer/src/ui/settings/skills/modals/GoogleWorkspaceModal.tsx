@@ -120,7 +120,7 @@ export function GoogleWorkspaceModalContent(props: {
     } catch {
       // Error already set by runGog.
     }
-  }, [runGog]);
+  }, [account, errorText, runGog]);
 
   return (
     <div className={sm.UiSkillModalContent}>

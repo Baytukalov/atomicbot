@@ -121,7 +121,7 @@ export function Sidebar() {
         }
       }
     },
-    [gw.request]
+    [gw]
   );
 
   // Don't attempt to load sessions until the gateway WebSocket is actually
@@ -173,7 +173,7 @@ export function Sidebar() {
         addToastError(err);
       }
     },
-    [gw.request, loadSessionsWithTitles, currentSessionKey, navigate]
+    [currentSessionKey, gw, loadSessionsWithTitles, navigate]
   );
 
   return (
