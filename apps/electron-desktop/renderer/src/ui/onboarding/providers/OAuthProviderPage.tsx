@@ -3,8 +3,8 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
 import { useOnboardingStepEvent } from "@analytics/use-onboarding-step-event";
 import { openExternal } from "@shared/utils/openExternal";
-import { GlassCard, HeroPageLayout, OnboardingDots, PrimaryButton } from "@shared/kit";
-import layoutStyles from "../OnboardingStepLayout.module.css";
+import { GlassCard, HeroPageLayout, PrimaryButton } from "@shared/kit";
+import { OnboardingHeader } from "../OnboardingHeader";
 import { errorToMessage } from "@shared/toast";
 import { MODEL_PROVIDER_BY_ID, type ModelProvider } from "@shared/models/providers";
 
@@ -98,26 +98,16 @@ export function OAuthProviderPage(props: {
       variant="compact"
       align="center"
       aria-label="OAuth provider setup"
-      className={layoutStyles.UiSetupLayout}
+      context="onboarding"
     >
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          <button
-            className="UiTextButton"
-            type="button"
-            onClick={() => {
-              abortRef.current = true;
-              props.onBack();
-            }}
-          >
-            Back
-          </button>
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderButton} />
-      </div>
+      <OnboardingHeader
+        totalSteps={props.totalSteps}
+        activeStep={props.activeStep}
+        onBack={() => {
+          abortRef.current = true;
+          props.onBack();
+        }}
+      />
       <GlassCard className="UiApiKeyCard UiGlassCardOnboarding">
         {meta?.helpTitle ? (
           <div className="UiApiKeyTitle">{meta.helpTitle}</div>

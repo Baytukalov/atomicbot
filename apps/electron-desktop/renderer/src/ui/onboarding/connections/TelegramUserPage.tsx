@@ -1,8 +1,8 @@
 import React from "react";
 
 import { openExternal } from "@shared/utils/openExternal";
-import { GlassCard, HeroPageLayout, OnboardingDots, PrimaryButton, TextInput } from "@shared/kit";
-import layoutStyles from "../OnboardingStepLayout.module.css";
+import { GlassCard, HeroPageLayout, PrimaryButton, TextInput } from "@shared/kit";
+import { OnboardingHeader } from "../OnboardingHeader";
 
 export function TelegramUserPage(props: {
   totalSteps: number;
@@ -35,19 +35,13 @@ export function TelegramUserPage(props: {
       variant="compact"
       align="center"
       aria-label="Telegram allowlist setup"
-      className={layoutStyles.UiSetupLayout}
+      context="onboarding"
     >
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          <button className="UiTextButton" type="button" onClick={props.onSkip}>
-            Back
-          </button>
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderButton} />
-      </div>
+      <OnboardingHeader
+        totalSteps={props.totalSteps}
+        activeStep={props.activeStep}
+        onBack={props.onSkip}
+      />
       <GlassCard className="UiApiKeyCard UiGlassCardOnboarding">
         <div className="UiApiKeyTitle">Allow Telegram DMs</div>
 

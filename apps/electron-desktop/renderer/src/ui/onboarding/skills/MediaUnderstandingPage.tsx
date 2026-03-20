@@ -2,15 +2,8 @@ import React from "react";
 
 import gw from "../connections/GoogleWorkspace.module.css";
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
-import {
-  CheckboxRow,
-  GlassCard,
-  HeroPageLayout,
-  OnboardingDots,
-  PrimaryButton,
-  TextInput,
-} from "@shared/kit";
-import layoutStyles from "../OnboardingStepLayout.module.css";
+import { CheckboxRow, GlassCard, HeroPageLayout, PrimaryButton, TextInput } from "@shared/kit";
+import { OnboardingHeader } from "../OnboardingHeader";
 import { errorToMessage } from "@shared/toast";
 
 type MediaUnderstandingSettings = {
@@ -100,19 +93,14 @@ export function MediaUnderstandingPage(props: {
       variant="compact"
       align="center"
       aria-label="Media understanding setup"
-      className={layoutStyles.UiSetupLayout}
+      context="onboarding"
     >
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          <button className="UiTextButton" type="button" onClick={props.onBack} disabled={isBusy}>
-            Back
-          </button>
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderRight} />
-      </div>
+      <OnboardingHeader
+        totalSteps={props.totalSteps}
+        activeStep={props.activeStep}
+        onBack={props.onBack}
+        backDisabled={isBusy}
+      />
       <GlassCard className={`${gw.card} UiGlassCardOnboarding`}>
         <div className="UiSectionTitle">Media Understanding</div>
 

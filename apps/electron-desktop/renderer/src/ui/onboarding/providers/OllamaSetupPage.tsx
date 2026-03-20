@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 
-import { GlassCard, HeroPageLayout, OnboardingDots, PrimaryButton, TextInput } from "@shared/kit";
+import { GlassCard, HeroPageLayout, PrimaryButton, SecondaryButton, TextInput } from "@shared/kit";
+import { OnboardingHeader } from "@ui/onboarding/OnboardingHeader";
 import { useOnboardingStepEvent } from "@analytics/use-onboarding-step-event";
 
 export type OllamaMode = "local" | "cloud";
@@ -74,10 +75,14 @@ export function OllamaSetupPage(props: {
   const isBusy = props.busy || connectionStatus === "testing";
 
   return (
-    <HeroPageLayout variant="compact" align="center" aria-label="Ollama setup">
-      <GlassCard className="UiApiKeyCard UiGlassCardOnboarding">
-        <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
+    <HeroPageLayout variant="compact" align="center" aria-label="Ollama setup" context="onboarding">
+      <OnboardingHeader
+        totalSteps={props.totalSteps}
+        activeStep={props.activeStep}
+        onBack={props.onBack}
+      />
 
+      <GlassCard className="UiApiKeyCard UiGlassCardOnboarding">
         <div className="UiApiKeyTitle" style={{ marginBottom: 2 }}>
           Use your local or cloud AI models with Ollama
         </div>
@@ -190,18 +195,15 @@ export function OllamaSetupPage(props: {
         <div className="UiApiKeySpacer" aria-hidden="true" />
 
         <div className="UiApiKeyButtonRow">
-          <button className="UiTextButton" disabled={isBusy} onClick={props.onBack} type="button">
-            Back
-          </button>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              className="UiTextButton"
+          <div />
+          <div className="flex-row-center">
+            <SecondaryButton
+              size="sm"
               disabled={isBusy || !baseUrl.trim()}
               onClick={() => void testConnection()}
-              type="button"
             >
               {connectionStatus === "testing" ? "Testing..." : "Test Connection"}
-            </button>
+            </SecondaryButton>
             <PrimaryButton
               size="sm"
               disabled={isBusy || !canSubmit}

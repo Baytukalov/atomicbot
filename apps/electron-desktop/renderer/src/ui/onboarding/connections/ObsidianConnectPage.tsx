@@ -1,13 +1,7 @@
 import React from "react";
 
-import {
-  GlassCard,
-  HeroPageLayout,
-  OnboardingDots,
-  PrimaryButton,
-  SecondaryButton,
-} from "@shared/kit";
-import layoutStyles from "../OnboardingStepLayout.module.css";
+import { GlassCard, HeroPageLayout, PrimaryButton, SecondaryButton } from "@shared/kit";
+import { OnboardingHeader } from "../OnboardingHeader";
 
 type ObsidianVault = {
   name: string;
@@ -36,24 +30,14 @@ export function ObsidianConnectPage(props: {
       variant="compact"
       align="center"
       aria-label="Obsidian setup"
-      className={layoutStyles.UiSetupLayout}
+      context="onboarding"
     >
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          <button
-            className="UiTextButton"
-            type="button"
-            onClick={props.onBack}
-            disabled={props.busy}
-          >
-            Back
-          </button>
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderButton} />
-      </div>
+      <OnboardingHeader
+        totalSteps={props.totalSteps}
+        activeStep={props.activeStep}
+        onBack={props.onBack}
+        backDisabled={props.busy}
+      />
       <GlassCard className="UiApiKeyCard UiGlassCardOnboarding">
         <div className="UiApiKeyTitle">Connect Obsidian</div>
 

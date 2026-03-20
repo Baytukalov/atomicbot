@@ -1,7 +1,7 @@
 import React from "react";
 
-import { GlassCard, HeroPageLayout, OnboardingDots, PrimaryButton, TextInput } from "@shared/kit";
-import layoutStyles from "../OnboardingStepLayout.module.css";
+import { GlassCard, HeroPageLayout, PrimaryButton, TextInput } from "@shared/kit";
+import { OnboardingHeader } from "../OnboardingHeader";
 
 export function GitHubConnectPage(props: {
   totalSteps: number;
@@ -28,28 +28,13 @@ export function GitHubConnectPage(props: {
   };
 
   return (
-    <HeroPageLayout
-      variant="compact"
-      align="center"
-      aria-label="GitHub setup"
-      className={layoutStyles.UiSetupLayout}
-    >
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          <button
-            className="UiTextButton"
-            type="button"
-            onClick={props.onBack}
-            disabled={props.busy}
-          >
-            Back
-          </button>
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderButton} />
-      </div>
+    <HeroPageLayout variant="compact" align="center" aria-label="GitHub setup" context="onboarding">
+      <OnboardingHeader
+        totalSteps={props.totalSteps}
+        activeStep={props.activeStep}
+        onBack={props.onBack}
+        backDisabled={props.busy}
+      />
       <GlassCard className="UiApiKeyCard UiGlassCardOnboarding">
         <div className="UiApiKeyTitle">Connect GitHub</div>
         <div className="UiApiKeySubtitle">

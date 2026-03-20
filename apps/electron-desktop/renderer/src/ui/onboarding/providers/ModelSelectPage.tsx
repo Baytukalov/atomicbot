@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { GlassCard, HeroPageLayout, OnboardingDots, PrimaryButton } from "@shared/kit";
+import { GlassCard, HeroPageLayout, PrimaryButton } from "@shared/kit";
 import { useOnboardingFlow } from "../hooks/onboarding-flow-context";
 import { useOnboardingStepEvent } from "@analytics/use-onboarding-step-event";
 import {
@@ -9,7 +9,7 @@ import {
   TIER_INFO,
 } from "@shared/models/modelPresentation";
 import { getProviderIconUrl } from "@shared/models/providers";
-import layoutStyles from "../OnboardingStepLayout.module.css";
+import { OnboardingHeader } from "../OnboardingHeader";
 import s from "./ModelSelectPage.module.css";
 import { RichSelect, type RichOption } from "@ui/settings/account-models/RichSelect";
 
@@ -92,19 +92,13 @@ export function ModelSelectPage(props: {
         variant="compact"
         align="center"
         aria-label="Model selection"
-        className={layoutStyles.UiSetupLayout}
+        context="onboarding"
       >
-        <div className={layoutStyles.UiSetupHeader}>
-          <div className={layoutStyles.UiSetupHeaderButton}>
-            <button className="UiTextButton" type="button" onClick={props.onBack}>
-              Back
-            </button>
-          </div>
-          <div className={layoutStyles.UiSetupHeaderCenter}>
-            <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-          </div>
-          <div className={layoutStyles.UiSetupHeaderButton} />
-        </div>
+        <OnboardingHeader
+          totalSteps={props.totalSteps}
+          activeStep={props.activeStep}
+          onBack={props.onBack}
+        />
         <GlassCard className="UiModelCard UiGlassCardOnboarding">
           <div className="UiSectionTitle">Select AI Model</div>
           <div className="UiSectionSubtitle">
@@ -121,19 +115,13 @@ export function ModelSelectPage(props: {
         variant="compact"
         align="center"
         aria-label="Model selection"
-        className={layoutStyles.UiSetupLayout}
+        context="onboarding"
       >
-        <div className={layoutStyles.UiSetupHeader}>
-          <div className={layoutStyles.UiSetupHeaderButton}>
-            <button className="UiTextButton" type="button" onClick={props.onBack}>
-              Back
-            </button>
-          </div>
-          <div className={layoutStyles.UiSetupHeaderCenter}>
-            <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-          </div>
-          <div className={layoutStyles.UiSetupHeaderRight} />
-        </div>
+        <OnboardingHeader
+          totalSteps={props.totalSteps}
+          activeStep={props.activeStep}
+          onBack={props.onBack}
+        />
         <GlassCard className="UiModelCard UiGlassCardOnboarding">
           <div className="UiSectionTitle">Select AI Model</div>
           <div className="UiSectionSubtitle">Failed to load models.</div>
@@ -153,19 +141,13 @@ export function ModelSelectPage(props: {
         variant="compact"
         align="center"
         aria-label="Model selection"
-        className={layoutStyles.UiSetupLayout}
+        context="onboarding"
       >
-        <div className={layoutStyles.UiSetupHeader}>
-          <div className={layoutStyles.UiSetupHeaderButton}>
-            <button className="UiTextButton" type="button" onClick={props.onBack}>
-              Back
-            </button>
-          </div>
-          <div className={layoutStyles.UiSetupHeaderCenter}>
-            <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-          </div>
-          <div className={layoutStyles.UiSetupHeaderRight} />
-        </div>
+        <OnboardingHeader
+          totalSteps={props.totalSteps}
+          activeStep={props.activeStep}
+          onBack={props.onBack}
+        />
         <GlassCard className="UiModelCard UiGlassCardOnboarding">
           <div className="UiSectionTitle">
             {isOllama ? "Something went wrong" : "Select AI Model"}
@@ -200,25 +182,14 @@ export function ModelSelectPage(props: {
       variant="compact"
       align="center"
       aria-label="Model selection"
-      className={layoutStyles.UiSetupLayout}
+      context="onboarding"
     >
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          <button className="UiTextButton" type="button" onClick={props.onBack}>
-            Back
-          </button>
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderRight}>
-          {props.onSkip ? (
-            <button className="UiTextButton" type="button" onClick={props.onSkip}>
-              Skip
-            </button>
-          ) : null}
-        </div>
-      </div>
+      <OnboardingHeader
+        totalSteps={props.totalSteps}
+        activeStep={props.activeStep}
+        onBack={props.onBack}
+        onSkip={props.onSkip}
+      />
       <GlassCard className="UiModelCard UiGlassCardOnboarding">
         <div className="UiSectionTitle">Select AI Model</div>
         <div className="UiSectionSubtitle">

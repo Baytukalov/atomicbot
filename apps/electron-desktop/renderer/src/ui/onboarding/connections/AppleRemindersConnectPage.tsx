@@ -1,7 +1,7 @@
 import React from "react";
 
-import { GlassCard, HeroPageLayout, OnboardingDots, PrimaryButton } from "@shared/kit";
-import layoutStyles from "../OnboardingStepLayout.module.css";
+import { GlassCard, HeroPageLayout, PrimaryButton } from "@shared/kit";
+import { OnboardingHeader } from "../OnboardingHeader";
 
 export function AppleRemindersConnectPage(props: {
   totalSteps: number;
@@ -17,24 +17,14 @@ export function AppleRemindersConnectPage(props: {
       variant="compact"
       align="center"
       aria-label="Apple Reminders setup"
-      className={layoutStyles.UiSetupLayout}
+      context="onboarding"
     >
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          <button
-            className="UiTextButton"
-            type="button"
-            onClick={props.onBack}
-            disabled={props.busy}
-          >
-            Back
-          </button>
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderButton} />
-      </div>
+      <OnboardingHeader
+        totalSteps={props.totalSteps}
+        activeStep={props.activeStep}
+        onBack={props.onBack}
+        backDisabled={props.busy}
+      />
       <GlassCard className="UiApiKeyCard UiGlassCardOnboarding">
         <div className="UiApiKeyTitle">Connect Apple Reminders</div>
         <div className="UiApiKeySubtitle">
