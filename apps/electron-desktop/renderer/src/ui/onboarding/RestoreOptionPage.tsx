@@ -2,12 +2,12 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
-import { GlassCard, HeroPageLayout, OnboardingDots, PrimaryButton } from "@shared/kit";
+import { GlassCard, HeroPageLayout, PrimaryButton } from "@shared/kit";
 import { errorToMessage } from "@shared/toast";
 import { useAppDispatch } from "@store/hooks";
 import { setOnboarded } from "@store/slices/onboardingSlice";
 import { routes } from "../app/routes";
-import layoutStyles from "./OnboardingStepLayout.module.css";
+import { OnboardingHeader } from "./OnboardingHeader";
 import s from "./RestoreOptionPage.module.css";
 
 type RestoreOption = "local" | "file";
@@ -86,24 +86,14 @@ export function RestoreOptionPage(props: { totalSteps: number; activeStep: numbe
       variant="compact"
       align="center"
       aria-label="Restore option"
-      className={layoutStyles.UiSetupLayout}
+      context="onboarding"
     >
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          <button
-            className="UiTextButton"
-            type="button"
-            onClick={handleBack}
-            disabled={pageState === "loading"}
-          >
-            Back
-          </button>
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderButton} />
-      </div>
+      <OnboardingHeader
+        totalSteps={props.totalSteps}
+        activeStep={props.activeStep}
+        onBack={handleBack}
+        backDisabled={pageState === "loading"}
+      />
       <GlassCard className={`UiGlassCardOnboarding ${s.UiRestoreCard}`}>
         <div className="UiSectionTitle">Choose restore option</div>
         <div className="UiSectionSubtitle">

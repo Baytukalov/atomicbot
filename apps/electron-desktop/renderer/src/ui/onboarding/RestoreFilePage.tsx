@@ -2,14 +2,14 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
-import { GlassCard, HeroPageLayout, OnboardingDots } from "@shared/kit";
+import { GlassCard, HeroPageLayout } from "@shared/kit";
 import { errorToMessage } from "@shared/toast";
 import { fileToBase64 } from "@shared/utils/base64";
 import { useAppDispatch } from "@store/hooks";
 import { setOnboarded } from "@store/slices/onboardingSlice";
 import { authActions, clearAuth, persistMode } from "@store/slices/auth/authSlice";
 import { routes } from "../app/routes";
-import layoutStyles from "./OnboardingStepLayout.module.css";
+import { OnboardingHeader } from "./OnboardingHeader";
 import s from "./RestoreFilePage.module.css";
 
 type PageState = "idle" | "loading" | "error";
@@ -124,24 +124,14 @@ export function RestoreFilePage(props: { totalSteps: number; activeStep: number 
       variant="compact"
       align="center"
       aria-label="Restore from backup file"
-      className={layoutStyles.UiSetupLayout}
+      context="onboarding"
     >
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          <button
-            className="UiTextButton"
-            type="button"
-            onClick={handleBack}
-            disabled={pageState === "loading"}
-          >
-            Back
-          </button>
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderButton} />
-      </div>
+      <OnboardingHeader
+        totalSteps={props.totalSteps}
+        activeStep={props.activeStep}
+        onBack={handleBack}
+        backDisabled={pageState === "loading"}
+      />
       <GlassCard className={`UiGlassCardOnboarding ${s.UiRestoreCard}`}>
         <div className="UiSectionTitle">Upload backup file</div>
         <div className="UiSectionSubtitle">

@@ -1,10 +1,10 @@
 import React from "react";
-import { GlassCard, HeroPageLayout, OnboardingDots } from "@shared/kit";
+import { GlassCard, HeroPageLayout } from "@shared/kit";
 import { useOnboardingStepEvent } from "@analytics/use-onboarding-step-event";
 import type { SubscriptionPriceInfo } from "@ipc/backendApi";
 import type { AutoTopUpState } from "@store/slices/auth/authSlice";
 import { UpgradePaywallContent } from "@ui/app/UpgradePaywallContent";
-import layoutStyles from "./OnboardingStepLayout.module.css";
+import { OnboardingHeader } from "./OnboardingHeader";
 import s from "./SetupReviewPage.module.css";
 
 export function SetupReviewPage(props: {
@@ -55,29 +55,13 @@ export function SetupReviewPage(props: {
   }
 
   return (
-    <HeroPageLayout
-      variant="compact"
-      align="center"
-      aria-label="Setup review"
-      className={layoutStyles.UiSetupLayout}
-    >
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          <button className="UiTextButton" type="button" onClick={props.onBack}>
-            Back
-          </button>
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderRight}>
-          {props.onSkip ? (
-            <button className="UiTextButton" type="button" onClick={props.onSkip}>
-              Skip
-            </button>
-          ) : null}
-        </div>
-      </div>
+    <HeroPageLayout variant="compact" align="center" aria-label="Setup review" context="onboarding">
+      <OnboardingHeader
+        totalSteps={props.totalSteps}
+        activeStep={props.activeStep}
+        onBack={props.onBack}
+        onSkip={props.onSkip}
+      />
 
       <GlassCard className={`UiGlassCardOnboarding ${s.UiSetupReviewCard}`}>
         <div className={`UiSectionTitle ${s.UiSectionTitleSetup}`}>

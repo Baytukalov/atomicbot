@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
-import { GlassCard, HeroPageLayout, OnboardingDots, PrimaryButton, TextInput } from "@shared/kit";
-import layoutStyles from "@ui/onboarding/OnboardingStepLayout.module.css";
+import { GlassCard, HeroPageLayout, PrimaryButton, TextInput } from "@shared/kit";
+import { OnboardingHeader } from "@ui/onboarding/OnboardingHeader";
 import { useOnboardingStepEvent } from "@analytics/use-onboarding-step-event";
 
 export type OllamaMode = "local" | "cloud";
@@ -75,18 +75,12 @@ export function OllamaSetupPage(props: {
   const isBusy = props.busy || connectionStatus === "testing";
 
   return (
-    <HeroPageLayout variant="compact" align="center" aria-label="Ollama setup">
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          <button className="UiTextButton" type="button" onClick={props.onBack}>
-            Back
-          </button>
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderRight} />
-      </div>
+    <HeroPageLayout variant="compact" align="center" aria-label="Ollama setup" context="onboarding">
+      <OnboardingHeader
+        totalSteps={props.totalSteps}
+        activeStep={props.activeStep}
+        onBack={props.onBack}
+      />
 
       <GlassCard className="UiApiKeyCard UiGlassCardOnboarding">
         <div className="UiApiKeyTitle" style={{ marginBottom: 2 }}>

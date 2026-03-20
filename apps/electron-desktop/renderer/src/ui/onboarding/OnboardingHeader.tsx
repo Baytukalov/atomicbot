@@ -7,6 +7,7 @@ export type OnboardingHeaderProps = {
   activeStep: number;
   onBack?: () => void;
   onSkip?: () => void;
+  backDisabled?: boolean;
 };
 
 export function OnboardingHeader({
@@ -14,12 +15,13 @@ export function OnboardingHeader({
   activeStep,
   onBack,
   onSkip,
+  backDisabled,
 }: OnboardingHeaderProps) {
   return (
     <div className={s.UiSetupHeader}>
       {onBack ? (
         <div className={s.UiSetupHeaderButton}>
-          <button className="UiTextButton" type="button" onClick={onBack}>
+          <button className="UiTextButton" type="button" onClick={onBack} disabled={backDisabled}>
             Back
           </button>
         </div>

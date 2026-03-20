@@ -1,15 +1,8 @@
 import React from "react";
 
-import {
-  GlassCard,
-  HeroPageLayout,
-  OnboardingDots,
-  PrimaryButton,
-  SecondaryButton,
-  SplashLogo,
-} from "@shared/kit";
+import { GlassCard, HeroPageLayout, PrimaryButton, SecondaryButton, SplashLogo } from "@shared/kit";
 import { useOnboardingStepEvent } from "@analytics/use-onboarding-step-event";
-import layoutStyles from "../OnboardingStepLayout.module.css";
+import { OnboardingHeader } from "../OnboardingHeader";
 import s from "./SetupModePage.module.css";
 import cursorIcon from "@assets/сursor.svg";
 import googleIcon from "@assets/set-up-skills/Google.svg";
@@ -33,21 +26,13 @@ export function SetupModePage(props: {
       variant="compact"
       align="center"
       aria-label="Setup mode selection"
-      className={layoutStyles.UiSetupLayout}
+      context="onboarding"
     >
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          {props.onBack ? (
-            <button className="UiTextButton" type="button" onClick={props.onBack}>
-              Back
-            </button>
-          ) : null}
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderButton} />
-      </div>
+      <OnboardingHeader
+        totalSteps={props.totalSteps}
+        activeStep={props.activeStep}
+        onBack={props.onBack}
+      />
       <GlassCard className={`UiGlassCardOnboarding ${s.UiSetupModeCard}`}>
         <div className="UiSectionContent">
           <div>

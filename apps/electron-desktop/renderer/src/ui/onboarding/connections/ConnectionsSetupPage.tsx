@@ -1,9 +1,9 @@
 import React from "react";
 
-import { GlassCard, HeroPageLayout, OnboardingDots, PrimaryButton } from "@shared/kit";
+import { GlassCard, HeroPageLayout, PrimaryButton } from "@shared/kit";
 import { useOnboardingFlow } from "../hooks/onboarding-flow-context";
 import { useOnboardingStepEvent } from "@analytics/use-onboarding-step-event";
-import layoutStyles from "../OnboardingStepLayout.module.css";
+import { OnboardingHeader } from "../OnboardingHeader";
 import telegramIcon from "@assets/messangers/Telegram.svg";
 import slackIcon from "@assets/set-up-skills/Slack.svg";
 
@@ -84,23 +84,14 @@ export function ConnectionsSetupPage(props: {
       variant="compact"
       align="center"
       aria-label="Connections setup"
-      className={layoutStyles.UiSetupLayout}
+      context="onboarding"
     >
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          <button className="UiTextButton" type="button" onClick={props.onBack}>
-            Back
-          </button>
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={totalSteps} activeStep={activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderRight}>
-          <button className="UiTextButton" type="button" onClick={props.onSkip}>
-            Skip
-          </button>
-        </div>
-      </div>
+      <OnboardingHeader
+        totalSteps={totalSteps}
+        activeStep={activeStep}
+        onBack={props.onBack}
+        onSkip={props.onSkip}
+      />
       <GlassCard className="UiSkillsCard UiGlassCardOnboarding">
         <div className="UiSectionTitle">Set Up Connections</div>
         <div className="UiSectionSubtitle">

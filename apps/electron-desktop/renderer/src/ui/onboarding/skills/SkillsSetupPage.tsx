@@ -1,10 +1,10 @@
 import React from "react";
 
-import { GlassCard, HeroPageLayout, OnboardingDots, PrimaryButton } from "@shared/kit";
+import { GlassCard, HeroPageLayout, PrimaryButton } from "@shared/kit";
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
 import { useOnboardingFlow } from "../hooks/onboarding-flow-context";
 import { useOnboardingStepEvent } from "@analytics/use-onboarding-step-event";
-import layoutStyles from "../OnboardingStepLayout.module.css";
+import { OnboardingHeader } from "../OnboardingHeader";
 import { isSkillAvailable } from "../../settings/skills/platformSkills";
 import googleIcon from "@assets/set-up-skills/Google.svg";
 import notionIcon from "@assets/set-up-skills/Notion.svg";
@@ -232,27 +232,13 @@ export function SkillsSetupPage(props: {
     isSkillAvailable(s.id as Parameters<typeof isSkillAvailable>[0], platform)
   );
   return (
-    <HeroPageLayout
-      variant="compact"
-      align="center"
-      aria-label="Skills setup"
-      className={layoutStyles.UiSetupLayout}
-    >
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          <button className="UiTextButton" type="button" onClick={props.onBack}>
-            Back
-          </button>
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={totalSteps} activeStep={activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderRight}>
-          <button className="UiTextButton" type="button" onClick={props.onSkip}>
-            Skip
-          </button>
-        </div>
-      </div>
+    <HeroPageLayout variant="compact" align="center" aria-label="Skills setup" context="onboarding">
+      <OnboardingHeader
+        totalSteps={totalSteps}
+        activeStep={activeStep}
+        onBack={props.onBack}
+        onSkip={props.onSkip}
+      />
       <GlassCard className="UiSkillsCard UiGlassCardOnboarding">
         <div className="UiSectionTitle">Set Up Skills</div>
         <div className="UiSectionSubtitle">

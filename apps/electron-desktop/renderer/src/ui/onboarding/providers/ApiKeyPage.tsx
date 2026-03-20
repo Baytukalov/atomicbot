@@ -3,8 +3,8 @@ import React, { useState } from "react";
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
 import { useOnboardingStepEvent } from "@analytics/use-onboarding-step-event";
 import { openExternal } from "@shared/utils/openExternal";
-import { GlassCard, HeroPageLayout, OnboardingDots, PrimaryButton, TextInput } from "@shared/kit";
-import layoutStyles from "../OnboardingStepLayout.module.css";
+import { GlassCard, HeroPageLayout, PrimaryButton, TextInput } from "@shared/kit";
+import { OnboardingHeader } from "../OnboardingHeader";
 import type { Provider } from "./ProviderSelectPage";
 import { MODEL_PROVIDER_BY_ID } from "@shared/models/providers";
 
@@ -107,19 +107,13 @@ export function ApiKeyPage(props: {
       variant="compact"
       align="center"
       aria-label="API key setup"
-      className={layoutStyles.UiSetupLayout}
+      context="onboarding"
     >
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          <button className="UiTextButton" type="button" onClick={props.onBack}>
-            Back
-          </button>
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderButton} />
-      </div>
+      <OnboardingHeader
+        totalSteps={props.totalSteps}
+        activeStep={props.activeStep}
+        onBack={props.onBack}
+      />
       <GlassCard className="UiApiKeyCard UiGlassCardOnboarding">
         {hasTokenMode ? (
           <div className="UiAuthModeToggle" role="radiogroup" aria-label="Authentication method">

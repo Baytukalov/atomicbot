@@ -2,8 +2,8 @@ import React from "react";
 
 import gw from "../connections/GoogleWorkspace.module.css";
 import { openExternal } from "@shared/utils/openExternal";
-import { GlassCard, HeroPageLayout, OnboardingDots, PrimaryButton, TextInput } from "@shared/kit";
-import layoutStyles from "../OnboardingStepLayout.module.css";
+import { GlassCard, HeroPageLayout, PrimaryButton, TextInput } from "@shared/kit";
+import { OnboardingHeader } from "../OnboardingHeader";
 import { DEFAULT_GOG_SERVICES } from "../hooks/constants";
 import { UiCheckbox } from "@shared/kit/forms";
 import connectGoogleImage from "@assets/connect-google.png";
@@ -71,7 +71,6 @@ export function GogPage(props: {
   finishText?: string;
   skipText?: string;
 }) {
-  const skip = props.onSkip ?? props.onFinish;
   const [connected, setConnected] = React.useState(false);
   const [errorText, setErrorText] = React.useState("");
   const [services, setServices] = React.useState<Record<string, boolean>>(() => {
@@ -114,19 +113,13 @@ export function GogPage(props: {
       variant="compact"
       align="center"
       aria-label="Google Workspace setup"
-      className={layoutStyles.UiSetupLayout}
+      context="onboarding"
     >
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          <button className="UiTextButton" type="button" onClick={props.onBack}>
-            Back
-          </button>
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderRight} />
-      </div>
+      <OnboardingHeader
+        totalSteps={props.totalSteps}
+        activeStep={props.activeStep}
+        onBack={props.onBack}
+      />
       <GlassCard className={`${gw.card} UiGlassCardOnboarding`}>
         <div className="UiSectionTitle">Google Workspace</div>
         <div className="UiContentWrapper scrollable">

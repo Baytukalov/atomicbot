@@ -1,8 +1,8 @@
 import React, { useEffect } from "react";
 
-import { GlassCard, HeroPageLayout, OnboardingDots, PrimaryButton } from "@shared/kit";
+import { GlassCard, HeroPageLayout, PrimaryButton } from "@shared/kit";
 import { useOnboardingStepEvent } from "@analytics/use-onboarding-step-event";
-import layoutStyles from "../OnboardingStepLayout.module.css";
+import { OnboardingHeader } from "../OnboardingHeader";
 
 import {
   MODEL_PROVIDERS,
@@ -37,27 +37,14 @@ export function ProviderSelectPage(props: {
       variant="compact"
       align="center"
       aria-label="Provider selection"
-      className={layoutStyles.UiSetupLayout}
+      context="onboarding"
     >
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          {props.onBack ? (
-            <button className="UiTextButton" type="button" onClick={props.onBack}>
-              Back
-            </button>
-          ) : null}
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderRight}>
-          {props.onSkip ? (
-            <button className="UiTextButton" type="button" onClick={props.onSkip}>
-              Skip
-            </button>
-          ) : null}
-        </div>
-      </div>
+      <OnboardingHeader
+        totalSteps={props.totalSteps}
+        activeStep={props.activeStep}
+        onBack={props.onBack}
+        onSkip={props.onSkip}
+      />
       <GlassCard className="UiProviderCard UiGlassCardOnboarding">
         <div className="UiSectionTitle">Choose AI Provider</div>
         <div className="UiSectionSubtitle">

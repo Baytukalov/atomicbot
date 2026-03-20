@@ -1,8 +1,8 @@
 import React from "react";
 
 import { openExternal } from "@shared/utils/openExternal";
-import { GlassCard, HeroPageLayout, OnboardingDots, PrimaryButton, TextInput } from "@shared/kit";
-import layoutStyles from "../OnboardingStepLayout.module.css";
+import { GlassCard, HeroPageLayout, PrimaryButton, TextInput } from "@shared/kit";
+import { OnboardingHeader } from "../OnboardingHeader";
 
 export function TrelloConnectPage(props: {
   totalSteps: number;
@@ -44,28 +44,13 @@ export function TrelloConnectPage(props: {
   };
 
   return (
-    <HeroPageLayout
-      variant="compact"
-      align="center"
-      aria-label="Trello setup"
-      className={layoutStyles.UiSetupLayout}
-    >
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          <button
-            className="UiTextButton"
-            type="button"
-            onClick={props.onBack}
-            disabled={props.busy}
-          >
-            Back
-          </button>
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderButton} />
-      </div>
+    <HeroPageLayout variant="compact" align="center" aria-label="Trello setup" context="onboarding">
+      <OnboardingHeader
+        totalSteps={props.totalSteps}
+        activeStep={props.activeStep}
+        onBack={props.onBack}
+        backDisabled={props.busy}
+      />
       <GlassCard className="UiApiKeyCard UiGlassCardOnboarding">
         <div className="UiApiKeyTitle">Connect Trello</div>
 

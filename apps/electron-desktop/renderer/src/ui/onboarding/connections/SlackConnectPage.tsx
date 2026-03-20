@@ -1,14 +1,7 @@
 import React from "react";
 
-import {
-  GlassCard,
-  HeroPageLayout,
-  InlineError,
-  OnboardingDots,
-  PrimaryButton,
-  TextInput,
-} from "@shared/kit";
-import layoutStyles from "../OnboardingStepLayout.module.css";
+import { GlassCard, HeroPageLayout, InlineError, PrimaryButton, TextInput } from "@shared/kit";
+import { OnboardingHeader } from "../OnboardingHeader";
 import { buildSlackManifest } from "./slack/slackManifest";
 import { parseList } from "./slack/slackUtils";
 import { SlackSetupInstructions } from "./slack/SlackSetupInstructions";
@@ -92,28 +85,13 @@ export function SlackConnectPage(props: {
   };
 
   return (
-    <HeroPageLayout
-      variant="compact"
-      align="center"
-      aria-label="Slack setup"
-      className={layoutStyles.UiSetupLayout}
-    >
-      <div className={layoutStyles.UiSetupHeader}>
-        <div className={layoutStyles.UiSetupHeaderButton}>
-          <button
-            className="UiTextButton"
-            type="button"
-            onClick={props.onBack}
-            disabled={props.busy}
-          >
-            Back
-          </button>
-        </div>
-        <div className={layoutStyles.UiSetupHeaderCenter}>
-          <OnboardingDots totalSteps={props.totalSteps} activeStep={props.activeStep} />
-        </div>
-        <div className={layoutStyles.UiSetupHeaderButton} />
-      </div>
+    <HeroPageLayout variant="compact" align="center" aria-label="Slack setup" context="onboarding">
+      <OnboardingHeader
+        totalSteps={props.totalSteps}
+        activeStep={props.activeStep}
+        onBack={props.onBack}
+        backDisabled={props.busy}
+      />
       <GlassCard className="UiApiKeyCard UiGlassCardOnboarding">
         <div className="UiApiKeyTitle">Connect Slack</div>
 
