@@ -7,7 +7,7 @@
  * Also reads from a local .env file when env vars are not already set in the
  * shell — this covers both local dev builds and CI environments alike.
  */
-import { execFileSync } from "node:child_process";
+import { build } from "esbuild";
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join, dirname } from "node:path";
@@ -26,36 +26,22 @@ if (existsSync(envFile)) {
   }
 }
 
-// Map of process.env.* keys to inline into dist/main.js.
-const defines = {
-  "process.env.POSTHOG_API_KEY": process.env.POSTHOG_API_KEY ?? "",
+// Values must be valid JS expressions — JSON.stringify wraps them in quotes.
+const define = {
+  "process.env.POSTHOG_API_KEY": JSON.stringify(process.env.POSTHOG_API_KEY ?? ""),
 };
-
-const defineArgs = Object.entries(defines).map(
-  ([key, val]) => `--define:${key}=${JSON.stringify(val)}`
-);
-
-// esbuild with --define but WITHOUT --bundle: only replaces literals in-place.
-// tsc outputs modules individually under dist/main/, so we target each file that
-// contains build-time env var references rather than the single entry dist/main.js.
-const esbuildName = process.platform === "win32" ? "esbuild.cmd" : "esbuild";
-const esbuildBin = join(root, "node_modules", ".bin", esbuildName);
 
 const targets = ["dist/main/analytics/posthog-main.js"];
 
 for (const target of targets) {
-  execFileSync(
-    esbuildBin,
-    [
-      target,
-      "--platform=node",
-      "--format=cjs",
-      `--outfile=${target}`,
-      "--allow-overwrite",
-      ...defineArgs,
-    ],
-    { stdio: "inherit", cwd: root }
-  );
+  await build({
+    entryPoints: [join(root, target)],
+    outfile: join(root, target),
+    platform: "node",
+    format: "cjs",
+    allowOverwrite: true,
+    define,
+  });
 }
 
 console.log("[define-main-env] main-process env vars inlined.");
