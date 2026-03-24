@@ -14,10 +14,7 @@ export function patchSpawnForWindows(): void {
   const cp = require("node:child_process");
 
   const originalSpawn = cp.spawn;
-  cp.spawn = function patchedSpawn(
-    command: string,
-    ...rest: unknown[]
-  ): unknown {
+  cp.spawn = function patchedSpawn(command: string, ...rest: unknown[]): unknown {
     const args = normalizeSpawnArgs(rest);
     if (args.options) {
       args.options.windowsHide = true;
@@ -28,10 +25,7 @@ export function patchSpawnForWindows(): void {
   };
 
   const originalSpawnSync = cp.spawnSync;
-  cp.spawnSync = function patchedSpawnSync(
-    command: string,
-    ...rest: unknown[]
-  ): unknown {
+  cp.spawnSync = function patchedSpawnSync(command: string, ...rest: unknown[]): unknown {
     const args = normalizeSpawnArgs(rest);
     if (args.options) {
       args.options.windowsHide = true;
@@ -42,10 +36,7 @@ export function patchSpawnForWindows(): void {
   };
 
   const originalExecFile = cp.execFile;
-  cp.execFile = function patchedExecFile(
-    file: string,
-    ...rest: unknown[]
-  ): unknown {
+  cp.execFile = function patchedExecFile(file: string, ...rest: unknown[]): unknown {
     for (const arg of rest) {
       if (arg && typeof arg === "object" && !Array.isArray(arg)) {
         (arg as Record<string, unknown>).windowsHide = true;
@@ -56,10 +47,7 @@ export function patchSpawnForWindows(): void {
   };
 
   const originalExecFileSync = cp.execFileSync;
-  cp.execFileSync = function patchedExecFileSync(
-    file: string,
-    ...rest: unknown[]
-  ): unknown {
+  cp.execFileSync = function patchedExecFileSync(file: string, ...rest: unknown[]): unknown {
     for (const arg of rest) {
       if (arg && typeof arg === "object" && !Array.isArray(arg)) {
         (arg as Record<string, unknown>).windowsHide = true;
@@ -70,10 +58,7 @@ export function patchSpawnForWindows(): void {
   };
 
   const originalExecSync = cp.execSync;
-  cp.execSync = function patchedExecSync(
-    command: string,
-    ...rest: unknown[]
-  ): unknown {
+  cp.execSync = function patchedExecSync(command: string, ...rest: unknown[]): unknown {
     for (const arg of rest) {
       if (arg && typeof arg === "object" && !Array.isArray(arg)) {
         (arg as Record<string, unknown>).windowsHide = true;
@@ -96,10 +81,7 @@ function normalizeSpawnArgs(rest: unknown[]): {
 
   if (Array.isArray(rest[0])) {
     const argv = rest[0];
-    const opts =
-      rest[1] && typeof rest[1] === "object"
-        ? (rest[1] as Record<string, unknown>)
-        : {};
+    const opts = rest[1] && typeof rest[1] === "object" ? (rest[1] as Record<string, unknown>) : {};
     if (!rest[1]) {
       rest[1] = opts;
     }

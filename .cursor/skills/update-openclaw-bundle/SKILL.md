@@ -25,6 +25,7 @@ The script builds a self-contained OpenClaw bundle for the Electron desktop app:
 10. **Verify** — post-bundle runtime checks ensure the bundle is executable and critical packages resolve
 
 Key design: only external packages remain in node_modules. External resolution is now:
+
 - manual policy (`ESBUILD_EXTERNALS_POLICY`)
 - generated list (`openclaw-bundle-generated-externals.json`)
 - adaptive externals learned during bundling
@@ -37,6 +38,7 @@ Key design: only external packages remain in node_modules. External resolution i
 **Generated location:** `apps/electron-desktop/scripts/lib/openclaw-bundle-generated-externals.json`
 
 A package must be external if it matches any of:
+
 - Contains native `.node` binaries (e.g. `sharp`, `sqlite3`, `node-pty`)
 - Uses dynamic `require()` that breaks when bundled (e.g. `yaml`, `grammy`, `jiti`)
 - Has complex module structure esbuild can't handle (e.g. `express`, `zod`)
@@ -56,7 +58,7 @@ Only prune packages that are optional peerDeps or dev-only tools.
 **Location:** `apps/electron-desktop/scripts/lib/openclaw-bundle-config.mjs`
 **Purpose:** Node.js built-in modules. Update only on Node major version change.
 
-### 4. STRIP_* lists
+### 4. STRIP\_\* lists
 
 **Location:** `apps/electron-desktop/scripts/lib/openclaw-bundle-config.mjs`
 **Purpose:** Remove docs/tests/configs from node_modules. Almost never needs updating.

@@ -1,9 +1,9 @@
-import type { GatewayRequestHandlers } from "./types.js";
 import { resolveApiKeyForProvider } from "../../agents/model-auth.js";
 import { loadConfig } from "../../config/config.js";
-import { transcribeOpenAiCompatibleAudio } from "../../media-understanding/providers/openai/audio.js";
+import { transcribeOpenAiCompatibleAudio } from "../../media-understanding/openai-compatible-audio.js";
 import { ErrorCodes, errorShape } from "../protocol/index.js";
 import { formatForLog } from "../ws-log.js";
+import type { GatewayRequestHandlers } from "./types.js";
 
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024; // 25 MB (OpenAI limit)
 const DEFAULT_TIMEOUT_MS = 60_000;
