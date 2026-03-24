@@ -567,6 +567,15 @@ export async function waitForChatPage(page: Page): Promise<void> {
   await page.getByText("What can I help with?").waitFor({ state: "visible", timeout: 30_000 });
 }
 
+export async function startNewTask(page: Page): Promise<void> {
+  const sidebar = page.locator('[aria-label="Chat sessions"]');
+  const trigger = sidebar.getByText("New task", { exact: true }).first();
+  await trigger.waitFor({ state: "visible", timeout: 15_000 });
+  await trigger.click();
+  await waitForChatPage(page);
+  await expect(page.locator("textarea").first()).toBeVisible({ timeout: 10_000 });
+}
+
 export async function sendChatMessage(page: Page, text: string): Promise<void> {
   const textarea = page.locator("textarea").first();
   await textarea.click();
@@ -578,12 +587,28 @@ export async function sendChatMessage(page: Page, text: string): Promise<void> {
 }
 
 export async function waitForAssistantResponse(page: Page, timeout = 120_000): Promise<string> {
-  // Wait for the typing indicator to appear (assistant started processing)
-  await page.locator('[aria-label="typing"]').first().waitFor({ state: "visible", timeout });
+  const typing = page.locator('[aria-label="typing"]').first();
+  const copyButtons = page.locator('[aria-label="Copy"]');
+  const initialCopyCount = await copyButtons.count();
 
-  // Wait for typing indicator to disappear (streaming complete).
-  // The Copy button on the last assistant bubble confirms the response is finalized.
-  await page.locator('[aria-label="typing"]').waitFor({ state: "hidden", timeout });
+  // Some responses render so quickly that the typing indicator never becomes visible.
+  // Accept either a visible typing phase or a newly rendered assistant bubble.
+  await Promise.race([
+    typing.waitFor({ state: "visible", timeout }).catch(() => {}),
+    expect
+      .poll(async () => await copyButtons.count(), { timeout })
+      .toBeGreaterThan(initialCopyCount)
+      .catch(() => {}),
+  ]);
+
+  // If typing appeared, wait for it to finish. Otherwise wait for a new completed bubble.
+  if (await typing.isVisible().catch(() => false)) {
+    await page.locator('[aria-label="typing"]').waitFor({ state: "hidden", timeout });
+  } else {
+    await expect
+      .poll(async () => await copyButtons.count(), { timeout })
+      .toBeGreaterThan(initialCopyCount);
+  }
 
   await page.waitForTimeout(500);
 

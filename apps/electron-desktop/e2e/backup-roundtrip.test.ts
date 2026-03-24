@@ -12,6 +12,7 @@ import {
   gatewayRpc,
   getConfig,
   sendChatMessage,
+  startNewTask,
   waitForAssistantResponse,
   getTestCredentials,
 } from "./helpers";
@@ -206,7 +207,7 @@ test.describe("Backup roundtrip (create -> mutate -> restore -> verify)", () => 
 
   test("chat works after restore (gateway functional)", async () => {
     test.setTimeout(180_000);
-    await page.locator('[aria-label="New session"]').click();
+    await startNewTask(page);
     await page.waitForTimeout(1_000);
 
     await sendChatMessage(page, "Say OK if you can hear me.");

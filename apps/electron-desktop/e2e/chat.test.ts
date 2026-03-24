@@ -5,6 +5,7 @@ import {
   closeApp,
   finishOnboarding,
   sendChatMessage,
+  startNewTask,
   waitForAssistantResponse,
   getSessionsList,
   getTestCredentials,
@@ -63,9 +64,7 @@ test.describe("Chat functionality", () => {
 
   test("new session button resets to start chat page", async () => {
     test.setTimeout(30_000);
-    await page.locator('[aria-label="New session"]').click();
-
-    await expect(page.getByText("What can I help with?")).toBeVisible({ timeout: 10_000 });
+    await startNewTask(page);
 
     await expect(page.locator("textarea").first()).toHaveValue("");
   });

@@ -5,6 +5,7 @@ import {
   closeApp,
   finishOnboarding,
   sendChatMessage,
+  startNewTask,
   waitForAssistantResponse,
   getSessionsList,
   getTestCredentials,
@@ -83,8 +84,7 @@ test.describe("Chat — extended interactions", () => {
     expect(firstSessionCount).toBeGreaterThanOrEqual(1);
 
     // Create a new session
-    await page.locator('[aria-label="New session"]').click();
-    await expect(page.getByText("What can I help with?")).toBeVisible({ timeout: 10_000 });
+    await startNewTask(page);
 
     // Send a message in the new session
     await sendChatMessage(page, "What is 1 + 1? Reply with just the number.");

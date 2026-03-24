@@ -90,17 +90,24 @@ test.describe("Settings account tab (paid mode)", () => {
           .then(() => "error" as const),
       ]).catch(() => "timeout" as const);
 
-      if (pendingOrError === "pending") {
+      if (pendingOrError !== "error") {
         await simulateStripeSuccessDeepLink(ctx.app);
-        await waitForSuccessPage(page);
-        await page
-          .getByText("YOUR AGENT IS READY!")
-          .waitFor({ state: "visible", timeout: 120_000 });
-        await page.getByRole("button", { name: "Start chat" }).click();
+
+        const afterSuccess = await Promise.race([
+          waitForSuccessPage(page).then(() => "success" as const),
+          waitForChatPage(page).then(() => "chat" as const),
+        ]).catch(() => "timeout" as const);
+
+        if (afterSuccess === "success") {
+          await page.getByRole("button", { name: "Start chat" }).waitFor({
+            state: "visible",
+            timeout: 130_000,
+          });
+          await page.getByRole("button", { name: "Start chat" }).click();
+        }
       }
 
-      // If error/timeout, the test user's account is likely already set up
-      // Navigate to chat anyway
+      // If checkout errors out, the account state is likely external to this test.
     }
 
     await waitForChatPage(page);

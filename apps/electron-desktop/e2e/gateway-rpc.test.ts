@@ -7,6 +7,7 @@ import {
   gatewayRpc,
   getConfig,
   sendChatMessage,
+  startNewTask,
   waitForAssistantResponse,
   getTestCredentials,
 } from "./helpers";
@@ -127,7 +128,7 @@ test.describe("Gateway core RPC", () => {
   test("session title matches first user message", async () => {
     test.setTimeout(180_000);
 
-    await page.locator('[aria-label="New session"]').click();
+    await startNewTask(page);
     await page.waitForTimeout(1_000);
 
     await sendChatMessage(page, "My unique test phrase ABC123");

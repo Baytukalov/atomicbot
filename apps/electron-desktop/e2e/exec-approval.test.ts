@@ -8,6 +8,8 @@ import {
   gatewayRpc,
   getConfig,
   getTestCredentials,
+  startNewTask,
+  waitForAssistantResponse,
 } from "./helpers";
 
 const creds = getTestCredentials();
@@ -49,7 +51,7 @@ test.describe("Exec Approval flow (gateway exec pipeline)", () => {
 
   test("start new session so config change is picked up", async () => {
     test.setTimeout(15_000);
-    await page.locator('[aria-label="New session"]').click();
+    await startNewTask(page);
     await page.waitForTimeout(2_000);
   });
 
@@ -91,14 +93,7 @@ test.describe("Exec Approval flow (gateway exec pipeline)", () => {
     await modal.waitFor({ state: "hidden", timeout: 10_000 });
 
     // Wait for the assistant's response that contains the exec output.
-    await page
-      .locator('[aria-label="typing"]')
-      .first()
-      .waitFor({ state: "visible", timeout: 60_000 })
-      .catch(() => {
-        // Typing indicator may already have appeared and gone
-      });
-    await page.locator('[aria-label="typing"]').waitFor({ state: "hidden", timeout: 120_000 });
+    await waitForAssistantResponse(page, 120_000);
     await page.waitForTimeout(2_000);
 
     // The assistant response should include the output of `echo HELLO_E2E_TEST`

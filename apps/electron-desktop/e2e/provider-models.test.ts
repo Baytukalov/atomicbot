@@ -8,6 +8,7 @@ import {
   gatewayRpc,
   getConfig,
   sendChatMessage,
+  startNewTask,
   waitForAssistantResponse,
   getTestCredentials,
   getSecondProviderCredentials,
@@ -248,7 +249,7 @@ test.describe("Provider addition, model listing, and model switching", () => {
   test("chat works with the new model", async () => {
     test.setTimeout(180_000);
     // Navigate to chat
-    await page.locator('[aria-label="New session"]').click();
+    await startNewTask(page);
     await page.waitForTimeout(1_000);
 
     await sendChatMessage(page, "Say OK if you can hear me.");

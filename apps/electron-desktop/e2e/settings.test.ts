@@ -8,6 +8,7 @@ import {
   getConfig,
   getTestCredentials,
   getSecondProviderCredentials,
+  startNewTask,
 } from "./helpers";
 
 const creds = getTestCredentials();
@@ -166,8 +167,6 @@ test.describe("Settings page", () => {
 
   test("navigate back to chat from settings", async () => {
     test.setTimeout(15_000);
-    await page.locator('[aria-label="New session"]').click();
-
-    await expect(page.getByText("What can I help with?")).toBeVisible({ timeout: 10_000 });
+    await startNewTask(page);
   });
 });
