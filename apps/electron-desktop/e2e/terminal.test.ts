@@ -6,6 +6,7 @@ import {
   finishOnboarding,
   navigateToSettings,
   getTestCredentials,
+  startNewTask,
 } from "./helpers";
 
 const creds = getTestCredentials();
@@ -54,8 +55,7 @@ test.describe("Terminal page", () => {
   test("terminal link appears in sidebar after enabling", async () => {
     test.setTimeout(15_000);
     // Navigate back to chat to see the sidebar
-    await page.locator('[aria-label="New session"]').click();
-    await page.getByText("What can I help with?").waitFor({ state: "visible", timeout: 10_000 });
+    await startNewTask(page);
 
     const terminalLink = page.locator('[aria-label="Terminal"]');
     await expect(terminalLink).toBeVisible({ timeout: 5_000 });
@@ -74,7 +74,7 @@ test.describe("Terminal page", () => {
         break;
       } catch {
         // Stuck on "Loading..." — navigate away and retry.
-        await page.locator('[aria-label="New session"]').click();
+        await startNewTask(page);
         await page.waitForTimeout(2_000);
       }
     }

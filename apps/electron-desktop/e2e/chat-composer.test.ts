@@ -5,6 +5,8 @@ import {
   closeApp,
   finishOnboarding,
   getTestCredentials,
+  startNewTask,
+  waitForAssistantResponse,
 } from "./helpers";
 
 const creds = getTestCredentials();
@@ -96,18 +98,13 @@ test.describe("Chat composer UI elements", () => {
       .waitFor({ state: "visible", timeout: 10_000 });
 
     // Wait for response (the message was sent via Enter)
-    await page
-      .locator('[aria-label="typing"]')
-      .first()
-      .waitFor({ state: "visible", timeout: 30_000 });
-    await page.locator('[aria-label="typing"]').waitFor({ state: "hidden", timeout: 120_000 });
+    await waitForAssistantResponse(page, 120_000);
   });
 
   test("Shift+Enter adds newline instead of sending", async () => {
     test.setTimeout(15_000);
     // Start a fresh session
-    await page.locator('[aria-label="New session"]').click();
-    await page.getByText("What can I help with?").waitFor({ state: "visible", timeout: 10_000 });
+    await startNewTask(page);
 
     const textarea = page.locator("textarea").first();
     await textarea.click();

@@ -86,15 +86,19 @@ test.describe("Settings — Ollama provider configuration", () => {
 
   // ── Verify Ollama configuration UI ───────────────────────
 
-  test("shows Ollama Configuration section with mode toggle", async () => {
+  test("shows inline Ollama section with mode toggle", async () => {
     test.setTimeout(15_000);
 
-    await expect(page.getByText("Ollama Configuration")).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText("Use your local or cloud AI models with Ollama")).toBeVisible({
+      timeout: 10_000,
+    });
 
     const modeToggle = page.locator('[aria-label="Ollama mode"]');
     await expect(modeToggle).toBeVisible();
-    await expect(modeToggle.getByText("Local")).toBeVisible();
-    await expect(modeToggle.getByText("Cloud + Local")).toBeVisible();
+    await expect(modeToggle.getByRole("button", { name: "Local", exact: true })).toBeVisible();
+    await expect(
+      modeToggle.getByRole("button", { name: "Cloud + Local", exact: true })
+    ).toBeVisible();
   });
 
   test("shows base URL input with default value", async () => {
@@ -124,7 +128,10 @@ test.describe("Settings — Ollama provider configuration", () => {
   test("switching to Cloud mode shows API key input", async () => {
     test.setTimeout(10_000);
 
-    await page.locator('[aria-label="Ollama mode"]').getByText("Cloud + Local").click();
+    await page
+      .locator('[aria-label="Ollama mode"]')
+      .getByRole("button", { name: "Cloud + Local", exact: true })
+      .click();
     await page.waitForTimeout(500);
 
     const passwordInput = page.locator('input[type="password"]');
@@ -135,7 +142,10 @@ test.describe("Settings — Ollama provider configuration", () => {
   test("switching back to Local mode hides API key input", async () => {
     test.setTimeout(10_000);
 
-    await page.locator('[aria-label="Ollama mode"]').getByText("Local").click();
+    await page
+      .locator('[aria-label="Ollama mode"]')
+      .getByRole("button", { name: "Local", exact: true })
+      .click();
     await page.waitForTimeout(500);
 
     const passwordInputs = page.locator('input[type="password"]');
@@ -163,11 +173,21 @@ test.describe("Settings — Ollama provider configuration", () => {
 
     const snap = await getConfig(page);
     const cfg = getObj(snap.config);
+    const models = getObj(cfg.models);
+    const providers = getObj(models.providers);
+    const ollamaProvider = getObj(providers.ollama);
     const auth = getObj(cfg.auth);
     const profiles = getObj(auth.profiles);
-    const ollamaProfile = getObj(profiles.ollama);
+    const ollamaProfile = getObj(profiles["ollama:default"]);
+    const order = getObj(auth.order);
+    const ollamaOrder = order.ollama;
 
+    expect(ollamaProvider.baseUrl).toBe("http://127.0.0.1:11434");
+    expect(ollamaProvider.api).toBe("ollama");
     expect(ollamaProfile).toBeTruthy();
-    expect(Object.keys(ollamaProfile).length).toBeGreaterThan(0);
+    expect(ollamaProfile.provider).toBe("ollama");
+    expect(ollamaProfile.mode).toBe("api_key");
+    expect(Array.isArray(ollamaOrder)).toBe(true);
+    expect(ollamaOrder).toContain("ollama:default");
   });
 });

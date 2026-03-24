@@ -166,23 +166,29 @@ export async function collectDistSubdirPackages(params) {
         }
 
         // write:false lets us parse + build the graph without modifying files.
-        const analyzed = await esbuild.build({
-          entryPoints: [full],
-          bundle: true,
-          write: false,
-          metafile: true,
-          platform: "node",
-          format: "esm",
-          logLevel: "silent",
-          external: [...bundleExternals, "node:*", ...nodeBuiltins],
-        });
-        analyzedFiles++;
-        const found = collectExternalPackagesFromMetafile({
-          metafile: analyzed.metafile,
-          nodeBuiltins,
-        });
-        for (const p of found) {
-          packages.add(p);
+        // Vendored node_modules inside extensions may contain legacy builds
+        // with unresolvable deps (e.g. regenerator-runtime) — skip on failure.
+        try {
+          const analyzed = await esbuild.build({
+            entryPoints: [full],
+            bundle: true,
+            write: false,
+            metafile: true,
+            platform: "node",
+            format: "esm",
+            logLevel: "silent",
+            external: [...bundleExternals, "node:*", ...nodeBuiltins],
+          });
+          analyzedFiles++;
+          const found = collectExternalPackagesFromMetafile({
+            metafile: analyzed.metafile,
+            nodeBuiltins,
+          });
+          for (const p of found) {
+            packages.add(p);
+          }
+        } catch {
+          // Non-runtime files (legacy builds, build configs) that fail — skip.
         }
       }
     }

@@ -1,4 +1,9 @@
-import { _electron as electron, type ElectronApplication, type Page } from "@playwright/test";
+import {
+  _electron as electron,
+  expect,
+  type ElectronApplication,
+  type Page,
+} from "@playwright/test";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -157,16 +162,19 @@ export async function enterApiKey(page: Page, apiKey: string): Promise<void> {
 }
 
 export async function waitForModelSelect(page: Page): Promise<void> {
-  const el = page.locator('[aria-label="Model selection"]');
-  await el.waitFor({ state: "visible", timeout: 60_000 });
-  await page.locator('input[name="model"]').first().waitFor({ state: "attached", timeout: 30_000 });
+  const container = page.locator('[aria-label="Model selection"]');
+  await container.waitFor({ state: "visible", timeout: 60_000 });
+  await container.locator('button[aria-haspopup="listbox"]').first().waitFor({
+    state: "visible",
+    timeout: 30_000,
+  });
+  await expect(container.getByRole("button", { name: "Continue" })).toBeEnabled({
+    timeout: 30_000,
+  });
 }
 
 export async function selectFirstModel(page: Page): Promise<string> {
   await waitForModelSelect(page);
-  const firstRadio = page.locator('input[name="model"]').first();
-  const modelId = (await firstRadio.getAttribute("value")) ?? "";
-
   const container = page.locator('[aria-label="Model selection"]');
   const continueBtn = container.getByRole("button", { name: "Continue" });
 
@@ -184,7 +192,12 @@ export async function selectFirstModel(page: Page): Promise<string> {
     }
   }
 
-  return modelId;
+  const snap = await getConfig(page);
+  const config = (snap.config ?? {}) as Record<string, unknown>;
+  const agents = (config.agents ?? {}) as Record<string, unknown>;
+  const defaults = (agents.defaults ?? {}) as Record<string, unknown>;
+  const model = (defaults.model ?? {}) as Record<string, unknown>;
+  return typeof model.primary === "string" ? model.primary : "";
 }
 
 export async function waitForSkillsPage(page: Page): Promise<void> {
@@ -313,6 +326,7 @@ async function gatewayRpcOnce<T = unknown>(
                 scopes: [
                   "operator.admin",
                   "operator.read",
+                  "operator.write",
                   "operator.approvals",
                   "operator.pairing",
                 ],
@@ -553,6 +567,15 @@ export async function waitForChatPage(page: Page): Promise<void> {
   await page.getByText("What can I help with?").waitFor({ state: "visible", timeout: 30_000 });
 }
 
+export async function startNewTask(page: Page): Promise<void> {
+  const sidebar = page.locator('[aria-label="Chat sessions"]');
+  const trigger = sidebar.getByText("New task", { exact: true }).first();
+  await trigger.waitFor({ state: "visible", timeout: 15_000 });
+  await trigger.click();
+  await waitForChatPage(page);
+  await expect(page.locator("textarea").first()).toBeVisible({ timeout: 10_000 });
+}
+
 export async function sendChatMessage(page: Page, text: string): Promise<void> {
   const textarea = page.locator("textarea").first();
   await textarea.click();
@@ -564,12 +587,28 @@ export async function sendChatMessage(page: Page, text: string): Promise<void> {
 }
 
 export async function waitForAssistantResponse(page: Page, timeout = 120_000): Promise<string> {
-  // Wait for the typing indicator to appear (assistant started processing)
-  await page.locator('[aria-label="typing"]').first().waitFor({ state: "visible", timeout });
+  const typing = page.locator('[aria-label="typing"]').first();
+  const copyButtons = page.locator('[aria-label="Copy"]');
+  const initialCopyCount = await copyButtons.count();
 
-  // Wait for typing indicator to disappear (streaming complete).
-  // The Copy button on the last assistant bubble confirms the response is finalized.
-  await page.locator('[aria-label="typing"]').waitFor({ state: "hidden", timeout });
+  // Some responses render so quickly that the typing indicator never becomes visible.
+  // Accept either a visible typing phase or a newly rendered assistant bubble.
+  await Promise.race([
+    typing.waitFor({ state: "visible", timeout }).catch(() => {}),
+    expect
+      .poll(async () => await copyButtons.count(), { timeout })
+      .toBeGreaterThan(initialCopyCount)
+      .catch(() => {}),
+  ]);
+
+  // If typing appeared, wait for it to finish. Otherwise wait for a new completed bubble.
+  if (await typing.isVisible().catch(() => false)) {
+    await page.locator('[aria-label="typing"]').waitFor({ state: "hidden", timeout });
+  } else {
+    await expect
+      .poll(async () => await copyButtons.count(), { timeout })
+      .toBeGreaterThan(initialCopyCount);
+  }
 
   await page.waitForTimeout(500);
 

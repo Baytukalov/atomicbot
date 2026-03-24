@@ -29,13 +29,13 @@ The `TRELLO_API_KEY` and `TRELLO_TOKEN` environment variables are set automatica
 
 Examples below use bash syntax. On **PowerShell (Windows)** apply these changes:
 
-| bash | PowerShell |
-|------|-----------|
-| `$TRELLO_API_KEY` | `$env:TRELLO_API_KEY` |
-| `$TRELLO_TOKEN` | `$env:TRELLO_TOKEN` |
-| `curl` | `curl.exe` (bare `curl` is a PowerShell alias for `Invoke-WebRequest`) |
-| `\` (line continuation) | `` ` `` (backtick) |
-| `'{"json"}'` (single-quoted body) | `'{"json"}'` (same — single quotes in PowerShell are literal) |
+| bash                              | PowerShell                                                             |
+| --------------------------------- | ---------------------------------------------------------------------- |
+| `$TRELLO_API_KEY`                 | `$env:TRELLO_API_KEY`                                                  |
+| `$TRELLO_TOKEN`                   | `$env:TRELLO_TOKEN`                                                    |
+| `curl`                            | `curl.exe` (bare `curl` is a PowerShell alias for `Invoke-WebRequest`) |
+| `\` (line continuation)           | `` ` `` (backtick)                                                     |
+| `'{"json"}'` (single-quoted body) | `'{"json"}'` (same — single quotes in PowerShell are literal)          |
 
 ## Usage
 

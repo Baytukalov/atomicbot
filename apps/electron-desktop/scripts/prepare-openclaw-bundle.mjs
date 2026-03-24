@@ -128,6 +128,67 @@ function verifyControlUiBuilt() {
   }
 }
 
+function normalizeVendoredDistPackageSubpaths(distDir) {
+  if (!fs.existsSync(distDir)) {
+    return;
+  }
+
+  const specifierRewrites = new Map([["file-type/core.js", "file-type/core"]]);
+  const importRewrites = new Map([
+    ['import fileType from "file-type/core";', 'import * as fileType from "file-type/core";'],
+    ["import fileType from 'file-type/core';", "import * as fileType from 'file-type/core';"],
+  ]);
+  let rewrittenFiles = 0;
+  const queue = [distDir];
+
+  while (queue.length > 0) {
+    const currentDir = queue.pop();
+    if (!currentDir) continue;
+
+    let entries = [];
+    try {
+      entries = fs.readdirSync(currentDir, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const entry of entries) {
+      const full = path.join(currentDir, entry.name);
+      if (entry.isDirectory()) {
+        queue.push(full);
+        continue;
+      }
+      if (!entry.isFile() || !entry.name.endsWith(".js")) continue;
+
+      let source;
+      try {
+        source = fs.readFileSync(full, "utf8");
+      } catch {
+        continue;
+      }
+
+      let nextSource = source;
+      for (const [from, to] of specifierRewrites) {
+        nextSource = nextSource.replaceAll(`"${from}"`, `"${to}"`);
+        nextSource = nextSource.replaceAll(`'${from}'`, `'${to}'`);
+      }
+      for (const [from, to] of importRewrites) {
+        nextSource = nextSource.replaceAll(from, to);
+      }
+      if (nextSource === source) continue;
+
+      fs.writeFileSync(full, nextSource);
+      rewrittenFiles++;
+    }
+  }
+
+  if (rewrittenFiles > 0) {
+    console.log(
+      `[electron-desktop] Normalized package export subpaths in ${rewrittenFiles} dist files`
+    );
+  }
+}
+
 function hoistPnpmVirtualStoreToRoot() {
   const pnpmHoistedDir = path.join(outDir, "node_modules", ".pnpm", "node_modules");
   if (!fs.existsSync(pnpmHoistedDir)) return;
@@ -231,6 +292,16 @@ function stripJunkFiles(dir) {
       }
 
       if (!entry.isFile()) continue;
+      const lowerName = entry.name.toLowerCase();
+      if (lowerName.startsWith("rollup.config") || lowerName.startsWith("webpack.config")) {
+        try {
+          fs.unlinkSync(full);
+          stripped++;
+        } catch {
+          // Ignore failures while removing build config files.
+        }
+        continue;
+      }
       if (STRIP_EXACT_NAMES.has(entry.name)) {
         try {
           fs.unlinkSync(full);
@@ -240,9 +311,8 @@ function stripJunkFiles(dir) {
         }
         continue;
       }
-      const lower = entry.name.toLowerCase();
       for (const ext of STRIP_EXTENSIONS) {
-        if (!lower.endsWith(ext)) continue;
+        if (!lowerName.endsWith(ext)) continue;
         try {
           fs.unlinkSync(full);
           stripped++;
@@ -466,11 +536,29 @@ async function main() {
   }
 
   const distDir = path.join(outDir, "dist");
+
+  // Strip junk from vendored node_modules inside dist/extensions/ so
+  // build configs (rollup, webpack) don't trip up the esbuild analysis pass.
+  const distExtDir = path.join(distDir, "extensions");
+  if (fs.existsSync(distExtDir)) {
+    let extStripped = 0;
+    for (const ext of fs.readdirSync(distExtDir, { withFileTypes: true })) {
+      if (!ext.isDirectory()) continue;
+      const extNm = path.join(distExtDir, ext.name, "node_modules");
+      if (fs.existsSync(extNm)) extStripped += stripJunkFiles(extNm);
+    }
+    if (extStripped > 0)
+      console.log(
+        `[electron-desktop] Stripped ${extStripped} unnecessary files from dist extension node_modules`
+      );
+  }
   const entryJs = path.join(distDir, "entry.js");
   let externalPkgs = new Set(ALWAYS_KEEP_PACKAGES);
   let esbuild;
   let effectiveExternals = resolveEsbuildExternals();
   const learnedAdaptiveExternals = new Set();
+
+  normalizeVendoredDistPackageSubpaths(distDir);
 
   if (fs.existsSync(entryJs)) {
     console.log("[electron-desktop] Bundling dist/ with esbuild...");

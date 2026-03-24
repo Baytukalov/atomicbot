@@ -77,6 +77,7 @@ describe("ensureGatewayConfigFile", () => {
     const content = JSON.parse(fs.readFileSync(configPath, "utf-8"));
     expect(content.gateway.auth.token).toBe("my-token");
     expect(content.gateway.controlUi.allowedOrigins).toContain("null");
+    expect(content.gateway.controlUi.allowInsecureAuth).toBe(true);
     expect(content.gateway.controlUi.dangerouslyDisableDeviceAuth).toBe(true);
     expect(content.gateway.mode).toBe("local");
     expect(content.gateway.bind).toBe("loopback");

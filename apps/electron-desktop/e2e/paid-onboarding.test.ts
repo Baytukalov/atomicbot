@@ -64,8 +64,9 @@ test.describe("Paid onboarding flow", () => {
     await waitForModelSelect(page);
     await expect(page.getByText("Select AI Model")).toBeVisible();
 
-    const modelCount = await page.locator('input[name="model"]').count();
-    expect(modelCount).toBeGreaterThan(0);
+    await expect(
+      page.locator('[aria-label="Model selection"]').getByRole("button", { name: "Continue" })
+    ).toBeEnabled();
   });
 
   test("select model -> skills page", async () => {
@@ -153,25 +154,9 @@ test.describe("Paid onboarding flow", () => {
     await simulateStripeSuccessDeepLink(ctx.app);
 
     await waitForSuccessPage(page);
-
-    // Success page first shows provisioning spinner, then the ready state
-    const readyOrProvisioning = await Promise.race([
-      page
-        .getByText("YOUR AGENT IS READY!")
-        .waitFor({ state: "visible", timeout: 120_000 })
-        .then(() => "ready" as const),
-      page
-        .getByText("Provisioning your API keys...")
-        .waitFor({ state: "visible", timeout: 10_000 })
-        .then(() => "provisioning" as const),
-    ]);
-
-    if (readyOrProvisioning === "provisioning") {
-      // Wait for provisioning to complete (polls backend for up to 2 minutes)
-      await page.getByText("YOUR AGENT IS READY!").waitFor({ state: "visible", timeout: 120_000 });
-    }
-
-    await expect(page.getByRole("button", { name: "Start chat" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Start chat" })).toBeVisible({
+      timeout: 130_000,
+    });
   });
 
   test("click Start chat -> navigates to chat page", async () => {

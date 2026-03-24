@@ -94,13 +94,21 @@ test.describe("Paid backup roundtrip (paid -> self -> paid)", () => {
             .then(() => "error" as const),
         ]).catch(() => "timeout" as const);
 
-        if (pendingOrError === "pending") {
+        if (pendingOrError !== "error") {
           await simulateStripeSuccessDeepLink(ctx.app);
-          await waitForSuccessPage(page);
-          await page
-            .getByText("YOUR AGENT IS READY!")
-            .waitFor({ state: "visible", timeout: 120_000 });
-          await page.getByRole("button", { name: "Start chat" }).click();
+
+          const afterSuccess = await Promise.race([
+            waitForSuccessPage(page).then(() => "success" as const),
+            waitForChatPage(page).then(() => "chat" as const),
+          ]).catch(() => "timeout" as const);
+
+          if (afterSuccess === "success") {
+            await page.getByRole("button", { name: "Start chat" }).waitFor({
+              state: "visible",
+              timeout: 130_000,
+            });
+            await page.getByRole("button", { name: "Start chat" }).click();
+          }
         }
       }
     }

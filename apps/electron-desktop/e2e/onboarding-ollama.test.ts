@@ -108,8 +108,9 @@ test.describe("Onboarding — Ollama provider flow", () => {
     await waitForModelSelect(page);
     await expect(page.getByText("Select AI Model")).toBeVisible();
 
-    const modelCount = await page.locator('input[name="model"]').count();
-    expect(modelCount).toBeGreaterThan(0);
+    await expect(
+      page.locator('[aria-label="Model selection"]').getByRole("button", { name: "Continue" })
+    ).toBeEnabled();
   });
 
   test("select model and proceed to skills page", async () => {

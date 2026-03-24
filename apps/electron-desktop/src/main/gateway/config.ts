@@ -46,6 +46,7 @@ export function ensureGatewayConfigFile(params: { configPath: string; token: str
       },
       controlUi: {
         allowedOrigins: ["null"],
+        allowInsecureAuth: true,
         dangerouslyDisableDeviceAuth: true,
       },
     },

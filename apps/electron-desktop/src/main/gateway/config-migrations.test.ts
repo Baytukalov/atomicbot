@@ -49,6 +49,7 @@ describe("runConfigMigrations", () => {
 
     const result = JSON.parse(fs.readFileSync(configPath, "utf-8"));
     expect(result.gateway.controlUi.allowedOrigins).toContain("null");
+    expect(result.gateway.controlUi.allowInsecureAuth).toBe(true);
     expect(result.gateway.controlUi.dangerouslyDisableDeviceAuth).toBe(true);
     expect(result.browser.defaultProfile).toBe("openclaw");
 
@@ -81,7 +82,11 @@ describe("runConfigMigrations", () => {
         mode: "local",
         bind: "loopback",
         auth: { mode: "token", token: "tok" },
-        controlUi: { allowedOrigins: ["null"], dangerouslyDisableDeviceAuth: true },
+        controlUi: {
+          allowedOrigins: ["null"],
+          allowInsecureAuth: true,
+          dangerouslyDisableDeviceAuth: true,
+        },
       },
       browser: { defaultProfile: "openclaw" },
       tools: {
@@ -110,7 +115,11 @@ describe("runConfigMigrations", () => {
         mode: "local",
         bind: "loopback",
         auth: { mode: "token", token: "tok" },
-        controlUi: { allowedOrigins: ["null"], dangerouslyDisableDeviceAuth: true },
+        controlUi: {
+          allowedOrigins: ["null"],
+          allowInsecureAuth: true,
+          dangerouslyDisableDeviceAuth: true,
+        },
       },
       browser: { defaultProfile: "chrome" },
     };
@@ -151,6 +160,7 @@ describe("runConfigMigrations", () => {
 
     const result = JSON.parse(fs.readFileSync(configPath, "utf-8"));
     expect(result.gateway.controlUi.allowedOrigins).toContain("null");
+    expect(result.gateway.controlUi.allowInsecureAuth).toBe(true);
     expect(result.browser.defaultProfile).toBe("openclaw");
   });
 

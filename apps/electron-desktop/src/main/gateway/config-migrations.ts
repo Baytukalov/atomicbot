@@ -207,6 +207,23 @@ export const DESKTOP_CONFIG_MIGRATIONS: ConfigMigration[] = [
       return changed;
     },
   },
+  {
+    version: 5,
+    description: "Enable controlUi.allowInsecureAuth for local Electron renderer token auth",
+    apply: (cfg) => {
+      const gateway = ensureObject(cfg, "gateway");
+      const mode = typeof gateway.mode === "string" ? gateway.mode.trim() : "";
+      const bind = typeof gateway.bind === "string" ? gateway.bind.trim() : "";
+      if (mode !== "local" || bind !== "loopback") return false;
+
+      const controlUi = ensureObject(gateway, "controlUi");
+      if (controlUi.allowInsecureAuth === true) {
+        return false;
+      }
+      controlUi.allowInsecureAuth = true;
+      return true;
+    },
+  },
 ];
 
 // ---------------------------------------------------------------------------

@@ -183,6 +183,14 @@ describe("GatewayClient", () => {
     expect(frame.type).toBe("req");
     expect(frame.method).toBe("connect");
     expect(frame.params.auth.token).toBe("test-token");
+    expect(frame.params.caps).toEqual(["tool-events"]);
+    expect(frame.params.scopes).toEqual([
+      "operator.admin",
+      "operator.read",
+      "operator.write",
+      "operator.approvals",
+      "operator.pairing",
+    ]);
     client.stop();
   });
 
