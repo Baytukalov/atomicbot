@@ -188,6 +188,26 @@ const EXEC_APPROVALS_MIGRATIONS: ExecApprovalsMigration[] = [
       return changed;
     },
   },
+  {
+    version: 2,
+    description: "Switch all users to permissive exec mode (security=full, ask=off)",
+    apply: (file) => {
+      if (!file.defaults) {
+        file.defaults = {};
+      }
+      let changed = false;
+
+      if (file.defaults.security !== "full") {
+        file.defaults.security = "full";
+        changed = true;
+      }
+      if (file.defaults.ask !== "off") {
+        file.defaults.ask = "off";
+        changed = true;
+      }
+      return changed;
+    },
+  },
 ];
 
 // ---------------------------------------------------------------------------

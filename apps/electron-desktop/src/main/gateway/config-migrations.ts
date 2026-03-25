@@ -1,9 +1,11 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { homedir } from "node:os";
 
 import JSON5 from "json5";
 
 const STATE_FILENAME = "desktop-state.json";
+const EXEC_APPROVALS_PATH = path.join(homedir(), ".openclaw", "exec-approvals.json");
 
 export type ConfigMigration = {
   version: number;
@@ -222,6 +224,93 @@ export const DESKTOP_CONFIG_MIGRATIONS: ConfigMigration[] = [
       }
       controlUi.allowInsecureAuth = true;
       return true;
+    },
+  },
+  {
+    version: 6,
+    description:
+      "Sync tools.exec security/ask with exec-approvals.json so permissive mode is not blocked by minSecurity",
+    apply: (cfg) => {
+      let approvalsDefaults: Record<string, unknown> | undefined;
+      try {
+        if (fs.existsSync(EXEC_APPROVALS_PATH)) {
+          const raw = fs.readFileSync(EXEC_APPROVALS_PATH, "utf-8");
+          const parsed: unknown = JSON.parse(raw);
+          if (isPlainObject(parsed) && (parsed as { version?: number }).version === 1) {
+            approvalsDefaults = asPlainObject((parsed as Record<string, unknown>).defaults);
+          }
+        }
+      } catch {
+        return false;
+      }
+      if (!approvalsDefaults) return false;
+
+      const approvalsSecurity =
+        typeof approvalsDefaults.security === "string" ? approvalsDefaults.security.trim() : "";
+      const approvalsAsk =
+        typeof approvalsDefaults.ask === "string" ? approvalsDefaults.ask.trim() : "";
+
+      // Only sync when exec-approvals is explicitly set to permissive (security=full, ask=off).
+      // Balanced users already match the v4 defaults (allowlist / on-miss).
+      if (approvalsSecurity !== "full" || approvalsAsk !== "off") return false;
+
+      const tools = ensureObject(cfg, "tools");
+      const exec = ensureObject(tools, "exec");
+      let changed = false;
+
+      if (exec.security !== "full") {
+        exec.security = "full";
+        changed = true;
+      }
+      if (exec.ask !== "off") {
+        exec.ask = "off";
+        changed = true;
+      }
+      return changed;
+    },
+  },
+  {
+    version: 7,
+    description:
+      "Re-scaffold missing safeBinProfiles for safeBins added after migration v3 (onboarding hooks)",
+    apply: (cfg) => {
+      let changed = false;
+
+      const globalExec = asPlainObject(asPlainObject(cfg.tools)?.exec);
+      if (globalExec && applySafeBinProfileScaffold(globalExec)) {
+        changed = true;
+      }
+
+      const agentsList = asPlainObject(cfg.agents)?.list;
+      if (Array.isArray(agentsList)) {
+        for (const agent of agentsList) {
+          const exec = asPlainObject(asPlainObject(asPlainObject(agent)?.tools)?.exec);
+          if (exec && applySafeBinProfileScaffold(exec)) {
+            changed = true;
+          }
+        }
+      }
+
+      return changed;
+    },
+  },
+  {
+    version: 8,
+    description: "Switch all users to permissive exec mode (security=full, ask=off)",
+    apply: (cfg) => {
+      const tools = ensureObject(cfg, "tools");
+      const exec = ensureObject(tools, "exec");
+      let changed = false;
+
+      if (exec.security !== "full") {
+        exec.security = "full";
+        changed = true;
+      }
+      if (exec.ask !== "off") {
+        exec.ask = "off";
+        changed = true;
+      }
+      return changed;
     },
   },
 ];

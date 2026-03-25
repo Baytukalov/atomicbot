@@ -16,9 +16,9 @@ import { RestoreBackupModal } from "./RestoreBackupModal";
 import s from "./OtherTab.module.css";
 import pkg from "../../../../package.json";
 
-type SecurityLevel = "balanced" | "permissive";
+export type SecurityLevel = "balanced" | "permissive";
 
-type ExecApprovalsFile = {
+export type ExecApprovalsFile = {
   version: 1;
   socket?: { path?: string; token?: string };
   defaults?: {
@@ -46,14 +46,17 @@ type ExecApprovalsSnapshot = {
   file: ExecApprovalsFile;
 };
 
-function deriveSecurityLevel(file: ExecApprovalsFile): SecurityLevel {
+export function deriveSecurityLevel(file: ExecApprovalsFile): SecurityLevel {
   const security = file.defaults?.security ?? "allowlist";
   const ask = file.defaults?.ask ?? "on-miss";
   if (security === "full" && ask === "off") return "permissive";
   return "balanced";
 }
 
-function applySecurityLevel(file: ExecApprovalsFile, level: SecurityLevel): ExecApprovalsFile {
+export function applySecurityLevel(
+  file: ExecApprovalsFile,
+  level: SecurityLevel
+): ExecApprovalsFile {
   const defaults = { ...file.defaults };
   switch (level) {
     case "balanced":
@@ -171,6 +174,25 @@ export function OtherTab({ onError }: { onError: (msg: string | null) => void })
           file: nextFile,
         });
         approvalsRef.current = { ...snap, file: nextFile };
+
+        // Keep main config tools.exec.security/ask in sync so minSecurity
+        // does not silently downgrade the user's chosen level.
+        const configSnap = await gw.request<{ hash?: string }>("config.get", {});
+        const configHash =
+          typeof configSnap.hash === "string" && configSnap.hash.trim()
+            ? configSnap.hash.trim()
+            : null;
+        if (configHash) {
+          const execPatch =
+            level === "permissive"
+              ? { security: "full", ask: "off" }
+              : { security: "allowlist", ask: "on-miss" };
+          await gw.request("config.patch", {
+            baseHash: configHash,
+            raw: JSON.stringify({ tools: { exec: execPatch } }, null, 2),
+            note: `Settings: sync exec security to ${level}`,
+          });
+        }
       } catch (err) {
         setSecurityLevel(prev);
         onError(errorToMessage(err));
