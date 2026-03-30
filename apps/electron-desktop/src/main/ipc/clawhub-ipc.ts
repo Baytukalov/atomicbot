@@ -2,7 +2,7 @@ import { ipcMain } from "electron";
 
 import { IPC } from "../../shared/ipc-channels";
 
-const CLAWHUB_API_URL = process.env.CLAWHUB_API_URL || "http://localhost:3000";
+const CLAWHUB_API_URL = process.env.CLAWHUB_API_URL || "https://clawhub.atomicbot.ai";
 const FETCH_TIMEOUT_MS = 30_000;
 
 async function clawhubFetch<T>(
