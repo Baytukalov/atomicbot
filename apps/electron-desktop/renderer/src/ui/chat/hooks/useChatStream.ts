@@ -4,9 +4,12 @@ import {
   chatActions,
   extractText,
   extractToolCalls,
+  normalizeMessageText,
   loadChatHistory,
 } from "@store/slices/chat/chatSlice";
 import { HIDDEN_TOOL_NAMES } from "../components/ToolCallCard";
+
+const HISTORY_RELOAD_DELAY_MS = 500;
 
 type ChatEvent = {
   runId: string;
@@ -34,7 +37,9 @@ type GatewayRpc = {
 /** Subscribe to gateway chat events and dispatch stream actions for the given session. */
 export function useChatStream(gw: GatewayRpc, dispatch: AppDispatch, sessionKey: string) {
   React.useEffect(() => {
-    return gw.onEvent((evt) => {
+    let reloadTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const unsubscribe = gw.onEvent((evt) => {
       // Handle chat events (text streaming)
       if (evt.event === "chat") {
         const payload = evt.payload as ChatEvent;
@@ -42,15 +47,14 @@ export function useChatStream(gw: GatewayRpc, dispatch: AppDispatch, sessionKey:
           return;
         }
         if (payload.state === "delta") {
-          const text = extractText(payload.message);
+          const text = normalizeMessageText(extractText(payload.message));
           dispatch(chatActions.streamDeltaReceived({ runId: payload.runId, text }));
           return;
         }
         if (payload.state === "final") {
-          const text = extractText(payload.message);
+          const rawText = extractText(payload.message);
+          const text = normalizeMessageText(rawText);
           const toolCalls = extractToolCalls(payload.message);
-          // streamFinalReceived also collects live tool calls for this runId
-          // and merges them into the finalized message, then clears them.
           dispatch(
             chatActions.streamFinalReceived({
               runId: payload.runId,
@@ -59,10 +63,15 @@ export function useChatStream(gw: GatewayRpc, dispatch: AppDispatch, sessionKey:
               toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
             })
           );
-          // Reload full chat history from the server, matching the web admin
-          // behavior. The server-side history contains final tool results
-          // (e.g. after exec approval) which replace the streamed versions.
-          void dispatch(loadChatHistory({ request: gw.request, sessionKey, limit: 200 }));
+          // Debounce history reload so rapid sequential finals (multi-turn agent
+          // runs) coalesce into a single fetch, reducing visual re-layout churn.
+          if (reloadTimer) {
+            clearTimeout(reloadTimer);
+          }
+          reloadTimer = setTimeout(() => {
+            reloadTimer = null;
+            void dispatch(loadChatHistory({ request: gw.request, sessionKey, limit: 200 }));
+          }, HISTORY_RELOAD_DELAY_MS);
           return;
         }
         if (payload.state === "error") {
@@ -122,5 +131,12 @@ export function useChatStream(gw: GatewayRpc, dispatch: AppDispatch, sessionKey:
         }
       }
     });
+
+    return () => {
+      unsubscribe();
+      if (reloadTimer) {
+        clearTimeout(reloadTimer);
+      }
+    };
   }, [dispatch, gw, sessionKey]);
 }

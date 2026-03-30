@@ -39,7 +39,11 @@ export function AssistantStreamBubble(props: {
               {props.text}
             </Markdown>
           </div>
-        ) : null}
+        ) : (
+          <div className="UiChatBubbleMeta">
+            <LoadingPhrase />
+          </div>
+        )}
       </div>
     </div>
   );

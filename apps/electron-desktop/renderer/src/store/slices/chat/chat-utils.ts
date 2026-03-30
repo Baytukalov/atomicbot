@@ -1,6 +1,15 @@
 import { stripMetadata } from "@ui/chat/hooks/messageParser";
 import type { UiMessage, UiMessageAttachment, UiToolCall, UiToolResult } from "./chat-types";
 
+/**
+ * Strip gateway-injected metadata from message text.  Intentionally does NOT
+ * trim — trailing/leading whitespace is preserved so cumulative prefix
+ * matching in the chat slice works correctly across multi-turn runs.
+ */
+export function normalizeMessageText(text: string): string {
+  return stripMetadata(text);
+}
+
 export function dataUrlToBase64(dataUrl: string): { content: string; mimeType: string } | null {
   const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl);
   if (!match) {

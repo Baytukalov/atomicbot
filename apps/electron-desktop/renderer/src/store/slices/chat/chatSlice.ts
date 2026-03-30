@@ -20,6 +20,7 @@ export {
   extractToolResult,
   isApprovalContinueMessage,
   isHeartbeatMessage,
+  normalizeMessageText,
   parseHistoryMessages,
   parseRole,
 } from "./chat-utils";
@@ -35,6 +36,32 @@ const initialState: ChatSliceState = {
   liveToolCalls: {},
   awaitingContinuation: false,
 };
+
+/**
+ * The gateway may send cumulative text in delta/final events — each event
+ * contains ALL text from previous turns of the same runId concatenated with
+ * the current turn's text.  Strip the already-finalized prefix so we only
+ * store/display the new portion.
+ *
+ * Works because normalizeMessageText preserves trailing whitespace (no trim),
+ * so join("") reproduces the exact cumulative byte sequence.
+ */
+function stripCumulativePrefix(text: string, runId: string, messages: UiMessage[]): string {
+  if (!text) {
+    return text;
+  }
+  const previousTexts: string[] = [];
+  for (const m of messages) {
+    if (m.runId === runId && m.role === "assistant" && m.text) {
+      previousTexts.push(m.text);
+    }
+  }
+  if (previousTexts.length === 0) {
+    return text;
+  }
+  const combined = previousTexts.join("");
+  return text.startsWith(combined) ? text.slice(combined.length) : text;
+}
 
 const chatSlice = createSlice({
   name: "chat",
@@ -68,7 +95,12 @@ const chatSlice = createSlice({
       const historyTexts = new Set(fromHistory.map((m) => m.text));
       const liveOnly: UiMessage[] = [];
       for (const m of state.messages) {
-        if (m.ts == null || m.ts <= lastHistoryTs || historyTexts.has(m.text)) {
+        if (m.ts == null || m.ts <= lastHistoryTs) {
+          continue;
+        }
+        // Compare trimmed: live texts keep trailing whitespace for cumulative
+        // prefix matching, while history texts are trimmed by parseHistoryMessages.
+        if (historyTexts.has(m.text.trim())) {
           continue;
         }
         if (m.role === "assistant" && m.runId) {
@@ -173,10 +205,11 @@ const chatSlice = createSlice({
       if (isHeartbeatMessage("assistant", action.payload.text)) {
         return;
       }
+      const text = stripCumulativePrefix(action.payload.text, runId, state.messages);
       state.streamByRun[runId] = {
         id: `s-${runId}`,
         role: "assistant",
-        text: action.payload.text,
+        text,
         runId,
         ts: Date.now(),
       };
@@ -221,16 +254,18 @@ const chatSlice = createSlice({
       ];
       const hasToolCalls = allToolCalls.length > 0;
 
-      if (!text && !hasToolCalls) {
+      const effectiveText = stripCumulativePrefix(text, runId, state.messages);
+
+      if (!effectiveText && !hasToolCalls) {
         return;
       }
-      if (text && isHeartbeatMessage("assistant", text)) {
+      if (effectiveText && isHeartbeatMessage("assistant", effectiveText)) {
         return;
       }
       state.messages.push({
         id: `a-${runId}-${seq}`,
         role: "assistant",
-        text,
+        text: effectiveText,
         runId,
         ts: Date.now(),
         toolCalls: hasToolCalls ? allToolCalls : undefined,
