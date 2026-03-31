@@ -1,6 +1,6 @@
 import type { DeploymentInfo, SubscriptionInfo } from "@ipc/backendApi";
 
-export type SetupMode = "paid" | "self-managed";
+export type SetupMode = "paid" | "self-managed" | "local-model";
 
 export type AutoTopUpState = {
   enabled: boolean;
@@ -85,5 +85,10 @@ export type PaidBackup = {
     primary?: string;
     models?: Record<string, unknown>;
   };
+  savedAt: string;
+};
+
+export type LocalModelBackup = {
+  activeModelId: string;
   savedAt: string;
 };

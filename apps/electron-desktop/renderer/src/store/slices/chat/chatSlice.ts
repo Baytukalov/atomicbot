@@ -93,6 +93,11 @@ const chatSlice = createSlice({
       // Deduplicate against history by text to avoid race-condition duplicates
       // (e.g. a stream final arriving between sessionCleared and historyLoaded).
       const historyTexts = new Set(fromHistory.map((m) => m.text));
+      // Suffix-based dedup: stream text and history text may differ slightly
+      // (whitespace, metadata stripping) but share the same tail.
+      // Use max(100, 2/3 of the message length) as suffix to compare.
+      const MIN_SUFFIX = 100;
+      const historyTrimmed = fromHistory.map((m) => m.text.trim());
       const liveOnly: UiMessage[] = [];
       for (const m of state.messages) {
         if (m.ts == null || m.ts <= lastHistoryTs) {
@@ -100,8 +105,20 @@ const chatSlice = createSlice({
         }
         // Compare trimmed: live texts keep trailing whitespace for cumulative
         // prefix matching, while history texts are trimmed by parseHistoryMessages.
-        if (historyTexts.has(m.text.trim())) {
+        const trimmed = m.text.trim();
+        if (historyTexts.has(trimmed)) {
           continue;
+        }
+        if (m.role === "assistant" && trimmed.length >= MIN_SUFFIX) {
+          const suffixLen = Math.max(MIN_SUFFIX, Math.floor((trimmed.length * 2) / 3));
+          const liveSuffix = trimmed.slice(-suffixLen);
+          if (
+            historyTrimmed.some(
+              (ht) => ht.length >= suffixLen && ht.slice(-suffixLen) === liveSuffix
+            )
+          ) {
+            continue;
+          }
         }
         if (m.role === "assistant" && m.runId) {
           liveOnly.push(m);

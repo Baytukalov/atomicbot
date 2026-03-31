@@ -1,9 +1,41 @@
 /**
- * Auth token storage moved to renderer localStorage.
- * This file is kept as a no-op so register.ts doesn't need changes.
+ * Auth tokens are stored in renderer localStorage, but setup mode needs a
+ * main-readable marker for bootstrap-time decisions.
  */
-import type { RegisterParams } from "./types";
+import { ipcMain } from "electron";
+import { IPC } from "../../shared/ipc-channels";
+import { clearOnboardedState, writeOnboardedState } from "../onboarding-state";
+import { clearSetupMode, writeSetupMode } from "../setup-mode-state";
+import type { AuthHandlerParams } from "./types";
 
-export function registerAuthHandlers(_params: RegisterParams) {
-  // JWT is now stored in renderer localStorage — no main-process IPC needed.
+export function registerAuthHandlers(params: AuthHandlerParams) {
+  ipcMain.handle(IPC.onboardingSetState, (_evt, payload: { onboarded?: boolean }) => {
+    console.log("[auth-ipc] onboardingSetState:", payload);
+    if (payload.onboarded) {
+      writeOnboardedState(params.stateDir, true);
+    } else {
+      clearOnboardedState(params.stateDir);
+    }
+    return { ok: true } as const;
+  });
+
+  ipcMain.handle(IPC.authSetSetupModeMarker, (_evt, payload?: { mode?: string }) => {
+    console.log("[auth-ipc] setSetupModeMarker:", payload?.mode ?? "clear");
+    if (!payload?.mode) {
+      clearSetupMode(params.stateDir);
+      return { ok: true } as const;
+    }
+
+    if (
+      payload.mode !== "paid" &&
+      payload.mode !== "self-managed" &&
+      payload.mode !== "local-model"
+    ) {
+      console.error("[auth-ipc] invalid setup mode:", payload.mode);
+      throw new Error(`Invalid setup mode marker: ${payload.mode}`);
+    }
+
+    writeSetupMode(params.stateDir, payload.mode);
+    return { ok: true } as const;
+  });
 }

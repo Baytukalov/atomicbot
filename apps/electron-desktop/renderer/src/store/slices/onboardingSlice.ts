@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
+import { getDesktopApiOrNull } from "@ipc/desktopApi";
 
 const ONBOARDED_KEY = "openclaw.desktop.onboarded.v1";
 
@@ -29,6 +30,13 @@ export const setOnboarded = createAsyncThunk(
       } else {
         localStorage.removeItem(ONBOARDED_KEY);
       }
+    }
+    if (typeof window !== "undefined") {
+      void getDesktopApiOrNull()
+        ?.setOnboardingState(onboarded)
+        .catch((err) => {
+          console.warn("[onboardingSlice] Failed to sync onboarding state:", err);
+        });
     }
     thunkApi.dispatch(onboardingActions.setOnboardedState(onboarded));
   }

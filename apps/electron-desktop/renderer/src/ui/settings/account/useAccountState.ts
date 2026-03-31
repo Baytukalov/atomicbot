@@ -3,7 +3,6 @@ import React from "react";
 import { useAppDispatch, useAppSelector } from "@store/hooks";
 import {
   storeAuthToken,
-  switchToSubscription,
   applySubscriptionKeys,
   handleLogout,
   createAddonCheckout,
@@ -12,6 +11,7 @@ import {
   fetchAutoTopUpSettings,
   patchAutoTopUpSettings,
 } from "@store/slices/auth/authSlice";
+import { switchMode } from "@store/slices/auth/mode-switch";
 import { useGatewayRpc } from "@gateway/context";
 import { backendApi, type SubscriptionPriceInfo } from "@ipc/backendApi";
 import { openExternal } from "@shared/utils/openExternal";
@@ -78,7 +78,7 @@ export function useAccountState() {
       void (async () => {
         await dispatch(storeAuthToken(params));
         await dispatch(fetchDesktopStatus());
-        await dispatch(switchToSubscription({ request: gw.request }));
+        await dispatch(switchMode({ request: gw.request, target: "paid" }));
         try {
           await dispatch(
             applySubscriptionKeys({ token: params.jwt, request: gw.request })

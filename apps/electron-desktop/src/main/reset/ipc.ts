@@ -5,6 +5,7 @@ import * as path from "node:path";
 import { IPC } from "../../shared/ipc-channels";
 import { clearGogAuthTokens } from "../gog/gog";
 import type { ResetHandlerParams } from "../ipc/types";
+import { stopLlamacppServer } from "../llamacpp/server";
 import type { ResetAndCloseResult } from "../types";
 
 export function registerResetAndCloseIpcHandler(params: ResetHandlerParams) {
@@ -18,6 +19,12 @@ export function registerResetAndCloseIpcHandler(params: ResetHandlerParams) {
       await stopGatewayChild();
     } catch (err) {
       warnings.push(`failed to stop gateway: ${String(err)}`);
+    }
+
+    try {
+      await stopLlamacppServer();
+    } catch (err) {
+      warnings.push(`failed to stop llamacpp server: ${String(err)}`);
     }
 
     try {

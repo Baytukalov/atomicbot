@@ -57,10 +57,6 @@ const mockFetchBalance = vi.fn(() => ({ type: "auth/fetchBalance" }));
 
 vi.mock("@store/slices/auth/authSlice", () => ({
   storeAuthToken: vi.fn((payload: unknown) => ({ type: "auth/storeToken", payload })),
-  switchToSubscription: vi.fn((payload: unknown) => ({
-    type: "auth/switchToSubscription",
-    payload,
-  })),
   applySubscriptionKeys: vi.fn((payload: unknown) => ({
     type: "auth/applySubscriptionKeys",
     payload,
@@ -71,6 +67,13 @@ vi.mock("@store/slices/auth/authSlice", () => ({
   fetchDesktopStatus: vi.fn(() => ({ type: "auth/fetchStatus" })),
   fetchAutoTopUpSettings: () => mockFetchAutoTopUpSettings(),
   patchAutoTopUpSettings: (payload: unknown) => mockPatchAutoTopUpSettings(payload),
+}));
+
+vi.mock("@store/slices/auth/mode-switch", () => ({
+  switchMode: vi.fn((payload: unknown) => ({
+    type: "auth/switchMode",
+    payload,
+  })),
 }));
 
 vi.mock("@ipc/desktopApi", () => ({

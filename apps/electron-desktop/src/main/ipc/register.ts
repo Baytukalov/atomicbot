@@ -7,6 +7,7 @@ import { ipcMain } from "electron";
 
 import { registerGogIpcHandlers } from "../gog/ipc";
 import { getExtraModels } from "../gateway/extra-models";
+import { registerLlamacppIpcHandlers } from "../llamacpp/ipc";
 import { registerResetAndCloseIpcHandler } from "../reset/ipc";
 import { registerWhisperIpcHandlers } from "../whisper/ipc";
 import { registerAnalyticsHandlers } from "./analytics-ipc";
@@ -48,6 +49,7 @@ export function registerIpcHandlers(params: RegisterParams) {
 
   registerGogIpcHandlers(params);
   registerWhisperIpcHandlers(params);
+  registerLlamacppIpcHandlers(params);
   registerResetAndCloseIpcHandler(params);
   registerAnalyticsHandlers(params);
 

@@ -23,6 +23,7 @@ export type UpdateErrorPayload = {
 };
 
 export type DesktopPlatform = "darwin" | "win32" | "linux";
+export type SetupModeMarker = "paid" | "self-managed" | "local-model";
 
 export type ClawHubBadges = {
   highlighted: boolean;
@@ -160,6 +161,7 @@ export interface OpenclawDesktopApi {
   getGatewayInfo: () => Promise<{ state: GatewayState | null }>;
   getConsentInfo: () => Promise<{ accepted: boolean }>;
   acceptConsent: () => Promise<{ ok: true }>;
+  setOnboardingState: (onboarded: boolean) => Promise<{ ok: true }>;
   startGateway: () => Promise<{ ok: true }>;
   openExternal: (url: string) => Promise<void>;
   extraModels: () => Promise<
@@ -173,6 +175,7 @@ export interface OpenclawDesktopApi {
   >;
   setApiKey: (provider: string, apiKey: string) => Promise<{ ok: true }>;
   setSetupToken: (provider: string, token: string) => Promise<{ ok: true }>;
+  setSetupModeMarker: (mode?: SetupModeMarker) => Promise<{ ok: true }>;
   validateApiKey: (provider: string, apiKey: string) => Promise<{ valid: boolean; error?: string }>;
   authHasApiKey: (provider: string) => Promise<{ configured: boolean }>;
   authReadProfiles: () => Promise<{
@@ -279,6 +282,83 @@ export interface OpenclawDesktopApi {
     comments: ClawHubComment[];
     error?: string;
   }>;
+  llamacppSystemInfo: () => Promise<{
+    totalRamGb: number;
+    arch: string;
+    platform: string;
+    isAppleSilicon: boolean;
+    models: Array<{ id: string; name: string; compatibility: string }>;
+  }>;
+  llamacppBackendStatus: () => Promise<{
+    downloaded: boolean;
+    version: string | null;
+    downloadedAt: string | null;
+  }>;
+  llamacppBackendDownload: () => Promise<{ ok: boolean; tag?: string; error?: string }>;
+  llamacppBackendDownloadCancel: () => Promise<{ ok: boolean }>;
+  llamacppBackendUpdate: () => Promise<{
+    ok: boolean;
+    updateAvailable?: boolean;
+    latestTag?: string;
+    currentTag?: string | null;
+    error?: string;
+  }>;
+  llamacppModelStatus: (params?: { model?: string }) => Promise<{
+    downloaded: boolean;
+    modelPath: string;
+    size: number;
+    modelId: string;
+  }>;
+  llamacppModelDownload: (params?: { model?: string }) => Promise<{
+    ok: boolean;
+    modelPath?: string;
+    error?: string;
+  }>;
+  llamacppModelDownloadCancel: () => Promise<{ ok: boolean }>;
+  onLlamacppBackendDownloadProgress: (
+    cb: (payload: { percent: number; transferred: number; total: number }) => void
+  ) => () => void;
+  onLlamacppModelDownloadProgress: (
+    cb: (payload: { percent: number; transferred: number; total: number; modelId: string }) => void
+  ) => () => void;
+  llamacppModelsList: () => Promise<
+    Array<{
+      id: string;
+      name: string;
+      description: string;
+      sizeLabel: string;
+      contextLabel: string;
+      downloaded: boolean;
+      size: number;
+      compatibility: string;
+      icon: string;
+    }>
+  >;
+  llamacppServerStart: (params?: { model?: string }) => Promise<{
+    ok: boolean;
+    port?: number;
+    modelId?: string;
+    modelName?: string;
+    contextLength?: number;
+    error?: string;
+  }>;
+  llamacppServerStop: () => Promise<{ ok: boolean; error?: string }>;
+  llamacppClearActiveModel: () => Promise<{ ok: boolean; error?: string }>;
+  llamacppServerStatus: () => Promise<{
+    running: boolean;
+    modelPath: string | null;
+    port: number;
+    healthy: boolean;
+    activeModelId: string | null;
+  }>;
+  llamacppSetActiveModel: (params: { model: string }) => Promise<{
+    ok: boolean;
+    port?: number;
+    modelId?: string;
+    modelName?: string;
+    contextLength?: number;
+    error?: string;
+  }>;
   whisperModelStatus: (params?: { model?: string }) => Promise<{
     modelReady: boolean;
     binReady: boolean;
@@ -344,11 +424,13 @@ export const DESKTOP_BRIDGE_KEYS: ReadonlyArray<keyof OpenclawDesktopApi> = [
   "getGatewayInfo",
   "getConsentInfo",
   "acceptConsent",
+  "setOnboardingState",
   "startGateway",
   "openExternal",
   "extraModels",
   "setApiKey",
   "setSetupToken",
+  "setSetupModeMarker",
   "validateApiKey",
   "authHasApiKey",
   "oauthLogin",
@@ -402,6 +484,22 @@ export const DESKTOP_BRIDGE_KEYS: ReadonlyArray<keyof OpenclawDesktopApi> = [
   "terminalKill",
   "terminalList",
   "terminalGetBuffer",
+  "llamacppSystemInfo",
+  "llamacppBackendStatus",
+  "llamacppBackendDownload",
+  "llamacppBackendDownloadCancel",
+  "llamacppBackendUpdate",
+  "llamacppModelStatus",
+  "llamacppModelDownload",
+  "llamacppModelDownloadCancel",
+  "onLlamacppBackendDownloadProgress",
+  "onLlamacppModelDownloadProgress",
+  "llamacppModelsList",
+  "llamacppServerStart",
+  "llamacppServerStop",
+  "llamacppClearActiveModel",
+  "llamacppServerStatus",
+  "llamacppSetActiveModel",
   "whisperModelStatus",
   "whisperModelDownload",
   "whisperModelDownloadCancel",

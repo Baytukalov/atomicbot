@@ -12,8 +12,7 @@ const mockAuthState = {
 const mockDispatch = vi.fn();
 const mockNavigate = vi.fn();
 const mockRequest = vi.fn();
-const mockSwitchToSubscription = vi.fn();
-const mockReloadConfig = vi.fn();
+const mockSwitchMode = vi.fn();
 
 vi.mock("@store/hooks", () => ({
   useAppDispatch: () => mockDispatch,
@@ -29,12 +28,8 @@ vi.mock("@gateway/context", () => ({
   useGatewayRpc: () => mockGatewayRpc,
 }));
 
-vi.mock("@store/slices/auth/authSlice", () => ({
-  switchToSubscription: (payload: unknown) => mockSwitchToSubscription(payload),
-}));
-
-vi.mock("@store/slices/configSlice", () => ({
-  reloadConfig: (payload: unknown) => mockReloadConfig(payload),
+vi.mock("@store/slices/auth/mode-switch", () => ({
+  switchMode: (payload: unknown) => mockSwitchMode(payload),
 }));
 
 vi.mock("@shared/toast", () => ({
@@ -65,8 +60,7 @@ describe("SubscriptionPromoBannerSource", () => {
     mockAuthState.mode = "self-managed";
     mockDispatch.mockReset();
     mockNavigate.mockReset();
-    mockSwitchToSubscription.mockReset();
-    mockReloadConfig.mockReset();
+    mockSwitchMode.mockReset();
     localStorage.clear();
   });
 
@@ -101,7 +95,7 @@ describe("SubscriptionPromoBannerSource", () => {
     expect(screen.getByText("100+ AI Models. One Subscription.")).toBeTruthy();
   });
 
-  it("dispatches switchToSubscription and navigates on Try now click", async () => {
+  it("dispatches switchMode to paid and navigates on Try now click", async () => {
     mockDispatch.mockReturnValue({ unwrap: vi.fn().mockResolvedValue(undefined) });
 
     render(<TestHarness />);
@@ -109,7 +103,7 @@ describe("SubscriptionPromoBannerSource", () => {
 
     fireEvent.click(screen.getByText("Try now"));
 
-    expect(mockSwitchToSubscription).toHaveBeenCalledWith({ request: mockRequest });
+    expect(mockSwitchMode).toHaveBeenCalledWith({ request: mockRequest, target: "paid" });
     expect(mockDispatch).toHaveBeenCalled();
   });
 

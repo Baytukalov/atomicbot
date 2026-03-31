@@ -10,8 +10,9 @@
 import React, { useState } from "react";
 
 import { useAppDispatch, useAppSelector } from "@store/hooks";
-import { switchToSubscription, switchToSelfManaged, SetupMode } from "@store/slices/auth/authSlice";
-import { reloadConfig, type ConfigData } from "@store/slices/configSlice";
+import type { SetupMode } from "@store/slices/auth/authSlice";
+import { switchMode } from "@store/slices/auth/mode-switch";
+import type { ConfigData } from "@store/slices/configSlice";
 import { addToastError } from "@shared/toast";
 
 import {
@@ -27,6 +28,8 @@ import { AccountTab } from "../account/AccountTab";
 import { RichSelect, type RichOption } from "./RichSelect";
 import { InlineApiKey } from "./InlineApiKey";
 import { useAccountState } from "@ui/settings/account/useAccountState";
+import { getDesktopApiOrNull } from "@ipc/desktopApi";
+import { LocalModelsTab } from "../local-models/LocalModelsTab";
 
 import s from "./AccountModelsTab.module.css";
 
@@ -54,33 +57,51 @@ function providerBadge(p: (typeof MODEL_PROVIDERS)[number]):
 }
 
 function ConnectionToggle(props: {
-  isPaid: boolean;
+  activeMode: SetupMode | null;
   disabled: boolean;
-  onSelect: (mode: "paid" | "self-managed") => void;
+  onSelect: (mode: SetupMode) => void;
+  showLocalModels?: boolean;
 }) {
+  const active = props.activeMode;
   return (
     <div className={s.connectionSection}>
       <div className={s.connectionSelector} role="radiogroup" aria-label="Connection mode">
         <button
           type="button"
-          className={`${s.connectionOption}${props.isPaid ? ` ${s["connectionOption--active"]}` : ""}`}
+          className={`${s.connectionOption}${active === "paid" ? ` ${s["connectionOption--active"]}` : ""}`}
           onClick={() => void props.onSelect("paid")}
           disabled={props.disabled}
         >
-          Atomic Subscription
+          Subscription
         </button>
         <button
           type="button"
-          className={`${s.connectionOption}${!props.isPaid ? ` ${s["connectionOption--active"]}` : ""}`}
+          className={`${s.connectionOption}${active === "self-managed" ? ` ${s["connectionOption--active"]}` : ""}`}
           onClick={() => void props.onSelect("self-managed")}
           disabled={props.disabled}
         >
-          Your own API key
+          API keys
         </button>
+        {props.showLocalModels && (
+          <button
+            type="button"
+            className={`${s.connectionOption}${active === "local-model" ? ` ${s["connectionOption--active"]}` : ""}`}
+            onClick={() => void props.onSelect("local-model")}
+            disabled={props.disabled}
+          >
+            Local Models
+          </button>
+        )}
       </div>
     </div>
   );
 }
+
+const MODE_LABELS: Record<SetupMode, string> = {
+  paid: "Subscription",
+  "self-managed": "API keys",
+  "local-model": "Local Models",
+};
 
 export function AccountModelsTab(props: {
   gw: GatewayRpc;
@@ -94,6 +115,7 @@ export function AccountModelsTab(props: {
   const authMode = useAppSelector((st) => st.auth.mode);
   const isPaidMode = authMode === "paid";
   const [tabMode, setTabMode] = useState<SetupMode | null>(authMode);
+  const isMac = (getDesktopApiOrNull()?.platform ?? "darwin") === "darwin";
 
   const [modeSwitchBusy, setModeSwitchBusy] = React.useState(false);
   const { gw, reload, onError, configSnap, noTitle } = props;
@@ -228,33 +250,25 @@ export function AccountModelsTab(props: {
   // ── Mode switching ──
 
   const handleConnectionSelect = React.useCallback(
-    async (mode: "paid" | "self-managed") => {
+    async (mode: SetupMode) => {
       setTabMode(mode);
 
-      if ((mode === "paid") === isPaidMode) return;
+      if (mode === authMode) return;
 
       setModeSwitchBusy(true);
       try {
-        let restoredProvider: ModelProvider | null = null;
+        const result = await dispatch(switchMode({ request: gw.request, target: mode })).unwrap();
 
-        if (mode === "paid") {
-          await dispatch(switchToSubscription({ request: gw.request })).unwrap();
-        } else {
-          const result = await dispatch(switchToSelfManaged({ request: gw.request })).unwrap();
-          if (!result.hasBackup) {
-            onError("No saved configuration found. Please set up your API keys.");
-          }
-          if (result.restoredModel) {
-            const idx = result.restoredModel.indexOf("/");
-            restoredProvider =
-              idx > 0 ? (result.restoredModel.slice(0, idx) as ModelProvider) : null;
-          }
+        let restoredProvider: ModelProvider | null = null;
+        if (result?.restoredModel) {
+          const idx = result.restoredModel.indexOf("/");
+          restoredProvider = idx > 0 ? (result.restoredModel.slice(0, idx) as ModelProvider) : null;
         }
 
-        await dispatch(reloadConfig({ request: gw.request }));
+        if (mode === "self-managed" && !result?.hasBackup) {
+          onError("No saved configuration found. Please set up your API keys.");
+        }
 
-        // Set provider directly from the restored model to avoid
-        // race conditions with the auto-select effect
         setProviderFilter(restoredProvider);
         autoSelectedRef.current = !!restoredProvider;
       } catch (err) {
@@ -263,7 +277,7 @@ export function AccountModelsTab(props: {
         setModeSwitchBusy(false);
       }
     },
-    [dispatch, gw.request, isPaidMode, onError, setProviderFilter]
+    [authMode, dispatch, gw.request, onError, setProviderFilter]
   );
 
   const isLoading = modeSwitchBusy || accountState.loading;
@@ -282,10 +296,24 @@ export function AccountModelsTab(props: {
       {!noTitle && <div className={s.title}>AI Models</div>}
 
       <ConnectionToggle
-        isPaid={tabMode === "paid"}
+        activeMode={tabMode}
         disabled={modeSwitchBusy}
+        showLocalModels={isMac}
         onSelect={handleConnectionSelect}
       />
+
+      {modeSwitchBusy && tabMode && (
+        <div className={s.modeSwitchLoader} role="status" aria-live="polite">
+          <div className={s.modeSwitchSpinner} aria-hidden="true" />
+          <div className={s.modeSwitchLoaderText}>Switching to {MODE_LABELS[tabMode]}...</div>
+        </div>
+      )}
+
+      {tabMode === "local-model" && !isLoading && (
+        <div className="fade-in">
+          <LocalModelsTab gatewayRequest={gw.request} onReload={reload} />
+        </div>
+      )}
 
       {canShowModels && (
         <>
@@ -309,7 +337,7 @@ export function AccountModelsTab(props: {
         </>
       )}
 
-      {!isPaidMode && !isLoading && (
+      {tabMode === "self-managed" && !isLoading && (
         <div className="fade-in">
           <div className={s.dropdownRow}>
             <div className={s.dropdownGroup}>

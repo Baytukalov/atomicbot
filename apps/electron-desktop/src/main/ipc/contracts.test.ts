@@ -15,6 +15,7 @@ import { ipcMain } from "electron";
 import { registerIpcHandlers } from "./register";
 import { IPC } from "../../shared/ipc-channels";
 import type {
+  AuthHandlerParams,
   BackupHandlerParams,
   ConfigHandlerParams,
   DefenderHandlerParams,
@@ -31,6 +32,7 @@ import type {
   WhisperHandlerParams,
 } from "./types";
 import type { registerFileHandlers } from "./files";
+import type { registerAuthHandlers } from "./auth-ipc";
 import type { registerKeyHandlers } from "./keys-ipc";
 import type { registerMemoHandlers } from "./memo-ipc";
 import type { registerRemindctlHandlers } from "./remindctl-ipc";
@@ -78,6 +80,7 @@ function createMockParams() {
     ghBin: "/bin/gh",
     whisperCliBin: "/bin/whisper-cli",
     whisperDataDir: "/tmp/whisper",
+    llamacppDataDir: "/tmp/llamacpp",
     stopGatewayChild: vi.fn(async () => {}),
     getGatewayToken: vi.fn(() => "test-token"),
     setGatewayToken: vi.fn(),
@@ -118,6 +121,7 @@ describe("IPC channel contracts", () => {
 describe("IPC handler param narrowing", () => {
   it("each handler accepts only its required fields (compile-time check)", () => {
     expectTypeOf<Parameters<typeof registerFileHandlers>[0]>().toEqualTypeOf<FileHandlerParams>();
+    expectTypeOf<Parameters<typeof registerAuthHandlers>[0]>().toEqualTypeOf<AuthHandlerParams>();
     expectTypeOf<Parameters<typeof registerKeyHandlers>[0]>().toEqualTypeOf<KeyHandlerParams>();
     expectTypeOf<Parameters<typeof registerMemoHandlers>[0]>().toEqualTypeOf<MemoHandlerParams>();
     expectTypeOf<

@@ -16,12 +16,14 @@ export const IPC = {
   gatewayGetInfo: "gateway-get-info",
   consentGet: "consent-get",
   consentAccept: "consent-accept",
+  onboardingSetState: "onboarding-set-state",
   gatewayStart: "gateway-start",
   gatewayRetry: "gateway-retry",
 
   // Auth / keys
   authSetApiKey: "auth-set-api-key",
   authSetSetupToken: "auth-set-setup-token",
+  authSetSetupModeMarker: "auth-set-setup-mode-marker",
   authValidateApiKey: "auth-validate-api-key",
   authHasApiKey: "auth-has-api-key",
   authReadProfiles: "auth-read-profiles",
@@ -105,6 +107,22 @@ export const IPC = {
   // Extra models (desktop-only model injection for the picker)
   extraModels: "extra-models",
 
+  // Llamacpp (local models)
+  llamacppSystemInfo: "llamacpp-system-info",
+  llamacppBackendStatus: "llamacpp-backend-status",
+  llamacppBackendDownload: "llamacpp-backend-download",
+  llamacppBackendDownloadCancel: "llamacpp-backend-download-cancel",
+  llamacppBackendUpdate: "llamacpp-backend-update",
+  llamacppModelStatus: "llamacpp-model-status",
+  llamacppModelDownload: "llamacpp-model-download",
+  llamacppModelDownloadCancel: "llamacpp-model-download-cancel",
+  llamacppModelsList: "llamacpp-models-list",
+  llamacppServerStart: "llamacpp-server-start",
+  llamacppServerStop: "llamacpp-server-stop",
+  llamacppClearActiveModel: "llamacpp-clear-active-model",
+  llamacppServerStatus: "llamacpp-server-status",
+  llamacppSetActiveModel: "llamacpp-set-active-model",
+
   // Reset
   resetAndClose: "reset-and-close",
 
@@ -126,6 +144,8 @@ export const IPC_EVENTS = {
   updaterDownloaded: "updater-downloaded",
   updaterError: "updater-error",
   whisperModelDownloadProgress: "whisper-model-download-progress",
+  llamacppBackendDownloadProgress: "llamacpp-backend-download-progress",
+  llamacppModelDownloadProgress: "llamacpp-model-download-progress",
   deepLink: "deep-link",
   terminalData: "terminal:data",
   terminalExit: "terminal:exit",

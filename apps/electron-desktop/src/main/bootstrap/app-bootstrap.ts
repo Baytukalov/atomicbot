@@ -27,10 +27,40 @@ import {
 import { registerTerminalIpcHandlers } from "../terminal/ipc";
 import { createTailBuffer, pickPort } from "../util/net";
 import { killUpdateSplash } from "../update-splash";
+import { readActiveModelId } from "../llamacpp/model-state";
+import { resolveServerBinPath, isBackendDownloaded } from "../llamacpp/backend-download";
+import {
+  getLlamacppModelDef,
+  resolveLlamacppModelPath,
+  resolveChatTemplatePath,
+  type LlamacppModelId,
+} from "../llamacpp/models";
+import { startLlamacppServer } from "../llamacpp/server";
+import { getSystemInfo, computeContextLength } from "../llamacpp/hardware";
+import { readOnboardedState } from "../onboarding-state";
+import { readSetupMode } from "../setup-mode-state";
 import { initAutoUpdater } from "../updater";
 
 type EnsureWindow = () => Promise<BrowserWindow | null>;
 type EnsureTray = () => void;
+
+function readConfiguredPrimaryModel(configPath: string): string | null {
+  try {
+    const raw = fs.readFileSync(configPath, "utf-8");
+    const parsed = JSON.parse(raw) as {
+      agents?: { defaults?: { model?: { primary?: string } } };
+    };
+    const primary = parsed.agents?.defaults?.model?.primary;
+    return typeof primary === "string" && primary.trim() ? primary.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+function shouldAutoStartLlamacpp(configPath: string): boolean {
+  const primary = readConfiguredPrimaryModel(configPath);
+  return typeof primary === "string" && primary.startsWith("llamacpp/");
+}
 
 export async function bootstrapApp(params: {
   gotTheLock: boolean;
@@ -49,6 +79,7 @@ export async function bootstrapApp(params: {
   const stateDir = path.join(userData, "openclaw");
   params.state.gatewayStateDir = stateDir;
   const whisperDataDir = path.join(userData, "whisper");
+  const llamacppDataDir = path.join(userData, "llamacpp");
   const logsDir = path.join(userData, "logs");
   params.state.logsDirForUi = logsDir;
 
@@ -162,6 +193,7 @@ export async function bootstrapApp(params: {
     logsDir,
     openclawDir,
     whisperDataDir,
+    llamacppDataDir,
     stopGatewayChild: params.stopGatewayChild,
     getGatewayToken: () => token,
     setGatewayToken: (t: string) => {
@@ -186,4 +218,58 @@ export async function bootstrapApp(params: {
   }
 
   await startGateway();
+
+  // Auto-start llama-server if local-model mode is active, backend + model are ready
+  if (process.platform === "darwin") {
+    try {
+      const activeId = readActiveModelId(stateDir);
+      const onboarded = readOnboardedState(stateDir);
+      const setupMode = readSetupMode(stateDir);
+      const backendReady = isBackendDownloaded(llamacppDataDir);
+      const configHasLlamacpp = shouldAutoStartLlamacpp(configPath);
+      console.log(
+        `[main] llama auto-start check: onboarded=${String(onboarded)}, setupMode=${setupMode ?? "null"}, activeId=${activeId ?? "null"}, backendReady=${String(backendReady)}, configHasLlamacpp=${String(configHasLlamacpp)}`
+      );
+      if (
+        onboarded &&
+        setupMode === "local-model" &&
+        activeId &&
+        backendReady &&
+        configHasLlamacpp
+      ) {
+        const model = getLlamacppModelDef(activeId as LlamacppModelId);
+        const modelPath = resolveLlamacppModelPath(llamacppDataDir, model);
+        const binPath = resolveServerBinPath(llamacppDataDir);
+        const modelExists = fs.existsSync(modelPath);
+        const binExists = fs.existsSync(binPath);
+        console.log(
+          `[main] llama paths: model=${modelPath} (exists=${String(modelExists)}), bin=${binPath} (exists=${String(binExists)})`
+        );
+        if (modelExists && binExists) {
+          const sysInfo = getSystemInfo();
+          const ctxLen = computeContextLength(sysInfo.totalRamGb, model);
+          const chatTemplateFile = resolveChatTemplatePath(model, {
+            isPackaged: app.isPackaged,
+            appPath: app.getAppPath(),
+          });
+          console.log(
+            `[main] auto-starting llama-server with model ${activeId}, context=${ctxLen}`
+          );
+          startLlamacppServer(binPath, modelPath, {
+            contextLength: ctxLen,
+            modelId: activeId,
+            chatTemplateFile,
+          }).catch((err) => {
+            console.error(`[main] llama-server auto-start failed: ${String(err)}`);
+          });
+        } else {
+          console.warn("[main] llama auto-start skipped: missing model or binary file");
+        }
+      } else {
+        console.log("[main] llama auto-start skipped: preconditions not met");
+      }
+    } catch (err) {
+      console.error(`[main] llama-server auto-start check failed: ${String(err)}`);
+    }
+  }
 }
