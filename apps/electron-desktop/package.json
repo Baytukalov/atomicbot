@@ -1,7 +1,7 @@
 {
   "name": "atomicbot-desktop",
   "private": true,
-  "version": "1.0.82",
+  "version": "1.0.83",
   "description": "Atomic Bot makes things for you",
   "type": "commonjs",
   "main": "dist/main.js",
