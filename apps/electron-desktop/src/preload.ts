@@ -40,6 +40,8 @@ const api: OpenclawDesktopApi = {
   getGatewayInfo: async () => ipcRenderer.invoke(IPC.gatewayGetInfo),
   getConsentInfo: async () => ipcRenderer.invoke(IPC.consentGet),
   acceptConsent: async () => ipcRenderer.invoke(IPC.consentAccept),
+  setOnboardingState: async (onboarded: boolean) =>
+    ipcRenderer.invoke(IPC.onboardingSetState, { onboarded }),
   startGateway: async () => ipcRenderer.invoke(IPC.gatewayStart),
   openExternal: async (url: string) => ipcRenderer.invoke(IPC.openExternal, { url }),
   extraModels: async () => ipcRenderer.invoke(IPC.extraModels),
@@ -47,6 +49,8 @@ const api: OpenclawDesktopApi = {
     ipcRenderer.invoke(IPC.authSetApiKey, { provider, apiKey }),
   setSetupToken: async (provider: string, token: string) =>
     ipcRenderer.invoke(IPC.authSetSetupToken, { provider, token }),
+  setSetupModeMarker: async (mode?: "paid" | "self-managed" | "local-model") =>
+    ipcRenderer.invoke(IPC.authSetSetupModeMarker, mode ? { mode } : undefined),
   validateApiKey: async (provider: string, apiKey: string) =>
     ipcRenderer.invoke(IPC.authValidateApiKey, { provider, apiKey }),
   authHasApiKey: async (provider: string) => ipcRenderer.invoke(IPC.authHasApiKey, { provider }),
@@ -119,6 +123,30 @@ const api: OpenclawDesktopApi = {
     ipcRenderer.invoke(IPC.clawhubGetSkillFile, params),
   clawhubGetComments: async (params: { slug: string; limit?: number }) =>
     ipcRenderer.invoke(IPC.clawhubGetComments, params),
+  llamacppSystemInfo: async () => ipcRenderer.invoke(IPC.llamacppSystemInfo),
+  llamacppBackendStatus: async () => ipcRenderer.invoke(IPC.llamacppBackendStatus),
+  llamacppBackendDownload: async () => ipcRenderer.invoke(IPC.llamacppBackendDownload),
+  llamacppBackendDownloadCancel: async () => ipcRenderer.invoke(IPC.llamacppBackendDownloadCancel),
+  llamacppBackendUpdate: async () => ipcRenderer.invoke(IPC.llamacppBackendUpdate),
+  llamacppModelStatus: async (params?: { model?: string }) =>
+    ipcRenderer.invoke(IPC.llamacppModelStatus, params),
+  llamacppModelDownload: async (params?: { model?: string }) =>
+    ipcRenderer.invoke(IPC.llamacppModelDownload, params),
+  llamacppModelDownloadCancel: async () => ipcRenderer.invoke(IPC.llamacppModelDownloadCancel),
+  onLlamacppBackendDownloadProgress: (
+    cb: (payload: { percent: number; transferred: number; total: number }) => void
+  ) => onIpc(IPC_EVENTS.llamacppBackendDownloadProgress, cb),
+  onLlamacppModelDownloadProgress: (
+    cb: (payload: { percent: number; transferred: number; total: number; modelId: string }) => void
+  ) => onIpc(IPC_EVENTS.llamacppModelDownloadProgress, cb),
+  llamacppModelsList: async () => ipcRenderer.invoke(IPC.llamacppModelsList),
+  llamacppServerStart: async (params?: { model?: string }) =>
+    ipcRenderer.invoke(IPC.llamacppServerStart, params),
+  llamacppServerStop: async () => ipcRenderer.invoke(IPC.llamacppServerStop),
+  llamacppClearActiveModel: async () => ipcRenderer.invoke(IPC.llamacppClearActiveModel),
+  llamacppServerStatus: async () => ipcRenderer.invoke(IPC.llamacppServerStatus),
+  llamacppSetActiveModel: async (params: { model: string }) =>
+    ipcRenderer.invoke(IPC.llamacppSetActiveModel, params),
   whisperModelStatus: async (params?: { model?: string }) =>
     ipcRenderer.invoke(IPC.whisperModelStatus, params),
   whisperModelDownload: async (params?: { model?: string }) =>

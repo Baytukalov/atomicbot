@@ -2,8 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppSelector, useAppDispatch } from "@store/hooks";
 import { useGatewayRpc } from "@gateway/context";
-import { switchToSubscription } from "@store/slices/auth/authSlice";
-import { reloadConfig } from "@store/slices/configSlice";
+import { switchMode } from "@store/slices/auth/mode-switch";
 import { addToastError } from "@shared/toast";
 import { routes } from "@ui/app/routes";
 import { useBannerRegister } from "./BannerContext";
@@ -41,8 +40,7 @@ export function SubscriptionPromoBannerSource() {
 
   const handleTryNow = React.useCallback(async () => {
     try {
-      await dispatch(switchToSubscription({ request: gw.request })).unwrap();
-      await dispatch(reloadConfig({ request: gw.request }));
+      await dispatch(switchMode({ request: gw.request, target: "paid" })).unwrap();
       navigate(`${routes.settings}/account-models`);
     } catch (err) {
       addToastError(err);

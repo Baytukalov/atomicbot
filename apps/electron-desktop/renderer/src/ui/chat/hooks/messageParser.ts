@@ -20,6 +20,8 @@ const MEDIA_REPLY_HINT_RE =
   /To send an image back, prefer the message tool \(media\/path\/filePath\)\. If you must inline, use MEDIA:https:\/\/example\.com\/image\.jpg \(spaces ok, quote if needed\) or a safe relative path like MEDIA:\.\/image\.jpg\. Avoid absolute paths \(MEDIA:\/\.\.\.\) and ~ paths — they are blocked for security\. Keep caption in the text body\./g;
 const FILE_TAG_RE = /<file\b[^>]*>[\s\S]*?(<\/file>|$)/g;
 const MESSAGE_ID_RE = /^\s*\[message_id:\s*[^\]]+\]\s*$/gm;
+// Model reasoning blocks: strip complete <think>…</think> and unclosed trailing <think>… during streaming.
+const THINK_BLOCK_RE = /<think>[\s\S]*?(?:<\/think>|$)/g;
 
 /**
  * Strip all gateway-injected metadata from a raw message string:
@@ -28,6 +30,7 @@ const MESSAGE_ID_RE = /^\s*\[message_id:\s*[^\]]+\]\s*$/gm;
  */
 export function stripMetadata(text: string): string {
   return text
+    .replace(THINK_BLOCK_RE, "")
     .replace(SYSTEM_EVENT_RE, "")
     .replace(UNTRUSTED_META_RE, "")
     .replace(DATE_HEADER_RE, "")

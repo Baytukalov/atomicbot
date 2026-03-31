@@ -3,9 +3,10 @@ import type { NavigateFunction } from "react-router-dom";
 import { useGatewayRpc } from "@gateway/context";
 import { captureRenderer, ANALYTICS_EVENTS } from "@analytics";
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
-import { useAppDispatch } from "@store/hooks";
+import { useAppDispatch, useAppSelector } from "@store/hooks";
 import { setOnboarded } from "@store/slices/onboardingSlice";
 import { authActions } from "@store/slices/auth/authSlice";
+import { switchMode } from "@store/slices/auth/mode-switch";
 import { persistDesktopMode } from "../../shared/persistMode";
 import type { GatewayState } from "@main/types";
 import { routes } from "../../app/routes";
@@ -150,13 +151,22 @@ export function useWelcomeState({ state, navigate }: WelcomeStateInput) {
 
   // --- Orchestrator-level handlers ---
 
+  const currentAuthMode = useAppSelector((st) => st.auth.mode);
   const finish = React.useCallback(() => {
-    captureRenderer(ANALYTICS_EVENTS.onboardingStep, { step: "finished", flow: "self-managed" });
-    dispatch(authActions.setMode("self-managed"));
-    persistDesktopMode("self-managed");
-    void dispatch(setOnboarded(true));
-    void navigate(routes.chat, { replace: true });
-  }, [dispatch, navigate]);
+    const mode = currentAuthMode === "local-model" ? "local-model" : "self-managed";
+    captureRenderer(ANALYTICS_EVENTS.onboardingStep, { step: "finished", flow: mode });
+
+    void (async () => {
+      try {
+        await dispatch(switchMode({ request: gw.request, target: mode })).unwrap();
+      } catch {
+        dispatch(authActions.setMode(mode));
+        persistDesktopMode(mode);
+      }
+      void dispatch(setOnboarded(true));
+      void navigate(routes.chat, { replace: true });
+    })();
+  }, [currentAuthMode, dispatch, gw.request, navigate]);
 
   const goMediaUnderstanding = React.useCallback(() => {
     void refreshProviderFlags();

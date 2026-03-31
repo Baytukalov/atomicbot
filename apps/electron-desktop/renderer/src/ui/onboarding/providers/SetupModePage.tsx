@@ -7,7 +7,7 @@ import s from "./SetupModePage.module.css";
 import cursorIcon from "@assets/сursor.svg";
 import googleIcon from "@assets/set-up-skills/Google.svg";
 
-export type SetupModeChoice = "paid" | "self-managed";
+export type SetupModeChoice = "paid" | "self-managed" | "local-model";
 
 export function SetupModePage(props: {
   totalSteps: number;
@@ -17,6 +17,7 @@ export function SetupModePage(props: {
   authBusy?: boolean;
   authError?: string | null;
   onBack?: () => void;
+  showLocalModel?: boolean;
 }) {
   useOnboardingStepEvent("setup_mode", null);
   const [_, setSelected] = React.useState<SetupModeChoice>("paid");
@@ -28,12 +29,14 @@ export function SetupModePage(props: {
       aria-label="Setup mode selection"
       context="onboarding"
     >
-      <OnboardingHeader
-        totalSteps={props.totalSteps}
-        activeStep={props.activeStep}
-        onBack={props.onBack}
-      />
-      <GlassCard className={`UiGlassCardOnboarding ${s.UiSetupModeCard}`}>
+      <div className={s.UiSetupModeHeader}>
+        <OnboardingHeader
+          totalSteps={props.totalSteps}
+          activeStep={props.activeStep}
+          onBack={props.onBack}
+        />
+      </div>
+      <GlassCard className={s.UiSetupModeCard}>
         <div className="UiSectionContent">
           <div>
             <div className="UiSectionTitle">Set up your AI agent</div>
@@ -111,6 +114,33 @@ export function SetupModePage(props: {
                 Set up with API keys
               </SecondaryButton>
             </div>
+
+            {props.showLocalModel && (
+              <div className="UiSectionCard">
+                <div>
+                  <div className={s.UiSetupModeIcon}>
+                    <span style={{ fontSize: 24 }}>🖥</span>
+                  </div>
+                  <div className={s.UiSetupModeTitle}>Run on device</div>
+                  <div className={s.UiSetupModeDesc}>Free, fully private</div>
+                  <ul className={s.UiSetupModeFeatures}>
+                    <li>No internet required</li>
+                    <li>Full privacy</li>
+                    <li>Apple Mac only</li>
+                  </ul>
+                </div>
+
+                <SecondaryButton
+                  size="sm"
+                  onClick={() => {
+                    props.onSelect("local-model");
+                    setSelected("local-model");
+                  }}
+                >
+                  Set up local AI
+                </SecondaryButton>
+              </div>
+            )}
           </div>
         </div>
       </GlassCard>

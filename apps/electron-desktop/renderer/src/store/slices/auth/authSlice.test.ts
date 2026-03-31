@@ -11,16 +11,16 @@ import {
   restoreMode,
   storeAuthToken,
   clearAuth,
-  switchToSubscription,
-  switchToSelfManaged,
   applySubscriptionKeys,
   handleLogout,
   createAddonCheckout,
   fetchAutoTopUpSettings,
   patchAutoTopUpSettings,
 } from "./authSlice";
+import { switchMode } from "./mode-switch";
 import { DEFAULT_AUTO_TOP_UP_SETTINGS } from "./auth-types";
 import { configReducer } from "../configSlice";
+import { llamacppReducer } from "../llamacppSlice";
 
 // ── localStorage shim ───────────────────────────────────────────────────────
 
@@ -43,6 +43,7 @@ const mockApi = {
   authReadProfiles: vi.fn().mockResolvedValue({ profiles: {}, order: {} }),
   authWriteProfiles: vi.fn().mockResolvedValue(undefined),
   setApiKey: vi.fn().mockResolvedValue(undefined),
+  llamacppClearActiveModel: vi.fn().mockResolvedValue({ ok: true }),
 };
 
 vi.mock("@ipc/desktopApi", () => ({
@@ -102,7 +103,7 @@ vi.mock("@ipc/backendApi", () => ({
 
 function createTestStore() {
   return configureStore({
-    reducer: { auth: authReducer, config: configReducer },
+    reducer: { auth: authReducer, config: configReducer, llamacpp: llamacppReducer },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
         serializableCheck: {
@@ -135,6 +136,8 @@ function createMockRequest() {
   return vi.fn().mockImplementation((method: string) => {
     if (method === "config.get") return Promise.resolve(configSnap);
     if (method === "config.patch") return Promise.resolve({ ok: true });
+    if (method === "sessions.list") return Promise.resolve({ sessions: [] });
+    if (method === "sessions.patch") return Promise.resolve({ ok: true });
     return Promise.resolve({});
   });
 }
@@ -440,18 +443,19 @@ describe("clearAuth thunk", () => {
   });
 });
 
-// ── switchToSubscription thunk ──────────────────────────────────────────────
+// ── switchMode to paid ──────────────────────────────────────────────────────
 
-describe("switchToSubscription thunk", () => {
-  it("backs up config and credentials to localStorage", async () => {
+describe("switchMode to paid", () => {
+  it("backs up self-managed config and credentials to localStorage", async () => {
     mockApi.authReadProfiles.mockResolvedValue({
       profiles: { "anthropic:default": { key: "sk-ant-xxx" } },
       order: { anthropic: ["anthropic:default"] },
     });
 
     const store = createTestStore();
+    store.dispatch(authActions.setMode("self-managed"));
     const mockRequest = createMockRequest();
-    await store.dispatch(switchToSubscription({ request: mockRequest }));
+    await store.dispatch(switchMode({ request: mockRequest, target: "paid" }));
 
     const backup = JSON.parse(storageMap.get(BACKUP_LS_KEY)!);
     expect(backup.credentials.profiles).toHaveProperty("anthropic:default");
@@ -460,38 +464,26 @@ describe("switchToSubscription thunk", () => {
     expect(backup.savedAt).toBeDefined();
   });
 
-  it("clears credentials via IPC", async () => {
+  it("clears credentials via IPC during teardown", async () => {
     const store = createTestStore();
+    store.dispatch(authActions.setMode("self-managed"));
     const mockRequest = createMockRequest();
-    await store.dispatch(switchToSubscription({ request: mockRequest }));
+    await store.dispatch(switchMode({ request: mockRequest, target: "paid" }));
 
     expect(mockApi.authWriteProfiles).toHaveBeenCalledWith({ profiles: {}, order: {} });
   });
 
-  it("sends config.patch with null for auth and empty string for model", async () => {
-    const store = createTestStore();
-    const mockRequest = createMockRequest();
-    await store.dispatch(switchToSubscription({ request: mockRequest }));
-
-    expect(mockRequest).toHaveBeenCalledWith("config.get", {});
-    const patchCall = mockRequest.mock.calls.find((c: unknown[]) => c[0] === "config.patch");
-    expect(patchCall).toBeDefined();
-    const patchBody = JSON.parse(patchCall![1].raw);
-    expect(patchBody.auth.profiles).toBeNull();
-    expect(patchBody.auth.order).toBeNull();
-    expect(patchBody.agents.defaults.model.primary).toBe("");
-  });
-
   it("sets mode to paid in state and localStorage", async () => {
     const store = createTestStore();
+    store.dispatch(authActions.setMode("self-managed"));
     const mockRequest = createMockRequest();
-    await store.dispatch(switchToSubscription({ request: mockRequest }));
+    await store.dispatch(switchMode({ request: mockRequest, target: "paid" }));
 
     expect(store.getState().auth.mode).toBe("paid");
     expect(storageMap.get(MODE_LS_KEY)).toBe("paid");
   });
 
-  it("does not overwrite existing backup on second call (idempotent)", async () => {
+  it("does not overwrite existing backup on second switch (idempotent)", async () => {
     mockApi.authReadProfiles.mockResolvedValue({
       profiles: {
         "anthropic:default": { type: "api_key", provider: "anthropic", key: "sk-ant-real" },
@@ -500,18 +492,18 @@ describe("switchToSubscription thunk", () => {
     });
 
     const store = createTestStore();
+    store.dispatch(authActions.setMode("self-managed"));
     const mockRequest = createMockRequest();
 
-    await store.dispatch(switchToSubscription({ request: mockRequest }));
+    await store.dispatch(switchMode({ request: mockRequest, target: "paid" }));
     const backupAfterFirst = JSON.parse(storageMap.get(BACKUP_LS_KEY)!);
     expect(backupAfterFirst.credentials.profiles["anthropic:default"].key).toBe("sk-ant-real");
 
-    mockApi.authReadProfiles.mockResolvedValue({
-      profiles: {},
-      order: {},
-    });
+    // Switch back to self-managed then to paid again
+    store.dispatch(authActions.setMode("self-managed"));
+    mockApi.authReadProfiles.mockResolvedValue({ profiles: {}, order: {} });
 
-    await store.dispatch(switchToSubscription({ request: mockRequest }));
+    await store.dispatch(switchMode({ request: mockRequest, target: "paid" }));
     const backupAfterSecond = JSON.parse(storageMap.get(BACKUP_LS_KEY)!);
     expect(backupAfterSecond.credentials.profiles["anthropic:default"].key).toBe("sk-ant-real");
   });
@@ -543,8 +535,9 @@ describe("switchToSubscription thunk", () => {
     });
 
     const store = createTestStore();
+    store.dispatch(authActions.setMode("self-managed"));
     const mockRequest = createMockRequest();
-    await store.dispatch(switchToSubscription({ request: mockRequest }));
+    await store.dispatch(switchMode({ request: mockRequest, target: "paid" }));
 
     expect(store.getState().auth.jwt).toBe("paid-jwt");
     expect(store.getState().auth.email).toBe("paid@test.com");
@@ -552,11 +545,6 @@ describe("switchToSubscription thunk", () => {
 
     const persisted = JSON.parse(storageMap.get(AUTH_TOKEN_LS_KEY)!);
     expect(persisted.jwt).toBe("paid-jwt");
-
-    expect(mockApi.authWriteProfiles).toHaveBeenCalledWith({
-      profiles: paidBackup.credentials.profiles,
-      order: paidBackup.credentials.order,
-    });
 
     expect(storageMap.has(PAID_BACKUP_LS_KEY)).toBe(false);
   });
@@ -577,8 +565,9 @@ describe("switchToSubscription thunk", () => {
     mockBackendApi.getStatus.mockRejectedValueOnce(new Error("Unauthorized"));
 
     const store = createTestStore();
+    store.dispatch(authActions.setMode("self-managed"));
     const mockRequest = createMockRequest();
-    await store.dispatch(switchToSubscription({ request: mockRequest }));
+    await store.dispatch(switchMode({ request: mockRequest, target: "paid" }));
 
     expect(store.getState().auth.jwt).toBeNull();
     expect(store.getState().auth.email).toBeNull();
@@ -588,17 +577,27 @@ describe("switchToSubscription thunk", () => {
 
   it("does not attempt restore when no paid backup exists", async () => {
     const store = createTestStore();
+    store.dispatch(authActions.setMode("self-managed"));
     const mockRequest = createMockRequest();
-    await store.dispatch(switchToSubscription({ request: mockRequest }));
+    await store.dispatch(switchMode({ request: mockRequest, target: "paid" }));
 
-    expect(mockBackendApi.getStatus).not.toHaveBeenCalled();
     expect(store.getState().auth.jwt).toBeNull();
+  });
+
+  it("is a no-op when already in paid mode", async () => {
+    const store = createTestStore();
+    store.dispatch(authActions.setMode("paid"));
+    const mockRequest = createMockRequest();
+    await store.dispatch(switchMode({ request: mockRequest, target: "paid" }));
+
+    expect(store.getState().auth.mode).toBe("paid");
+    expect(mockApi.authWriteProfiles).not.toHaveBeenCalled();
   });
 });
 
-// ── switchToSelfManaged thunk ───────────────────────────────────────────────
+// ── switchMode to self-managed ───────────────────────────────────────────────
 
-describe("switchToSelfManaged thunk", () => {
+describe("switchMode to self-managed", () => {
   const savedBackup = {
     credentials: {
       profiles: { "anthropic:default": { key: "sk-ant-xxx" } },
@@ -619,47 +618,35 @@ describe("switchToSelfManaged thunk", () => {
     storageMap.set(BACKUP_LS_KEY, JSON.stringify(savedBackup));
 
     const store = createTestStore();
+    store.dispatch(authActions.setMode("paid"));
     store.dispatch(authActions.setAuth({ jwt: "sub-jwt", email: "u@t.com", userId: "u1" }));
 
     const mockRequest = createMockRequest();
-    const result = await store.dispatch(switchToSelfManaged({ request: mockRequest })).unwrap();
+    const result = await store
+      .dispatch(switchMode({ request: mockRequest, target: "self-managed" }))
+      .unwrap();
 
     expect(result.hasBackup).toBe(true);
     expect(store.getState().auth.mode).toBe("self-managed");
     expect(store.getState().auth.jwt).toBeNull();
     expect(storageMap.get(MODE_LS_KEY)).toBe("self-managed");
     expect(storageMap.has(BACKUP_LS_KEY)).toBe(false);
-
-    expect(mockApi.authWriteProfiles).toHaveBeenCalledWith({
-      profiles: savedBackup.credentials.profiles,
-      order: savedBackup.credentials.order,
-    });
-
-    const patchCall = mockRequest.mock.calls.find((c: unknown[]) => c[0] === "config.patch");
-    expect(patchCall).toBeDefined();
-    const patchBody = JSON.parse(patchCall![1].raw);
-    expect(patchBody.auth.profiles).toEqual(savedBackup.configAuth.profiles);
-    expect(patchBody.agents.defaults.model.primary).toBe("anthropic/claude-sonnet-4.6");
   });
 
-  it("without backup: clears config, returns hasBackup false", async () => {
+  it("without backup: sets mode, returns hasBackup false", async () => {
     const store = createTestStore();
+    store.dispatch(authActions.setMode("paid"));
     const mockRequest = createMockRequest();
-    const result = await store.dispatch(switchToSelfManaged({ request: mockRequest })).unwrap();
+    const result = await store
+      .dispatch(switchMode({ request: mockRequest, target: "self-managed" }))
+      .unwrap();
 
     expect(result.hasBackup).toBe(false);
     expect(store.getState().auth.mode).toBe("self-managed");
     expect(storageMap.get(MODE_LS_KEY)).toBe("self-managed");
-
-    const patchCall = mockRequest.mock.calls.find((c: unknown[]) => c[0] === "config.patch");
-    expect(patchCall).toBeDefined();
-    const patchBody = JSON.parse(patchCall![1].raw);
-    expect(patchBody.auth.profiles).toBeNull();
-    expect(patchBody.auth.order).toBeNull();
-    expect(patchBody.agents.defaults.model.primary).toBe("");
   });
 
-  it("saves paid backup before clearing auth when JWT is present", async () => {
+  it("saves paid backup before switching when JWT is present", async () => {
     mockApi.authReadProfiles.mockResolvedValue({
       profiles: { "openrouter:default": { provider: "openrouter", mode: "api_key" } },
       order: { openrouter: ["openrouter:default"] },
@@ -671,10 +658,11 @@ describe("switchToSelfManaged thunk", () => {
     );
 
     const store = createTestStore();
+    store.dispatch(authActions.setMode("paid"));
     store.dispatch(authActions.setAuth({ jwt: "paid-jwt", email: "paid@test.com", userId: "pu1" }));
 
     const mockRequest = createMockRequest();
-    await store.dispatch(switchToSelfManaged({ request: mockRequest })).unwrap();
+    await store.dispatch(switchMode({ request: mockRequest, target: "self-managed" })).unwrap();
 
     const paidBackup = JSON.parse(storageMap.get(PAID_BACKUP_LS_KEY)!);
     expect(paidBackup.authToken).toEqual({
@@ -690,13 +678,14 @@ describe("switchToSelfManaged thunk", () => {
 
   it("does not save paid backup when no JWT is present", async () => {
     const store = createTestStore();
+    store.dispatch(authActions.setMode("paid"));
     const mockRequest = createMockRequest();
-    await store.dispatch(switchToSelfManaged({ request: mockRequest })).unwrap();
+    await store.dispatch(switchMode({ request: mockRequest, target: "self-managed" })).unwrap();
 
     expect(storageMap.has(PAID_BACKUP_LS_KEY)).toBe(false);
   });
 
-  it("does not overwrite existing paid backup on second call (idempotent)", async () => {
+  it("does not overwrite existing paid backup on second switch (idempotent)", async () => {
     mockApi.authReadProfiles.mockResolvedValue({
       profiles: { "openrouter:default": { provider: "openrouter", key: "sk-or-real" } },
       order: { openrouter: ["openrouter:default"] },
@@ -708,16 +697,19 @@ describe("switchToSelfManaged thunk", () => {
     );
 
     const store = createTestStore();
+    store.dispatch(authActions.setMode("paid"));
     store.dispatch(
       authActions.setAuth({ jwt: "jwt-first", email: "first@test.com", userId: "u1" })
     );
 
     const mockRequest = createMockRequest();
-    await store.dispatch(switchToSelfManaged({ request: mockRequest })).unwrap();
+    await store.dispatch(switchMode({ request: mockRequest, target: "self-managed" })).unwrap();
 
     const backupAfterFirst = JSON.parse(storageMap.get(PAID_BACKUP_LS_KEY)!);
     expect(backupAfterFirst.authToken.jwt).toBe("jwt-first");
 
+    // Switch back to paid then to self-managed again
+    store.dispatch(authActions.setMode("paid"));
     storageMap.set(
       AUTH_TOKEN_LS_KEY,
       JSON.stringify({ jwt: "jwt-second", email: "second@test.com", userId: "u2" })
@@ -726,10 +718,251 @@ describe("switchToSelfManaged thunk", () => {
       authActions.setAuth({ jwt: "jwt-second", email: "second@test.com", userId: "u2" })
     );
 
-    await store.dispatch(switchToSelfManaged({ request: mockRequest })).unwrap();
+    await store.dispatch(switchMode({ request: mockRequest, target: "self-managed" })).unwrap();
 
     const backupAfterSecond = JSON.parse(storageMap.get(PAID_BACKUP_LS_KEY)!);
     expect(backupAfterSecond.authToken.jwt).toBe("jwt-first");
+  });
+});
+
+describe("switchMode session override cleanup", () => {
+  it("clears session model overrides after switching to local-model", async () => {
+    const store = createTestStore();
+    store.dispatch(authActions.setMode("self-managed"));
+
+    let localConfigApplied = false;
+    const mockRequest = vi.fn().mockImplementation((method: string) => {
+      if (method === "config.get") {
+        if (localConfigApplied) {
+          return Promise.resolve({
+            config: {
+              auth: {
+                profiles: { "llamacpp:default": { provider: "llamacpp", mode: "api_key" } },
+                order: { llamacpp: ["llamacpp:default"] },
+              },
+              agents: {
+                defaults: {
+                  model: { primary: "llamacpp/llama-3.2-3b" },
+                  models: { "llamacpp/llama-3.2-3b": {} },
+                },
+              },
+            },
+            hash: "local-hash",
+            exists: true,
+          });
+        }
+        return Promise.resolve({
+          config: {
+            auth: {
+              profiles: { "anthropic:default": { provider: "anthropic", mode: "api_key" } },
+              order: { anthropic: ["anthropic:default"] },
+            },
+            agents: {
+              defaults: {
+                model: { primary: "anthropic/claude-sonnet-4.6" },
+                models: { "anthropic/claude-sonnet-4.6": {} },
+              },
+            },
+          },
+          hash: "abc123",
+          exists: true,
+        });
+      }
+      if (method === "config.apply") {
+        localConfigApplied = true;
+        return Promise.resolve({ ok: true });
+      }
+      if (method === "config.patch") return Promise.resolve({ ok: true });
+      if (method === "sessions.list") {
+        return Promise.resolve({
+          sessions: [
+            { key: "session-1", modelOverride: "anthropic/claude-sonnet-4.6" },
+            { key: "session-2", modelOverride: null },
+          ],
+        });
+      }
+      if (method === "sessions.patch") return Promise.resolve({ ok: true });
+      return Promise.resolve({});
+    });
+
+    await store
+      .dispatch(
+        switchMode({
+          request: mockRequest,
+          target: "local-model",
+          modelId: "llama-3.2-3b",
+          modelName: "Llama 3.2 3B",
+          contextLength: 8192,
+        })
+      )
+      .unwrap();
+
+    expect(mockRequest).toHaveBeenCalledWith("sessions.list", {
+      includeGlobal: false,
+      includeUnknown: false,
+    });
+    expect(mockRequest).toHaveBeenCalledWith("sessions.patch", {
+      key: "session-1",
+      model: null,
+    });
+  });
+
+  it("clears stale runtime session models after switching to local-model", async () => {
+    const store = createTestStore();
+    store.dispatch(authActions.setMode("self-managed"));
+
+    let localConfigApplied = false;
+    const mockRequest = vi.fn().mockImplementation((method: string) => {
+      if (method === "config.get") {
+        if (localConfigApplied) {
+          return Promise.resolve({
+            config: {
+              auth: {
+                profiles: { "llamacpp:default": { provider: "llamacpp", mode: "api_key" } },
+                order: { llamacpp: ["llamacpp:default"] },
+              },
+              agents: {
+                defaults: {
+                  model: { primary: "llamacpp/qwen-3.5-9b" },
+                  models: { "llamacpp/qwen-3.5-9b": {} },
+                },
+              },
+            },
+            hash: "local-hash",
+            exists: true,
+          });
+        }
+        return Promise.resolve({
+          config: {
+            auth: {
+              profiles: { "anthropic:default": { provider: "anthropic", mode: "api_key" } },
+              order: { anthropic: ["anthropic:default"] },
+            },
+            agents: {
+              defaults: {
+                model: { primary: "anthropic/claude-sonnet-4.6" },
+                models: { "anthropic/claude-sonnet-4.6": {} },
+              },
+            },
+          },
+          hash: "abc123",
+          exists: true,
+        });
+      }
+      if (method === "config.apply") {
+        localConfigApplied = true;
+        return Promise.resolve({ ok: true });
+      }
+      if (method === "config.patch") return Promise.resolve({ ok: true });
+      if (method === "sessions.list") {
+        return Promise.resolve({
+          sessions: [
+            { key: "session-1", model: "qwen-3.5-35b", modelProvider: "llamacpp" },
+            { key: "session-2" },
+          ],
+        });
+      }
+      if (method === "sessions.patch") return Promise.resolve({ ok: true });
+      return Promise.resolve({});
+    });
+
+    await store
+      .dispatch(
+        switchMode({
+          request: mockRequest,
+          target: "local-model",
+          modelId: "qwen-3.5-9b",
+          modelName: "Qwen 3.5 9B",
+          contextLength: 200_000,
+        })
+      )
+      .unwrap();
+
+    expect(mockRequest).toHaveBeenCalledWith("sessions.patch", {
+      key: "session-1",
+      model: null,
+    });
+  });
+
+  it("clears saved active llamacpp model when leaving local-model", async () => {
+    const store = createTestStore();
+    store.dispatch(authActions.setMode("local-model"));
+
+    const mockRequest = createMockRequest();
+    await store.dispatch(switchMode({ request: mockRequest, target: "paid" })).unwrap();
+
+    expect(mockApi.llamacppClearActiveModel).toHaveBeenCalled();
+    expect(store.getState().llamacpp.activeModelId).toBeNull();
+  });
+});
+
+describe("switchMode to local-model", () => {
+  it("applies local model config and returns restored local model", async () => {
+    const store = createTestStore();
+    store.dispatch(authActions.setMode("self-managed"));
+
+    const configAfterApply = {
+      config: {
+        auth: {
+          profiles: { "llamacpp:default": { provider: "llamacpp", mode: "api_key" } },
+          order: { llamacpp: ["llamacpp:default"] },
+        },
+        models: {
+          providers: {
+            llamacpp: {
+              baseUrl: "http://127.0.0.1:18790",
+              api: "openai-completions",
+              apiKey: "LLAMACPP_LOCAL_KEY",
+              models: [{ id: "qwen-3.5-35b" }],
+            },
+          },
+        },
+        agents: {
+          defaults: {
+            model: { primary: "llamacpp/qwen-3.5-35b" },
+            models: { "llamacpp/qwen-3.5-35b": {} },
+          },
+        },
+      },
+      hash: "after-apply-hash",
+      exists: true,
+    };
+
+    let configReadCount = 0;
+    const mockRequest = vi.fn().mockImplementation((method: string) => {
+      if (method === "config.get") {
+        configReadCount += 1;
+        return Promise.resolve(
+          configReadCount >= 2 ? configAfterApply : createMockRequest()("config.get")
+        );
+      }
+      if (method === "config.apply") return Promise.resolve({ ok: true });
+      if (method === "config.patch") return Promise.resolve({ ok: true });
+      if (method === "sessions.list") return Promise.resolve({ sessions: [] });
+      if (method === "sessions.patch") return Promise.resolve({ ok: true });
+      return Promise.resolve({});
+    });
+
+    const result = await store
+      .dispatch(
+        switchMode({
+          request: mockRequest,
+          target: "local-model",
+          modelId: "qwen-3.5-35b",
+          modelName: "Qwen 3.5 35B-A3B",
+          contextLength: 45_000,
+        })
+      )
+      .unwrap();
+
+    expect(mockApi.setApiKey).toHaveBeenCalledWith("llamacpp", "LLAMACPP_LOCAL_KEY");
+    expect(mockRequest).toHaveBeenCalledWith(
+      "config.apply",
+      expect.objectContaining({
+        baseHash: "after-apply-hash",
+      })
+    );
+    expect(result.restoredModel).toBe("llamacpp/qwen-3.5-35b");
   });
 });
 
@@ -854,7 +1087,7 @@ describe("handleLogout thunk", () => {
     expect(patchBody.agents.defaults.model.primary).toBe("");
   });
 
-  it("creates backup when missing and remains in paid mode", async () => {
+  it("clears config and remains in paid mode when no backup exists", async () => {
     const store = createTestStore();
     const mockRequest = createMockRequest();
     await store.dispatch(handleLogout({ request: mockRequest })).unwrap();
@@ -862,7 +1095,6 @@ describe("handleLogout thunk", () => {
     expect(store.getState().auth.mode).toBe("paid");
     expect(store.getState().auth.jwt).toBeNull();
     expect(storageMap.get(MODE_LS_KEY)).toBe("paid");
-    expect(storageMap.get(BACKUP_LS_KEY)).toBeDefined();
   });
 
   it("clears paid backup on logout", async () => {

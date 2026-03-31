@@ -18,6 +18,7 @@ export type RegisterParams = BinaryPaths & {
   logsDir: string;
   openclawDir: string;
   whisperDataDir: string;
+  llamacppDataDir: string;
   stopGatewayChild: () => Promise<void>;
   getGatewayToken: () => string;
   setGatewayToken: (token: string) => void;
@@ -26,6 +27,7 @@ export type RegisterParams = BinaryPaths & {
 /** Narrowed params for each IPC handler module. */
 export type FileHandlerParams = Pick<RegisterParams, "getLogsDir" | "stateDir" | "getMainWindow">;
 export type KeyHandlerParams = Pick<RegisterParams, "stateDir">;
+export type AuthHandlerParams = Pick<RegisterParams, "stateDir">;
 export type MemoHandlerParams = Pick<RegisterParams, "memoBin" | "openclawDir">;
 export type RemindctlHandlerParams = Pick<RegisterParams, "remindctlBin" | "openclawDir">;
 export type ObsidianHandlerParams = Pick<RegisterParams, "obsidianCliBin" | "openclawDir">;
@@ -65,8 +67,13 @@ export type ResetHandlerParams = Pick<
   | "stateDir"
   | "logsDir"
   | "whisperDataDir"
+  | "llamacppDataDir"
   | "gogBin"
   | "openclawDir"
   | "stopGatewayChild"
 >;
 export type AnalyticsHandlerParams = Pick<RegisterParams, "stateDir">;
+export type LlamacppHandlerParams = Pick<
+  RegisterParams,
+  "llamacppDataDir" | "getMainWindow" | "stateDir"
+>;

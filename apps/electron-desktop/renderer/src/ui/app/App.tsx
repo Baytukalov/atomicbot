@@ -34,6 +34,7 @@ import { UpgradePaywallPopup } from "./UpgradePaywallPopup";
 import { usePaidStatusBridge } from "./hooks/usePaidStatusBridge";
 import { SubscriptionPromoBannerSource } from "../shared/banners/SubscriptionPromoBannerSource";
 import { UpdateBanner } from "../updates/UpdateBanner";
+import { LlamacppDownloadBanner } from "../updates/LlamacppDownloadBanner";
 import { DefenderBanner } from "../updates/DefenderBanner";
 import { AppBanners } from "../shared/banners/AppBanners";
 import { SkillsPage } from "@ui/skills/SkillsPage";
@@ -51,6 +52,7 @@ function ChatRoute({ state }: { state: Extract<GatewayState, { kind: "ready" }> 
   return (
     <>
       <UpdateBanner />
+      <LlamacppDownloadBanner />
       <DefenderBanner />
       <AppBanners />
       {session?.trim() ? <ChatPage state={state} /> : <StartChatPage state={state} />}

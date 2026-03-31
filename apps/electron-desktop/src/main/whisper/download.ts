@@ -18,17 +18,25 @@ export async function downloadFile(
   const headers: Record<string, string> = {
     "User-Agent": opts?.userAgent ?? "openclaw-electron-desktop",
   };
-  const token = (process.env.GITHUB_TOKEN || process.env.GH_TOKEN || "").trim();
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const isGitHub = url.includes("github.com") || url.includes("githubusercontent.com");
+  if (isGitHub) {
+    const token = (process.env.GITHUB_TOKEN || process.env.GH_TOKEN || "").trim();
+    if (token) headers.Authorization = `Bearer ${token}`;
+  }
 
+  console.log(`[downloadFile] fetching: ${url}`);
   const res = await fetch(url, { headers, redirect: "follow", signal: opts?.signal });
+  console.log(
+    `[downloadFile] response: ${res.status} ${res.statusText}, content-length=${res.headers.get("content-length")}`
+  );
   if (!res.ok || !res.body) {
-    throw new Error(`Download failed: HTTP ${res.status}`);
+    throw new Error(`Download failed: HTTP ${res.status} ${res.statusText}`);
   }
 
   const totalRaw = res.headers.get("content-length");
   const total = totalRaw ? parseInt(totalRaw, 10) : 0;
   let transferred = 0;
+  let lastReportedPercent = -1;
 
   const reader = res.body.getReader();
   const trackingStream = new ReadableStream({
@@ -45,7 +53,11 @@ export async function downloadFile(
       }
       transferred += value.byteLength;
       const percent = total > 0 ? Math.round((transferred / total) * 100) : 0;
-      opts?.onProgress?.(percent, transferred, total);
+      // Throttle progress callbacks to avoid flooding IPC
+      if (percent !== lastReportedPercent) {
+        lastReportedPercent = percent;
+        opts?.onProgress?.(percent, transferred, total);
+      }
       controller.enqueue(value);
     },
   });

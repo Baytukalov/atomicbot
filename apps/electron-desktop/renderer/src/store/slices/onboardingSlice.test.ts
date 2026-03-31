@@ -2,7 +2,7 @@
  * Tests for onboardingSlice — initial state, reducers, and thunks.
  */
 import { configureStore } from "@reduxjs/toolkit";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   loadOnboardingFromStorage,
@@ -10,6 +10,8 @@ import {
   onboardingReducer,
   setOnboarded,
 } from "./onboardingSlice";
+
+const setOnboardingState = vi.fn(async () => ({ ok: true }));
 
 // ── Initial state ──────────────────────────────────────────────────────────────
 
@@ -61,6 +63,9 @@ describe("onboarding thunks", () => {
     storageMap.clear();
     // @ts-expect-error - shimming localStorage for node env
     globalThis.localStorage = localStorageShim;
+    // @ts-expect-error - minimal window shim for desktop bridge
+    globalThis.window = { openclawDesktop: { setOnboardingState } };
+    setOnboardingState.mockClear();
   });
 
   afterEach(() => {
@@ -91,6 +96,7 @@ describe("onboarding thunks", () => {
 
     expect(store.getState().onboarding.onboarded).toBe(true);
     expect(storageMap.get("openclaw.desktop.onboarded.v1")).toBe("1");
+    expect(setOnboardingState).toHaveBeenCalledWith(true);
   });
 
   it("setOnboarded(false) removes from localStorage and updates state", async () => {
@@ -101,5 +107,6 @@ describe("onboarding thunks", () => {
 
     expect(store.getState().onboarding.onboarded).toBe(false);
     expect(storageMap.has("openclaw.desktop.onboarded.v1")).toBe(false);
+    expect(setOnboardingState).toHaveBeenCalledWith(false);
   });
 });

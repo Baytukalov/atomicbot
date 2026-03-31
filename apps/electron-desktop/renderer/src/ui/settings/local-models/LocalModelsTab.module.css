@@ -1,0 +1,268 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.sectionTitle {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--muted3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.versionBadge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--lime) 15%, transparent);
+  color: var(--lime);
+}
+
+.systemInfo {
+  font-size: 12px;
+  color: var(--muted3);
+}
+
+.serverRunning {
+  color: var(--lime);
+  font-weight: 600;
+}
+
+.modelList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.modelRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--surface-hover);
+  border: 1px solid var(--surface-overlay);
+  transition: border-color 0.15s ease;
+}
+
+.modelRowActive {
+  border-color: var(--lime);
+}
+
+.modelIcon {
+  flex-shrink: 0;
+}
+
+.modelIconBox {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modelIconFallback {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.modelInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.modelName {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.activeBadge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--lime) 15%, transparent);
+  color: var(--lime);
+}
+
+.modelMeta {
+  font-size: 12px;
+  color: var(--muted3);
+  line-height: 16px;
+}
+
+.modelAction {
+  flex-shrink: 0;
+}
+
+.compatBadge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 6px;
+  width: fit-content;
+  margin-top: 2px;
+}
+
+.compatPossible {
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
+  color: var(--warning);
+}
+
+.compatNotRecommended {
+  background: color-mix(in srgb, var(--error) 15%, transparent);
+  color: var(--error);
+}
+
+.runningIndicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--lime);
+  box-shadow: 0 0 6px var(--lime);
+}
+
+/* Whisper-style inline download progress */
+.downloadProgress {
+  margin-top: 6px;
+}
+
+.downloadRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.downloadLabel {
+  font-size: 12px;
+  color: rgba(230, 237, 243, 0.55);
+}
+
+.downloadTrack {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.downloadFill {
+  height: 100%;
+  background: var(--lime-soft, #a3e635);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* Selecting/loading spinner */
+.selectingLoader {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-top-color: var(--lime);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.progressContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progressText {
+  font-size: 12px;
+  color: var(--muted3);
+}
+
+.progressTrack {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-overlay);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--lime);
+  transition: width 0.3s ease;
+}
+
+.errorText {
+  color: var(--error);
+  font-size: 13px;
+}
+
+.cancelBtn {
+  background: none;
+  border: none;
+  color: var(--muted3);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.cancelBtn:hover {
+  color: var(--text);
+}
+
+.downloadError {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--error) 10%, var(--surface-hover));
+  border: 1px solid color-mix(in srgb, var(--error) 30%, transparent);
+  color: var(--error);
+  font-size: 13px;
+}
+
+.downloadError span {
+  flex: 1;
+  word-break: break-word;
+}

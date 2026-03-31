@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, cleanup, waitFor } from "@testing-library/react";
+import { render, screen, cleanup, waitFor, fireEvent } from "@testing-library/react";
 
 const mockDispatch = vi.fn();
 const mockSaveDefaultModel = vi.fn().mockResolvedValue(undefined);
 const mockSetProviderFilter = vi.fn();
 const mockIsProviderConfigured = vi.fn().mockReturnValue(false);
 const mockSaveOllamaProvider = vi.fn().mockResolvedValue(undefined);
+const mockSwitchMode = vi.fn();
 
 let mockAuthMode = "self-managed";
 let mockProviderFilter: string | null = null;
@@ -15,6 +16,7 @@ let mockActiveProviderKey: string | null = null;
 let mockSortedModels: Array<{ id: string; name: string; provider: string }> = [];
 let mockModelsLoading = false;
 let mockModelBusy = false;
+let mockAccountLoading = false;
 
 vi.mock("@store/hooks", () => ({
   useAppDispatch: () => mockDispatch,
@@ -22,13 +24,10 @@ vi.mock("@store/hooks", () => ({
     selector({ auth: { mode: mockAuthMode } }),
 }));
 
-vi.mock("@store/slices/auth/authSlice", () => ({
-  switchToSubscription: vi.fn(),
-  switchToSelfManaged: vi.fn(),
-}));
+vi.mock("@store/slices/auth/authSlice", () => ({}));
 
-vi.mock("@store/slices/configSlice", () => ({
-  reloadConfig: vi.fn(),
+vi.mock("@store/slices/auth/mode-switch", () => ({
+  switchMode: (payload: unknown) => mockSwitchMode(payload),
 }));
 
 vi.mock("@shared/toast", () => ({
@@ -60,7 +59,7 @@ vi.mock("@ipc/desktopApi", () => ({
 }));
 
 vi.mock("@ui/settings/account/useAccountState", () => ({
-  useAccountState: () => ({ mode: "self-managed" }),
+  useAccountState: () => ({ mode: "self-managed", loading: mockAccountLoading }),
 }));
 
 vi.mock("../providers/useModelProvidersState", () => ({
@@ -84,6 +83,10 @@ vi.mock("../providers/useModelProvidersState", () => ({
 
 vi.mock("../account/AccountTab", () => ({
   AccountTab: () => <div data-testid="account-tab" />,
+}));
+
+vi.mock("../local-models/LocalModelsTab", () => ({
+  LocalModelsTab: () => <div data-testid="local-models-tab" />,
 }));
 
 let capturedInlineApiKeyProps: Record<string, unknown> = {};
@@ -118,6 +121,7 @@ describe("AccountModelsTab (self-managed mode)", () => {
     mockSortedModels = [];
     mockModelsLoading = false;
     mockModelBusy = false;
+    mockAccountLoading = false;
     capturedInlineApiKeyProps = {};
   });
 
@@ -217,8 +221,8 @@ describe("AccountModelsTab (self-managed mode)", () => {
 
     const toggle = screen.getByRole("radiogroup", { name: "Connection mode" });
     expect(toggle).not.toBeNull();
-    expect(screen.getByText("Atomic Subscription")).not.toBeNull();
-    expect(screen.getByText("Your own API key")).not.toBeNull();
+    expect(screen.getByText("Subscription")).not.toBeNull();
+    expect(screen.getByText("API keys")).not.toBeNull();
   });
 
   it("passes onSaveOllama prop to InlineApiKey", () => {
@@ -227,5 +231,20 @@ describe("AccountModelsTab (self-managed mode)", () => {
     render(<AccountModelsTab {...defaultProps} />);
 
     expect(capturedInlineApiKeyProps.onSaveOllama).toBe(mockSaveOllamaProvider);
+  });
+
+  it("shows mode switch loader while switching away from local models", () => {
+    mockAuthMode = "local-model";
+    mockDispatch.mockReturnValue({
+      unwrap: () => new Promise(() => {}),
+    });
+
+    render(<AccountModelsTab {...defaultProps} />);
+
+    fireEvent.click(screen.getByText("API keys"));
+
+    expect(mockSwitchMode).toHaveBeenCalled();
+    expect(screen.getByText("Switching to API keys...")).not.toBeNull();
+    expect(screen.getByRole("status")).not.toBeNull();
   });
 });
