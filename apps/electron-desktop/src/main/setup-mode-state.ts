@@ -13,13 +13,17 @@ export function readSetupMode(stateDir: string): DesktopSetupMode | null {
   try {
     const raw = fs.readFileSync(path.join(stateDir, STATE_FILE), "utf-8");
     const parsed = JSON.parse(raw) as { mode?: unknown };
-    return isDesktopSetupMode(parsed.mode) ? parsed.mode : null;
+    const mode = isDesktopSetupMode(parsed.mode) ? parsed.mode : null;
+    console.log("[setup-mode] read:", mode ?? "none");
+    return mode;
   } catch {
+    console.log("[setup-mode] read: file absent");
     return null;
   }
 }
 
 export function writeSetupMode(stateDir: string, mode: DesktopSetupMode): void {
+  console.log("[setup-mode] write:", mode);
   fs.mkdirSync(stateDir, { recursive: true });
   fs.writeFileSync(
     path.join(stateDir, STATE_FILE),
@@ -28,6 +32,7 @@ export function writeSetupMode(stateDir: string, mode: DesktopSetupMode): void {
 }
 
 export function clearSetupMode(stateDir: string): void {
+  console.log("[setup-mode] clear");
   try {
     fs.unlinkSync(path.join(stateDir, STATE_FILE));
   } catch {

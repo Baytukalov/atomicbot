@@ -141,6 +141,7 @@ export const cancelLlamacppBackendDownload = createAsyncThunk(
 export const downloadLlamacppModel = createAsyncThunk(
   "llamacpp/downloadModel",
   async (modelId: string, thunkApi) => {
+    console.log("[llamacpp/downloadModel] starting:", modelId);
     const api = getDesktopApiOrNull();
     if (!api?.llamacppModelDownload) {
       return thunkApi.rejectWithValue("Desktop API not available");
@@ -164,12 +165,15 @@ export const downloadLlamacppModel = createAsyncThunk(
       const result = await api.llamacppModelDownload({ model: modelId });
       unsub?.();
       if (!result.ok) {
+        console.error("[llamacpp/downloadModel] failed:", result.error);
         return thunkApi.rejectWithValue(result.error ?? "Download failed");
       }
+      console.log("[llamacpp/downloadModel] done:", modelId);
       thunkApi.dispatch(fetchLlamacppModels());
       return modelId;
     } catch (err) {
       unsub?.();
+      console.error("[llamacpp/downloadModel] exception:", err);
       return thunkApi.rejectWithValue(errorToMessage(err));
     }
   }
@@ -187,8 +191,10 @@ export const cancelLlamacppModelDownload = createAsyncThunk(
 export const startLlamacppServer = createAsyncThunk(
   "llamacpp/startServer",
   async (modelId: string | undefined, thunkApi) => {
+    console.log("[llamacpp/startServer] requested, modelId:", modelId ?? "default");
     const api = getDesktopApiOrNull();
     if (!api?.llamacppServerStart) {
+      console.error("[llamacpp/startServer] Desktop API not available");
       return thunkApi.rejectWithValue("Desktop API not available");
     }
 
@@ -197,11 +203,14 @@ export const startLlamacppServer = createAsyncThunk(
     try {
       const result = await api.llamacppServerStart(modelId ? { model: modelId } : undefined);
       if (!result.ok) {
+        console.error("[llamacpp/startServer] failed:", result.error);
         thunkApi.dispatch(llamacppActions.setServerStatus("error"));
         return thunkApi.rejectWithValue(result.error ?? "Server start failed");
       }
+      console.log("[llamacpp/startServer] OK, modelId:", result.modelId);
       return result;
     } catch (err) {
+      console.error("[llamacpp/startServer] exception:", err);
       thunkApi.dispatch(llamacppActions.setServerStatus("error"));
       return thunkApi.rejectWithValue(errorToMessage(err));
     }
@@ -209,22 +218,27 @@ export const startLlamacppServer = createAsyncThunk(
 );
 
 export const stopLlamacppServer = createAsyncThunk("llamacpp/stopServer", async (_, thunkApi) => {
+  console.log("[llamacpp/stopServer] requested");
   const api = getDesktopApiOrNull();
   if (!api?.llamacppServerStop) {
     return thunkApi.rejectWithValue("Desktop API not available");
   }
   const result = await api.llamacppServerStop();
   if (!result.ok) {
+    console.error("[llamacpp/stopServer] failed:", result.error);
     return thunkApi.rejectWithValue(result.error ?? "Stop failed");
   }
+  console.log("[llamacpp/stopServer] OK");
   return true;
 });
 
 export const setLlamacppActiveModel = createAsyncThunk(
   "llamacpp/setActiveModel",
   async (modelId: string, thunkApi) => {
+    console.log("[llamacpp/setActiveModel] requested:", modelId);
     const api = getDesktopApiOrNull();
     if (!api?.llamacppSetActiveModel) {
+      console.error("[llamacpp/setActiveModel] Desktop API not available");
       return thunkApi.rejectWithValue("Desktop API not available");
     }
 
@@ -234,11 +248,14 @@ export const setLlamacppActiveModel = createAsyncThunk(
     try {
       const result = await api.llamacppSetActiveModel({ model: modelId });
       if (!result.ok) {
+        console.error("[llamacpp/setActiveModel] failed:", result.error);
         thunkApi.dispatch(llamacppActions.setServerStatus("error"));
         return thunkApi.rejectWithValue(result.error ?? "Failed to set model");
       }
+      console.log("[llamacpp/setActiveModel] OK, modelId:", result.modelId);
       return result;
     } catch (err) {
+      console.error("[llamacpp/setActiveModel] exception:", err);
       thunkApi.dispatch(llamacppActions.setServerStatus("error"));
       return thunkApi.rejectWithValue(errorToMessage(err));
     }

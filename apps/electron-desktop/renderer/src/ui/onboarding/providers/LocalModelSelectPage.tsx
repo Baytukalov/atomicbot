@@ -8,6 +8,7 @@ import {
   cancelLlamacppModelDownload,
 } from "@store/slices/llamacppSlice";
 import { GlassCard, HeroPageLayout, PrimaryButton, SecondaryButton } from "@shared/kit";
+import { addToastError } from "@shared/toast";
 import { OnboardingHeader } from "../OnboardingHeader";
 import qwenIcon from "@assets/ai-models/qwen.svg";
 import glmIcon from "@assets/ai-models/glm.svg";
@@ -16,7 +17,7 @@ import s from "./LocalModelSelectPage.module.css";
 export function LocalModelSelectPage(props: {
   totalSteps: number;
   activeStep: number;
-  onSelect: (modelId: string) => void;
+  onSelect: (modelId: string) => Promise<void>;
   onContinue: () => void;
   onBack: () => void;
 }) {
@@ -24,6 +25,7 @@ export function LocalModelSelectPage(props: {
   const models = useAppSelector((st) => st.llamacpp.models);
   const systemInfo = useAppSelector((st) => st.llamacpp.systemInfo);
   const modelDownload = useAppSelector((st) => st.llamacpp.modelDownload);
+  const [selectingModelId, setSelectingModelId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     void dispatch(fetchLlamacppModels());
@@ -32,14 +34,32 @@ export function LocalModelSelectPage(props: {
 
   const downloadingModelId = modelDownload.kind === "downloading" ? modelDownload.modelId : null;
 
+  const handleSelect = React.useCallback(
+    async (modelId: string) => {
+      setSelectingModelId(modelId);
+      try {
+        await props.onSelect(modelId);
+      } catch (err) {
+        addToastError(err);
+      } finally {
+        setSelectingModelId(null);
+      }
+    },
+    [props]
+  );
+
   const handleDownload = React.useCallback(
     (modelId: string) => {
       void (async () => {
-        await dispatch(downloadLlamacppModel(modelId)).unwrap();
-        props.onSelect(modelId);
+        try {
+          await dispatch(downloadLlamacppModel(modelId)).unwrap();
+          await handleSelect(modelId);
+        } catch {
+          // Download errors are rendered inline by modelDownload state.
+        }
       })();
     },
-    [dispatch, props]
+    [dispatch, handleSelect]
   );
 
   const handleCancel = React.useCallback(() => {
@@ -66,6 +86,8 @@ export function LocalModelSelectPage(props: {
           <div className={s.modelList}>
             {models.map((model) => {
               const isDownloading = downloadingModelId === model.id;
+              const isSelecting = selectingModelId === model.id;
+              const actionsDisabled = selectingModelId !== null && !isSelecting;
               const compatClass =
                 model.compatibility === "recommended"
                   ? s.badgeRecommended
@@ -84,20 +106,27 @@ export function LocalModelSelectPage(props: {
                     </div>
                   )}
                   <div className={s.modelInfo}>
-                    <div className={s.modelName}>{model.name}</div>
+                    <div className={s.modelName}>
+                      {model.name}
+                      {model.compatibility !== "recommended" && (
+                        <span className={`${s.badge} ${compatClass}`}>
+                          {model.compatibility === "possible" ? "May be slow" : "Not recommended"}
+                        </span>
+                      )}
+                    </div>
                     <div className={s.modelMeta}>
                       {model.description} &middot; {model.sizeLabel} &middot; {model.contextLabel}
                     </div>
-                    {model.compatibility !== "recommended" && (
-                      <span className={`${s.badge} ${compatClass}`}>
-                        {model.compatibility === "possible" ? "May be slow" : "Not recommended"}
-                      </span>
-                    )}
                   </div>
                   <div className={s.modelAction}>
                     {model.downloaded ? (
-                      <PrimaryButton size="sm" onClick={() => props.onSelect(model.id)}>
-                        Select
+                      <PrimaryButton
+                        size="sm"
+                        loading={isSelecting}
+                        disabled={actionsDisabled}
+                        onClick={() => void handleSelect(model.id)}
+                      >
+                        {isSelecting ? "Starting..." : "Select"}
                       </PrimaryButton>
                     ) : isDownloading ? (
                       <SecondaryButton size="sm" onClick={handleCancel}>
@@ -106,7 +135,11 @@ export function LocalModelSelectPage(props: {
                           : "Cancel"}
                       </SecondaryButton>
                     ) : (
-                      <SecondaryButton size="sm" onClick={() => handleDownload(model.id)}>
+                      <SecondaryButton
+                        size="sm"
+                        disabled={actionsDisabled}
+                        onClick={() => handleDownload(model.id)}
+                      >
                         Download
                       </SecondaryButton>
                     )}

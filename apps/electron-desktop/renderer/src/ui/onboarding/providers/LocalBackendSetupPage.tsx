@@ -40,6 +40,7 @@ export function LocalBackendSetupPage(props: {
       autoContinuedRef.current = true;
       props.onContinue();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when isDone or onContinue changes
   }, [isDone, props.onContinue]);
 
   const handleCancel = React.useCallback(() => {

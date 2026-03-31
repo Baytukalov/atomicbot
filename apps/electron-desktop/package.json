@@ -57,7 +57,7 @@
     "dist:local": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist -- --publish never",
     "dist:local:win": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false ELECTRON_BUILDER_COMPRESSION_LEVEL=1 npm run dist -- --publish never --win",
     "dist": "npm run build:all && electron-builder",
-    "dist:env": "npm run build:all &&  node --env-file=.env ./node_modules/electron-builder/out/cli/cli.js",
+    "dist:env": "set -a && . ./.env && set +a && npm run build:all && node ./node_modules/electron-builder/out/cli/cli.js",
     "dist:env:local": "CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist:env -- --publish never",
     "release": "bash scripts/release.sh",
     "test": "vitest run --config vitest.config.ts",
@@ -165,8 +165,11 @@
         "to": "assets/trayTemplate@2x.png"
       },
       {
-        "from": "assets/ai-models/*.jinja",
-        "to": "ai-models"
+        "from": "assets/ai-models",
+        "to": "ai-models",
+        "filter": [
+          "*.jinja"
+        ]
       },
       {
         "from": "vendor/openclaw",

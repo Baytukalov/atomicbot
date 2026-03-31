@@ -6,7 +6,6 @@ import {
   fetchLlamacppBackendStatus,
   fetchLlamacppServerStatus,
   downloadLlamacppBackend,
-  cancelLlamacppBackendDownload,
   checkLlamacppBackendUpdate,
   downloadLlamacppModel,
   cancelLlamacppModelDownload,
@@ -28,16 +27,8 @@ export function LocalModelsTab(props: {
   onReload?: () => Promise<void>;
 }) {
   const dispatch = useAppDispatch();
-  const {
-    backendDownloaded,
-    backendVersion,
-    backendDownload,
-    models,
-    modelDownload,
-    serverStatus,
-    activeModelId,
-    systemInfo,
-  } = useAppSelector((st) => st.llamacpp);
+  const { backendDownloaded, models, modelDownload, serverStatus, activeModelId, systemInfo } =
+    useAppSelector((st) => st.llamacpp);
 
   const autoStartedRef = React.useRef(false);
   const [selectingModelId, setSelectingModelId] = React.useState<string | null>(null);
@@ -63,27 +54,22 @@ export function LocalModelsTab(props: {
     })();
   }, [dispatch]);
 
-  // Clear selecting state when server finishes starting
-  React.useEffect(() => {
-    if (serverStatus !== "starting") {
-      setSelectingModelId(null);
-    }
-  }, [serverStatus]);
-
   const downloadingModelId = modelDownload.kind === "downloading" ? modelDownload.modelId : null;
 
   const handleSelect = React.useCallback(
     async (modelId: string) => {
+      console.log("[LocalModelsTab] handleSelect:", modelId);
       setSelectingModelId(modelId);
 
-      const serverResult = await dispatch(setLlamacppActiveModel(modelId)).unwrap();
-      void dispatch(fetchLlamacppServerStatus());
+      try {
+        const serverResult = await dispatch(setLlamacppActiveModel(modelId)).unwrap();
+        console.log("[LocalModelsTab] setActiveModel result:", serverResult);
+        void dispatch(fetchLlamacppServerStatus());
 
-      const cfgModelId = serverResult?.modelId ?? modelId;
-      const cfgModelName = serverResult?.modelName ?? "Local Model";
+        const cfgModelId = serverResult?.modelId ?? modelId;
+        const cfgModelName = serverResult?.modelName ?? "Local Model";
 
-      if (props.gatewayRequest) {
-        try {
+        if (props.gatewayRequest) {
           await applyLocalModelConfig({
             request: props.gatewayRequest,
             modelId: cfgModelId,
@@ -100,51 +86,19 @@ export function LocalModelsTab(props: {
               .unwrap()
               .catch(() => {});
           }
-        } catch (err) {
-          console.error("[LocalModelsTab] config.patch failed:", err);
         }
+      } catch (err) {
+        console.error("[LocalModelsTab] handleSelect failed:", err);
+      } finally {
+        setSelectingModelId(null);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-run when specific prop methods change
     [dispatch, props.gatewayRequest, props.onReload]
   );
 
   return (
     <div className={s.root}>
-      {/* Backend status */}
-      <div className={s.section}>
-        <div className={s.sectionHeader}>
-          <div className={s.sectionTitle}>AI Engine</div>
-          {backendDownloaded && backendVersion && (
-            <div className={s.versionBadge}>{backendVersion}</div>
-          )}
-        </div>
-
-        {!backendDownloaded && backendDownload.kind !== "downloading" && (
-          <SecondaryButton size="sm" onClick={() => void dispatch(downloadLlamacppBackend())}>
-            Download AI Engine
-          </SecondaryButton>
-        )}
-
-        {backendDownload.kind === "downloading" && (
-          <div className={s.progressContainer}>
-            <div className={s.progressText}>Downloading engine... {backendDownload.percent}%</div>
-            <div className={s.progressTrack}>
-              <div className={s.progressFill} style={{ width: `${backendDownload.percent}%` }} />
-            </div>
-            <SecondaryButton
-              size="sm"
-              onClick={() => void dispatch(cancelLlamacppBackendDownload())}
-            >
-              Cancel
-            </SecondaryButton>
-          </div>
-        )}
-
-        {backendDownload.kind === "error" && (
-          <div className={s.errorText}>{backendDownload.message}</div>
-        )}
-      </div>
-
       {/* System info */}
       {systemInfo && (
         <div className={s.systemInfo}>
@@ -161,7 +115,7 @@ export function LocalModelsTab(props: {
         {models.map((model) => {
           const isActive = activeModelId === model.id;
           const isDownloading = downloadingModelId === model.id;
-          const isSelecting = selectingModelId === model.id && serverStatus === "starting";
+          const isSelecting = selectingModelId === model.id;
 
           return (
             <div key={model.id} className={`${s.modelRow} ${isActive ? s.modelRowActive : ""}`}>
@@ -172,19 +126,21 @@ export function LocalModelsTab(props: {
                 <div className={s.modelName}>
                   {model.name}
                   {isActive && <span className={s.activeBadge}>Active</span>}
+                  {model.compatibility !== "recommended" && (
+                    <span
+                      className={`${s.activeBadge} ${
+                        model.compatibility === "possible"
+                          ? s.compatPossible
+                          : s.compatNotRecommended
+                      }`}
+                    >
+                      {model.compatibility === "possible" ? "May be slow" : "Not recommended"}
+                    </span>
+                  )}
                 </div>
                 <div className={s.modelMeta}>
                   {model.description} &middot; {model.sizeLabel} &middot; {model.contextLabel}
                 </div>
-                {model.compatibility !== "recommended" && (
-                  <span
-                    className={`${s.compatBadge} ${
-                      model.compatibility === "possible" ? s.compatPossible : s.compatNotRecommended
-                    }`}
-                  >
-                    {model.compatibility === "possible" ? "May be slow" : "Not recommended"}
-                  </span>
-                )}
 
                 {/* Whisper-style download progress inline */}
                 {isDownloading && modelDownload.kind === "downloading" && (
@@ -213,15 +169,13 @@ export function LocalModelsTab(props: {
                 {model.downloaded ? (
                   isActive ? (
                     <div className={s.runningIndicator} />
-                  ) : isSelecting ? (
-                    <div className={s.selectingLoader} />
                   ) : (
                     <SecondaryButton
                       size="sm"
-                      disabled={serverStatus === "starting"}
+                      disabled={isSelecting || selectingModelId !== null}
                       onClick={() => void handleSelect(model.id)}
                     >
-                      Select
+                      {isSelecting ? "Starting…" : "Select"}
                     </SecondaryButton>
                   )
                 ) : isDownloading ? null : (

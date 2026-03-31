@@ -15,6 +15,7 @@ import { applyLocalModelConfig } from "../llamacpp-config";
 export const localModelHandler: ModeHandler = {
   async saveBackup(ctx: SwitchContext): Promise<void> {
     const activeModelId = ctx.getState().llamacpp.activeModelId;
+    console.log("[localModelHandler] saveBackup, activeModelId:", activeModelId ?? "none");
     if (activeModelId) {
       saveLocalModelBackup({
         activeModelId,
@@ -24,22 +25,26 @@ export const localModelHandler: ModeHandler = {
   },
 
   async teardown(ctx: SwitchContext): Promise<void> {
+    console.log("[localModelHandler] teardown start");
     try {
       await ctx.dispatch(stopLlamacppServer()).unwrap();
-    } catch {
-      // server might already be stopped
+      console.log("[localModelHandler] stopLlamacppServer OK");
+    } catch (err) {
+      console.warn("[localModelHandler] stopLlamacppServer failed (may already be stopped):", err);
     }
 
     try {
       await ctx.api?.llamacppClearActiveModel?.();
-    } catch {
-      // active model file cleanup is best effort
+      console.log("[localModelHandler] clearActiveModel OK");
+    } catch (err) {
+      console.warn("[localModelHandler] clearActiveModel failed:", err);
     }
 
     try {
       await ctx.api?.setSetupModeMarker?.();
-    } catch {
-      // setup mode marker cleanup is best effort
+      console.log("[localModelHandler] setSetupModeMarker cleared");
+    } catch (err) {
+      console.warn("[localModelHandler] setSetupModeMarker failed:", err);
     }
 
     ctx.dispatch(llamacppActions.setActiveModelId(null));
@@ -51,20 +56,32 @@ export const localModelHandler: ModeHandler = {
       { models: { providers: { llamacpp: null } } },
       "Switch from local-model: clear llamacpp config"
     );
+    console.log("[localModelHandler] teardown done");
   },
 
   async setup(ctx: SwitchContext): Promise<ModeSetupResult> {
     let { modelId, modelName, contextLength } = ctx.extra;
     const backup = readLocalModelBackup();
+    console.log(
+      "[localModelHandler] setup start, modelId:",
+      modelId ?? "none",
+      "backup:",
+      backup?.activeModelId ?? "none"
+    );
 
     if (!modelId && backup?.activeModelId) {
+      console.log(
+        "[localModelHandler] restoring from backup, starting server:",
+        backup.activeModelId
+      );
       try {
         const serverResult = await ctx.dispatch(startLlamacppServer(backup.activeModelId)).unwrap();
         modelId = serverResult?.modelId ?? backup.activeModelId;
         modelName = serverResult?.modelName ?? modelName;
         contextLength = serverResult?.contextLength ?? contextLength;
-      } catch {
-        // Server start is best effort on mode restore.
+        console.log("[localModelHandler] server restored OK, modelId:", modelId);
+      } catch (err) {
+        console.warn("[localModelHandler] server restore failed:", err);
       }
     }
 
@@ -74,6 +91,7 @@ export const localModelHandler: ModeHandler = {
     if (ctx.api?.setApiKey) {
       try {
         await ctx.api.setApiKey("llamacpp", "LLAMACPP_LOCAL_KEY");
+        console.log("[localModelHandler] setApiKey(llamacpp) OK");
       } catch (err) {
         console.warn("[localModelHandler] Failed to set llamacpp API key:", err);
       }
@@ -86,11 +104,18 @@ export const localModelHandler: ModeHandler = {
         modelName: cfgModelName,
         contextLength,
       });
+      console.log(
+        "[localModelHandler] applyLocalModelConfig OK:",
+        cfgModelId,
+        "ctx:",
+        contextLength
+      );
     } catch (err) {
       console.warn("[localModelHandler] Failed to patch config:", err);
     }
 
     clearLocalModelBackup();
+    console.log("[localModelHandler] setup done, restoredModel:", `llamacpp/${cfgModelId}`);
     return { hasBackup: !!backup, restoredModel: `llamacpp/${cfgModelId}` };
   },
 };

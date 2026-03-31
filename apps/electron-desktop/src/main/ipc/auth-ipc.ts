@@ -10,6 +10,7 @@ import type { AuthHandlerParams } from "./types";
 
 export function registerAuthHandlers(params: AuthHandlerParams) {
   ipcMain.handle(IPC.onboardingSetState, (_evt, payload: { onboarded?: boolean }) => {
+    console.log("[auth-ipc] onboardingSetState:", payload);
     if (payload.onboarded) {
       writeOnboardedState(params.stateDir, true);
     } else {
@@ -19,6 +20,7 @@ export function registerAuthHandlers(params: AuthHandlerParams) {
   });
 
   ipcMain.handle(IPC.authSetSetupModeMarker, (_evt, payload?: { mode?: string }) => {
+    console.log("[auth-ipc] setSetupModeMarker:", payload?.mode ?? "clear");
     if (!payload?.mode) {
       clearSetupMode(params.stateDir);
       return { ok: true } as const;
@@ -29,6 +31,7 @@ export function registerAuthHandlers(params: AuthHandlerParams) {
       payload.mode !== "self-managed" &&
       payload.mode !== "local-model"
     ) {
+      console.error("[auth-ipc] invalid setup mode:", payload.mode);
       throw new Error(`Invalid setup mode marker: ${payload.mode}`);
     }
 

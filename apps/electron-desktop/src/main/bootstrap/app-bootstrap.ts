@@ -225,17 +225,27 @@ export async function bootstrapApp(params: {
       const activeId = readActiveModelId(stateDir);
       const onboarded = readOnboardedState(stateDir);
       const setupMode = readSetupMode(stateDir);
+      const backendReady = isBackendDownloaded(llamacppDataDir);
+      const configHasLlamacpp = shouldAutoStartLlamacpp(configPath);
+      console.log(
+        `[main] llama auto-start check: onboarded=${String(onboarded)}, setupMode=${setupMode ?? "null"}, activeId=${activeId ?? "null"}, backendReady=${String(backendReady)}, configHasLlamacpp=${String(configHasLlamacpp)}`
+      );
       if (
         onboarded &&
         setupMode === "local-model" &&
         activeId &&
-        isBackendDownloaded(llamacppDataDir) &&
-        shouldAutoStartLlamacpp(configPath)
+        backendReady &&
+        configHasLlamacpp
       ) {
         const model = getLlamacppModelDef(activeId as LlamacppModelId);
         const modelPath = resolveLlamacppModelPath(llamacppDataDir, model);
         const binPath = resolveServerBinPath(llamacppDataDir);
-        if (fs.existsSync(modelPath) && fs.existsSync(binPath)) {
+        const modelExists = fs.existsSync(modelPath);
+        const binExists = fs.existsSync(binPath);
+        console.log(
+          `[main] llama paths: model=${modelPath} (exists=${String(modelExists)}), bin=${binPath} (exists=${String(binExists)})`
+        );
+        if (modelExists && binExists) {
           const sysInfo = getSystemInfo();
           const ctxLen = computeContextLength(sysInfo.totalRamGb, model);
           const chatTemplateFile = resolveChatTemplatePath(model, {
@@ -252,7 +262,11 @@ export async function bootstrapApp(params: {
           }).catch((err) => {
             console.error(`[main] llama-server auto-start failed: ${String(err)}`);
           });
+        } else {
+          console.warn("[main] llama auto-start skipped: missing model or binary file");
         }
+      } else {
+        console.log("[main] llama auto-start skipped: preconditions not met");
       }
     } catch (err) {
       console.error(`[main] llama-server auto-start check failed: ${String(err)}`);

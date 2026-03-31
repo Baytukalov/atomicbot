@@ -245,22 +245,20 @@ export function WelcomePage({ state }: { state: Extract<GatewayState, { kind: "r
             <LocalModelSelectPage
               totalSteps={LOCAL_MODEL_FLOW.totalSteps}
               activeStep={LOCAL_MODEL_FLOW.steps.modelSelect}
-              onSelect={(modelId) => {
-                void (async () => {
-                  const serverResult = await dispatch(startLlamacppServer(modelId)).unwrap();
-                  if (gw) {
-                    await dispatch(
-                      switchMode({
-                        request: gw.request,
-                        target: "local-model",
-                        modelId: serverResult?.modelId,
-                        modelName: serverResult?.modelName,
-                        contextLength: serverResult?.contextLength,
-                      })
-                    );
-                  }
-                  welcome.goSkills();
-                })();
+              onSelect={async (modelId) => {
+                const serverResult = await dispatch(startLlamacppServer(modelId)).unwrap();
+                if (gw) {
+                  await dispatch(
+                    switchMode({
+                      request: gw.request,
+                      target: "local-model",
+                      modelId: serverResult?.modelId,
+                      modelName: serverResult?.modelName,
+                      contextLength: serverResult?.contextLength,
+                    })
+                  ).unwrap();
+                }
+                welcome.goSkills();
               }}
               onContinue={welcome.goSkills}
               onBack={() => void navigate(`${routes.welcome}/setup-mode`)}

@@ -70,14 +70,21 @@ export const switchMode = createAsyncThunk(
     const dispatch = thunkApi.dispatch as AppDispatch;
     const current = getState().auth.mode;
 
-    if (current === target) return { hasBackup: true } as ModeSetupResult;
+    console.log(`[switchMode] ${current ?? "null"} → ${target}`, extra);
+
+    if (current === target) {
+      console.log("[switchMode] same mode, skipping");
+      return { hasBackup: true } as ModeSetupResult;
+    }
 
     const api = getDesktopApiOrNull();
     const ctx: SwitchContext = { request, api, dispatch, getState, extra };
 
     // Phase 1 + 2: save backup & teardown current mode
     if (current) {
+      console.log(`[switchMode] phase 1: saveBackup(${current})`);
       await handlers[current].saveBackup(ctx);
+      console.log(`[switchMode] phase 2: teardown(${current})`);
       await handlers[current].teardown(ctx);
     }
 
@@ -86,7 +93,9 @@ export const switchMode = createAsyncThunk(
     dispatch(authActions.clearAuthState());
 
     // Phase 3: setup target mode
+    console.log(`[switchMode] phase 3: setup(${target})`);
     const result = await handlers[target].setup(ctx);
+    console.log("[switchMode] setup result:", result);
 
     // Phase 4: finalize
     dispatch(authActions.setMode(target));
@@ -99,13 +108,16 @@ export const switchMode = createAsyncThunk(
 
     try {
       await request("secrets.reload", {});
-    } catch {
-      // best effort
+      console.log("[switchMode] secrets.reload OK");
+    } catch (err) {
+      console.warn("[switchMode] secrets.reload failed:", err);
     }
 
+    console.log("[switchMode] resetting session model selection");
     await resetSessionModelSelection(request);
     await dispatch(reloadConfig({ request }));
 
+    console.log(`[switchMode] done: ${current ?? "null"} → ${target}`);
     return result;
   }
 );
