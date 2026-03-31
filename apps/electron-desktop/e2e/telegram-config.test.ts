@@ -57,6 +57,11 @@ test.describe("Telegram channel config (gateway RPC)", () => {
             botToken: telegramCfg.botToken,
           },
         },
+        plugins: {
+          entries: {
+            telegram: { enabled: true },
+          },
+        },
       }),
     });
     expect(patchResult.ok).toBe(true);

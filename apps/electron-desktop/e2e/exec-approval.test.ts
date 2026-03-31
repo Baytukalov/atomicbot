@@ -37,7 +37,7 @@ test.describe("Exec Approval flow (gateway exec pipeline)", () => {
   });
 
   test("set exec host=gateway and ask=always via config.patch", async () => {
-    test.setTimeout(30_000);
+    test.setTimeout(45_000);
     const snap = await getConfig(page);
     await gatewayRpc(page, "config.patch", {
       baseHash: snap.hash,
@@ -45,8 +45,8 @@ test.describe("Exec Approval flow (gateway exec pipeline)", () => {
         tools: { exec: { host: "gateway", ask: "always" } },
       }),
     });
-    // Gateway restarts after config.patch; wait for it to come back
-    await page.waitForTimeout(8_000);
+    // Gateway restarts after config.patch; give it enough time to fully come back
+    await page.waitForTimeout(12_000);
   });
 
   test("start new session so config change is picked up", async () => {

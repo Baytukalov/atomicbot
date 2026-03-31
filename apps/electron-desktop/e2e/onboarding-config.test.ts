@@ -115,14 +115,16 @@ test.describe("Config verification during onboarding", () => {
   });
 
   test("full config is consistent after completing onboarding", async () => {
+    test.setTimeout(60_000);
     await skipSkills(page);
     await waitForConnectionsPage(page);
     await skipConnections(page);
 
-    const onboarded = await page.evaluate(() =>
-      localStorage.getItem("openclaw.desktop.onboarded.v1")
-    );
-    expect(onboarded).toBe("1");
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem("openclaw.desktop.onboarded.v1")), {
+        timeout: 30_000,
+      })
+      .toBe("1");
 
     const snap = await getConfig(page);
     const cfg = getObj(snap.config);

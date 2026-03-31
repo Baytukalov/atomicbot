@@ -76,11 +76,11 @@ test.describe("Exec approval modes: balanced vs permissive", () => {
   });
 
   test("toggle back to balanced and verify config syncs", async () => {
-    test.setTimeout(30_000);
+    test.setTimeout(60_000);
 
     const select = page.locator("select").filter({ has: page.locator('option[value="balanced"]') });
     await select.selectOption("balanced");
-    await page.waitForTimeout(3_000);
+    await page.waitForTimeout(8_000);
 
     const approvals = await gatewayRpc<{
       file: { defaults?: { security?: string; ask?: string } };

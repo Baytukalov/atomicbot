@@ -121,7 +121,7 @@ test.describe("Settings account tab (paid mode)", () => {
     await expect(tabNav.getByText("AI Models")).toBeVisible();
   });
 
-  test("Connection toggle shows Atomic Bot Account as active", async () => {
+  test("Connection toggle shows Subscription as active", async () => {
     test.setTimeout(15_000);
     const tabNav = page.locator('[aria-label="Settings sections"]');
     await tabNav.getByText("AI Models").click();
@@ -129,8 +129,8 @@ test.describe("Settings account tab (paid mode)", () => {
 
     const toggle = page.locator('[aria-label="Connection mode"]');
     await expect(toggle).toBeVisible({ timeout: 10_000 });
-    await expect(toggle.getByText("Atomic Bot Account")).toBeVisible();
-    await expect(toggle.getByText("Own API key")).toBeVisible();
+    await expect(toggle.getByText("Subscription")).toBeVisible();
+    await expect(toggle.getByText("API keys")).toBeVisible();
   });
 
   test("balance section is visible in paid mode", async () => {

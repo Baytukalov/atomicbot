@@ -77,7 +77,7 @@ test.describe("Settings page", () => {
     });
 
     await tabNav.getByText("Skills").click();
-    await expect(page.getByPlaceholder("Search by skills…")).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByPlaceholder("Search ClawHub skills…")).toBeVisible({ timeout: 15_000 });
 
     await tabNav.getByText("Other").click();
     await expect(page.locator('[aria-label="Launch at startup"]')).toBeVisible({ timeout: 15_000 });

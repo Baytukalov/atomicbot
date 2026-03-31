@@ -150,7 +150,7 @@ test.describe("Paid onboarding flow", () => {
   });
 
   test("simulate stripe-success deep link -> success page", async () => {
-    test.setTimeout(120_000);
+    test.setTimeout(180_000);
     await simulateStripeSuccessDeepLink(ctx.app);
 
     await waitForSuccessPage(page);

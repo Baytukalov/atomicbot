@@ -73,20 +73,20 @@ test.describe("Settings — ClawHub live skills", () => {
     await waitForClawHubCard(page);
   });
 
-  test("opens a live ClawHub package modal from the grid", async () => {
+  test("opens a live ClawHub package detail page from the grid", async () => {
     const card = await waitForClawHubCard(page);
     const title = (await card.getAttribute("aria-label"))?.trim() ?? "";
 
     await card.click();
 
-    const modal = page.getByRole("dialog", { name: "ClawHub package details" });
-    await expect(modal).toBeVisible({ timeout: 15_000 });
+    const backBtn = page.getByText("← Back to Skills");
+    await expect(backBtn).toBeVisible({ timeout: 15_000 });
     if (title) {
-      await expect(modal.getByText(title, { exact: true })).toBeVisible();
+      await expect(page.locator("h1").getByText(title, { exact: true })).toBeVisible();
     }
-    await expect(modal.getByRole("button", { name: /Install|Remove/ })).toBeVisible();
-    await modal.getByRole("button", { name: "Close" }).click();
-    await expect(modal).not.toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("button", { name: /Install|Remove/ })).toBeVisible();
+    await backBtn.click();
+    await waitForClawHubCard(page);
   });
 
   test("installs from ClawHub, appears in Installed, then removes cleanly", async () => {

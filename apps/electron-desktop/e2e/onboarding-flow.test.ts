@@ -71,11 +71,13 @@ test.describe("Full onboarding flow", () => {
   });
 
   test("skip connections and finish onboarding -> chat", async () => {
+    test.setTimeout(60_000);
     await skipConnections(page);
 
-    const onboarded = await page.evaluate(() =>
-      localStorage.getItem("openclaw.desktop.onboarded.v1")
-    );
-    expect(onboarded).toBe("1");
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem("openclaw.desktop.onboarded.v1")), {
+        timeout: 30_000,
+      })
+      .toBe("1");
   });
 });

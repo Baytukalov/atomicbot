@@ -72,12 +72,12 @@ test.describe("Settings AI Models tab (self-managed mode)", () => {
 
   // ── Connection toggle ─────────────────────────────────────
 
-  test("connection toggle shows Own API key as active", async () => {
+  test("connection toggle shows API keys as active", async () => {
     test.setTimeout(15_000);
     const toggle = page.locator('[aria-label="Connection mode"]');
     await expect(toggle).toBeVisible({ timeout: 10_000 });
 
-    const ownKeyBtn = toggle.getByText("Own API key");
+    const ownKeyBtn = toggle.getByText("API keys");
     await expect(ownKeyBtn).toBeVisible();
   });
 
