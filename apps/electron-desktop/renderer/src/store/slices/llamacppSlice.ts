@@ -2,6 +2,9 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
 import { errorToMessage } from "../../ui/shared/toast";
+import type { GatewayRequest } from "./chat/chat-types";
+
+export const WARMUP_SESSION_KEY = "__warmup__";
 
 export type LlamacppModelInfo = {
   id: string;
@@ -47,6 +50,7 @@ export type LlamacppSliceState = {
   systemInfo: LlamacppSystemInfo | null;
   models: LlamacppModelInfo[];
   warmupStatus: LlamacppWarmupStatus;
+  warmupSessionKey: string | null;
 };
 
 const initialState: LlamacppSliceState = {
@@ -59,6 +63,7 @@ const initialState: LlamacppSliceState = {
   systemInfo: null,
   models: [],
   warmupStatus: "idle",
+  warmupSessionKey: null,
 };
 
 export const fetchLlamacppSystemInfo = createAsyncThunk("llamacpp/fetchSystemInfo", async () => {
@@ -283,6 +288,31 @@ export const setLlamacppActiveModel = createAsyncThunk(
   }
 );
 
+export const warmupLocalModel = createAsyncThunk(
+  "llamacpp/warmup",
+  async (request: GatewayRequest, thunkApi) => {
+    console.log("[llamacpp/warmup] starting KV cache warmup");
+    thunkApi.dispatch(llamacppActions.setWarmupStatus("warming"));
+
+    try {
+      // sessions.create with message triggers the full agent pipeline
+      // (fire-and-forget); completion is tracked via gateway event listener
+      // in useLocalModelWarmup hook which waits for first token.
+      const res = await request<{ key: string }>("sessions.create", {
+        key: WARMUP_SESSION_KEY,
+        message: "warmup",
+      });
+      // Gateway canonicalizes the key (e.g. "agent:default:__warmup__").
+      const canonicalKey = res?.key ?? WARMUP_SESSION_KEY;
+      console.log("[llamacpp/warmup] session created, canonical key:", canonicalKey);
+      return canonicalKey;
+    } catch (err) {
+      console.warn("[llamacpp/warmup] failed to create session:", err);
+      return thunkApi.rejectWithValue(errorToMessage(err));
+    }
+  }
+);
+
 const llamacppSlice = createSlice({
   name: "llamacpp",
   initialState,
@@ -368,7 +398,6 @@ const llamacppSlice = createSlice({
 
     builder.addCase(startLlamacppServer.fulfilled, (state, action) => {
       state.serverStatus = "running";
-      state.warmupStatus = "warming";
       if (action.payload?.modelId) {
         state.activeModelId = action.payload.modelId;
       }
@@ -377,16 +406,24 @@ const llamacppSlice = createSlice({
     builder.addCase(stopLlamacppServer.fulfilled, (state) => {
       state.serverStatus = "stopped";
       state.warmupStatus = "idle";
+      state.warmupSessionKey = null;
     });
 
     builder.addCase(setLlamacppActiveModel.fulfilled, (state, action) => {
       state.serverStatus = "running";
-      // Main process fires warmup right after health check inside startLlamacppServer,
-      // so by the time this fulfilled action runs, warmup is already in progress.
-      state.warmupStatus = "warming";
+      state.warmupStatus = "idle";
+      state.warmupSessionKey = null;
       if (action.payload?.modelId) {
         state.activeModelId = action.payload.modelId;
       }
+    });
+
+    builder.addCase(warmupLocalModel.fulfilled, (state, action) => {
+      state.warmupSessionKey = action.payload ?? null;
+    });
+    builder.addCase(warmupLocalModel.rejected, (state) => {
+      state.warmupStatus = "error";
+      state.warmupSessionKey = null;
     });
   },
 });
