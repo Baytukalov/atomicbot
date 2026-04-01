@@ -101,18 +101,24 @@ export async function startLlamacppServer(
     process.stdout.write(chunk);
   });
 
+  // Guard: only clear state if this child is still the active process.
+  // A stale exit/error from a previous server must not clobber the new one.
   child.on("exit", (code, signal) => {
     console.log(`[llamacpp] server exited: code=${code} signal=${signal}`);
-    state.process = null;
-    state.healthy = false;
-    state.modelPath = null;
+    if (state.process === child) {
+      state.process = null;
+      state.healthy = false;
+      state.modelPath = null;
+    }
   });
 
   child.on("error", (err) => {
     console.error(`[llamacpp] server error: ${err.message}`);
-    state.process = null;
-    state.healthy = false;
-    state.modelPath = null;
+    if (state.process === child) {
+      state.process = null;
+      state.healthy = false;
+      state.modelPath = null;
+    }
   });
 
   state.process = child;

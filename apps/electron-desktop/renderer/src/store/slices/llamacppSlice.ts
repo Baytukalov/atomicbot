@@ -55,6 +55,7 @@ export type LlamacppSliceState = {
   models: LlamacppModelInfo[];
   warmupStatus: LlamacppWarmupStatus;
   warmupSessionKey: string | null;
+  modelSwitchInFlight: boolean;
 };
 
 const initialState: LlamacppSliceState = {
@@ -68,6 +69,7 @@ const initialState: LlamacppSliceState = {
   models: [],
   warmupStatus: "idle",
   warmupSessionKey: null,
+  modelSwitchInFlight: false,
 };
 
 export const fetchLlamacppSystemInfo = createAsyncThunk("llamacpp/fetchSystemInfo", async () => {
@@ -362,6 +364,10 @@ const llamacppSlice = createSlice({
 
     builder.addCase(fetchLlamacppServerStatus.fulfilled, (state, action) => {
       if (action.payload) {
+        if (state.modelSwitchInFlight) {
+          state.activeModelId = action.payload.activeModelId;
+          return;
+        }
         if (action.payload.healthy) {
           state.serverStatus = "running";
         } else if (action.payload.loading) {
@@ -400,11 +406,18 @@ const llamacppSlice = createSlice({
       state.modelDownload = { kind: "error", message: msg };
     });
 
+    builder.addCase(startLlamacppServer.pending, (state) => {
+      state.modelSwitchInFlight = true;
+    });
     builder.addCase(startLlamacppServer.fulfilled, (state, action) => {
+      state.modelSwitchInFlight = false;
       state.serverStatus = "running";
       if (action.payload?.modelId) {
         state.activeModelId = action.payload.modelId;
       }
+    });
+    builder.addCase(startLlamacppServer.rejected, (state) => {
+      state.modelSwitchInFlight = false;
     });
 
     builder.addCase(stopLlamacppServer.fulfilled, (state) => {
@@ -413,13 +426,20 @@ const llamacppSlice = createSlice({
       state.warmupSessionKey = null;
     });
 
+    builder.addCase(setLlamacppActiveModel.pending, (state) => {
+      state.modelSwitchInFlight = true;
+    });
     builder.addCase(setLlamacppActiveModel.fulfilled, (state, action) => {
+      state.modelSwitchInFlight = false;
       state.serverStatus = "running";
       state.warmupStatus = "idle";
       state.warmupSessionKey = null;
       if (action.payload?.modelId) {
         state.activeModelId = action.payload.modelId;
       }
+    });
+    builder.addCase(setLlamacppActiveModel.rejected, (state) => {
+      state.modelSwitchInFlight = false;
     });
 
     builder.addCase(warmupLocalModel.fulfilled, (state, action) => {
