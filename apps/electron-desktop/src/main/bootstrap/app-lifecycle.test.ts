@@ -55,6 +55,7 @@ describe("registerAppLifecycle", () => {
       handleDeepLink: vi.fn(),
       disposeAutoUpdater: vi.fn(),
       stopGatewayChild: vi.fn(async () => {}),
+      stopLlamacppServer: vi.fn(async () => {}),
       removeGatewayPid: vi.fn(),
     });
     expect(ok).toBe(false);
@@ -72,6 +73,7 @@ describe("registerAppLifecycle", () => {
     const state = createAppState();
     state.gatewayStateDir = "/tmp/state";
     const stopGatewayChild = vi.fn(async () => {});
+    const stopLlamacppServer = vi.fn(async () => {});
     const removeGatewayPid = vi.fn();
     const disposeAutoUpdater = vi.fn();
     const showWindow = vi.fn(async () => {});
@@ -89,6 +91,7 @@ describe("registerAppLifecycle", () => {
       handleDeepLink,
       disposeAutoUpdater,
       stopGatewayChild,
+      stopLlamacppServer,
       removeGatewayPid,
     });
 
@@ -101,10 +104,12 @@ describe("registerAppLifecycle", () => {
     handlers.get("before-quit")?.(event);
     await Promise.resolve();
     await Promise.resolve();
+    await Promise.resolve();
 
     expect(event.preventDefault).toHaveBeenCalled();
     expect(disposeAutoUpdater).toHaveBeenCalled();
     expect(stopGatewayChild).toHaveBeenCalled();
+    expect(stopLlamacppServer).toHaveBeenCalled();
     expect(removeGatewayPid).toHaveBeenCalledWith("/tmp/state");
     expect(app.quit).toHaveBeenCalled();
   });

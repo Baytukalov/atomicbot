@@ -25,6 +25,7 @@ export function registerAppLifecycle(params: {
   handleDeepLink: HandleDeepLink;
   disposeAutoUpdater: () => void;
   stopGatewayChild: () => Promise<void>;
+  stopLlamacppServer: () => Promise<void>;
   removeGatewayPid: (stateDir: string) => void;
 }): boolean {
   const {
@@ -35,6 +36,7 @@ export function registerAppLifecycle(params: {
     handleDeepLink,
     disposeAutoUpdater,
     stopGatewayChild,
+    stopLlamacppServer,
     removeGatewayPid,
   } = params;
 
@@ -86,7 +88,7 @@ export function registerAppLifecycle(params: {
     event.preventDefault();
 
     disposeAutoUpdater();
-    stopGatewayChild()
+    Promise.all([stopGatewayChild(), stopLlamacppServer()])
       .then(() => {
         if (state.gatewayStateDir) {
           removeGatewayPid(state.gatewayStateDir);

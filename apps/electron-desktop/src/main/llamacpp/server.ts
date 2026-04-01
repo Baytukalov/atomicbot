@@ -143,6 +143,7 @@ export async function stopLlamacppServer(): Promise<void> {
   state.modelPath = null;
 
   return new Promise<void>((resolve) => {
+    // Short grace period: llamacpp is stateless, no data to flush
     const timeout = setTimeout(() => {
       try {
         child.kill("SIGKILL");
@@ -150,7 +151,7 @@ export async function stopLlamacppServer(): Promise<void> {
         // already dead
       }
       resolve();
-    }, 5000);
+    }, 500);
 
     child.once("exit", () => {
       clearTimeout(timeout);

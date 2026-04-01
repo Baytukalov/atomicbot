@@ -6,6 +6,7 @@ import { registerAppLifecycle, registerProtocolHandler } from "./main/bootstrap/
 import { handleDeepLink } from "./main/deep-link";
 import { broadcastGatewayState, stopGatewayChild } from "./main/gateway/lifecycle";
 import { removeGatewayPid } from "./main/gateway/pid-file";
+import { stopLlamacppServer } from "./main/llamacpp/server";
 import { initLogger } from "./main/logger";
 import { getPlatform } from "./main/platform";
 import { createTray } from "./main/tray";
@@ -57,6 +58,7 @@ const gotTheLock = registerAppLifecycle({
   handleDeepLink,
   disposeAutoUpdater,
   stopGatewayChild: () => stopGatewayChild(st, platform),
+  stopLlamacppServer,
   removeGatewayPid,
 });
 

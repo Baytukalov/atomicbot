@@ -44,24 +44,6 @@ import { initAutoUpdater } from "../updater";
 type EnsureWindow = () => Promise<BrowserWindow | null>;
 type EnsureTray = () => void;
 
-function readConfiguredPrimaryModel(configPath: string): string | null {
-  try {
-    const raw = fs.readFileSync(configPath, "utf-8");
-    const parsed = JSON.parse(raw) as {
-      agents?: { defaults?: { model?: { primary?: string } } };
-    };
-    const primary = parsed.agents?.defaults?.model?.primary;
-    return typeof primary === "string" && primary.trim() ? primary.trim() : null;
-  } catch {
-    return null;
-  }
-}
-
-function shouldAutoStartLlamacpp(configPath: string): boolean {
-  const primary = readConfiguredPrimaryModel(configPath);
-  return typeof primary === "string" && primary.startsWith("llamacpp/");
-}
-
 export async function bootstrapApp(params: {
   gotTheLock: boolean;
   state: AppState;
@@ -219,24 +201,20 @@ export async function bootstrapApp(params: {
 
   await startGateway();
 
-  // Auto-start llama-server if local-model mode is active, backend + model are ready
+  // Auto-start llama-server if local-model mode is active, backend + model are ready.
+  // We rely on dedicated state files (setup-mode, active-model, onboarding) rather than
+  // the gateway config's primary model field, which can be stale after config.patch/apply
+  // race conditions during mode switching.
   if (process.platform === "darwin") {
     try {
       const activeId = readActiveModelId(stateDir);
       const onboarded = readOnboardedState(stateDir);
       const setupMode = readSetupMode(stateDir);
       const backendReady = isBackendDownloaded(llamacppDataDir);
-      const configHasLlamacpp = shouldAutoStartLlamacpp(configPath);
       console.log(
-        `[main] llama auto-start check: onboarded=${String(onboarded)}, setupMode=${setupMode ?? "null"}, activeId=${activeId ?? "null"}, backendReady=${String(backendReady)}, configHasLlamacpp=${String(configHasLlamacpp)}`
+        `[main] llama auto-start check: onboarded=${String(onboarded)}, setupMode=${setupMode ?? "null"}, activeId=${activeId ?? "null"}, backendReady=${String(backendReady)}`
       );
-      if (
-        onboarded &&
-        setupMode === "local-model" &&
-        activeId &&
-        backendReady &&
-        configHasLlamacpp
-      ) {
+      if (onboarded && setupMode === "local-model" && activeId && backendReady) {
         const model = getLlamacppModelDef(activeId as LlamacppModelId);
         const modelPath = resolveLlamacppModelPath(llamacppDataDir, model);
         const binPath = resolveServerBinPath(llamacppDataDir);
