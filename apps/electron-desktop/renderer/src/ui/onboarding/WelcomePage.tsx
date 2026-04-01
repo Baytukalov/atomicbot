@@ -5,6 +5,9 @@ import { clearAuth } from "@store/slices/auth/authSlice";
 import { switchMode } from "@store/slices/auth/mode-switch";
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
 import { startLlamacppServer } from "@store/slices/llamacppSlice";
+import { applyLocalModelConfig } from "@store/slices/llamacpp-config";
+import { resetSessionModelSelection } from "@store/slices/session-model-reset";
+import { reloadConfig } from "@store/slices/configSlice";
 import type { GatewayState } from "@main/types";
 import { routes } from "../app/routes";
 import { useGatewayRpc } from "@gateway/context";
@@ -257,6 +260,36 @@ export function WelcomePage({ state }: { state: Extract<GatewayState, { kind: "r
                       contextLength: serverResult?.contextLength,
                     })
                   ).unwrap();
+
+                  const cfgModelId = serverResult?.modelId ?? modelId;
+                  const cfgModelName = serverResult?.modelName ?? "Local Model";
+                  const maxAttempts = 6;
+                  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+                    try {
+                      await applyLocalModelConfig({
+                        request: gw.request,
+                        modelId: cfgModelId,
+                        modelName: cfgModelName,
+                        contextLength: serverResult?.contextLength,
+                      });
+                      await gw.request("secrets.reload", {}).catch(() => {});
+                      await resetSessionModelSelection(gw.request);
+                      break;
+                    } catch (retryErr) {
+                      const msg = String(retryErr);
+                      const isRestart =
+                        msg.includes("1012") ||
+                        msg.includes("service restart") ||
+                        msg.includes("gateway closed") ||
+                        msg.includes("did not persist");
+                      if (!isRestart || attempt === maxAttempts) throw retryErr;
+                      await new Promise((r) => setTimeout(r, 800 * attempt));
+                    }
+                  }
+
+                  await dispatch(reloadConfig({ request: gw.request }))
+                    .unwrap()
+                    .catch(() => {});
                 }
                 welcome.goSkills();
               }}
