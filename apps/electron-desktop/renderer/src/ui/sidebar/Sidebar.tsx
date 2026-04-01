@@ -10,7 +10,7 @@ import { SessionSidebarItem } from "./SessionSidebarItem";
 import { cleanDerivedTitle } from "../chat/hooks/messageParser";
 import { useTerminalSidebarVisible } from "@shared/hooks/useTerminalSidebarVisible";
 import { useAppSelector } from "@store/hooks";
-import { WARMUP_SESSION_KEY } from "@store/slices/llamacppSlice";
+const WARMUP_SESSION_KEY = "__warmup__";
 import { useUpgradePaywall } from "../app/hooks/useUpgradePaywall";
 import css from "./Sidebar.module.css";
 

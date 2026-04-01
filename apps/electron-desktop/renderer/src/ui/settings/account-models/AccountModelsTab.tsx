@@ -247,17 +247,21 @@ export function AccountModelsTab(props: {
     [saveDefaultModel]
   );
 
-  // Auto-select first model when provider changes and current model doesn't belong to it
+  // Auto-select first model when provider changes and current model doesn't belong to it.
+  // Skip when in local-model mode — the local models tab manages its own primary model
+  // via applyLocalModelConfig, and this effect would race with it by writing back
+  // a stale self-managed model (e.g. anthropic) from the still-loaded model options.
   React.useEffect(() => {
     if (
       !isPaidMode &&
+      authMode !== "local-model" &&
       selectedProvider &&
       modelOptions.length > 0 &&
       !modelOptions.some((opt) => opt.value === activeModelId)
     ) {
       handleModelChange(modelOptions[0]!.value);
     }
-  }, [activeModelId, handleModelChange, isPaidMode, modelOptions, selectedProvider]);
+  }, [activeModelId, authMode, handleModelChange, isPaidMode, modelOptions, selectedProvider]);
 
   const handleOAuthSuccess = React.useCallback(() => {
     void reload();

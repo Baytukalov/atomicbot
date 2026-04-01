@@ -11,7 +11,6 @@ import {
   cancelLlamacppModelDownload,
   setLlamacppActiveModel,
   deleteLlamacppModel,
-  warmupLocalModel,
   llamacppActions,
 } from "@store/slices/llamacppSlice";
 import { applyLocalModelConfig } from "@store/slices/llamacpp-config";
@@ -66,7 +65,6 @@ export function LocalModelsTab(props: {
 
   const handleSelect = React.useCallback(
     async (modelId: string) => {
-      console.log("[LocalModelsTab] handleSelect:", modelId);
       setSelectingModelId(modelId);
 
       try {
@@ -75,22 +73,40 @@ export function LocalModelsTab(props: {
         }
 
         const serverResult = await dispatch(setLlamacppActiveModel(modelId)).unwrap();
-        console.log("[LocalModelsTab] setActiveModel result:", serverResult);
         void dispatch(fetchLlamacppServerStatus());
 
+        // Phase 3: apply model config with real data (gateway RPC)
+        // Gateway may still be restarting after teardown, so retry on 1012.
         const cfgModelId = serverResult?.modelId ?? modelId;
         const cfgModelName = serverResult?.modelName ?? "Local Model";
 
         if (props.gatewayRequest) {
-          await applyLocalModelConfig({
-            request: props.gatewayRequest,
-            modelId: cfgModelId,
-            modelName: cfgModelName,
-            contextLength: serverResult?.contextLength,
-          });
-          await resetSessionModelSelection(props.gatewayRequest);
-          console.log(`[LocalModelsTab] config.apply OK: llamacpp/${cfgModelId} set as default`);
-          void dispatch(warmupLocalModel(props.gatewayRequest));
+          const maxAttempts = 6;
+          for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+              await applyLocalModelConfig({
+                request: props.gatewayRequest,
+                modelId: cfgModelId,
+                modelName: cfgModelName,
+                contextLength: serverResult?.contextLength,
+              });
+              await props.gatewayRequest("secrets.reload", {}).catch(() => {});
+              await resetSessionModelSelection(props.gatewayRequest);
+              break;
+            } catch (retryErr) {
+              const msg = String(retryErr);
+              const isRestart =
+                msg.includes("1012") ||
+                msg.includes("service restart") ||
+                msg.includes("gateway closed") ||
+                msg.includes("did not persist");
+              if (!isRestart || attempt === maxAttempts) {
+                throw retryErr;
+              }
+              console.warn(`[LocalModelsTab] gateway restarting, retry ${attempt}/${maxAttempts}`);
+              await new Promise((r) => setTimeout(r, 800 * attempt));
+            }
+          }
 
           if (props.onReload) {
             await props.onReload().catch(() => {});

@@ -1,6 +1,9 @@
 /**
  * ModeHandler for the "local-model" mode.
- * Manages the local llama-server lifecycle and llamacpp gateway config.
+ *
+ * Follows the same lightweight pattern as paid/self-managed handlers:
+ * setup() only configures auth + provider via config.patch.
+ * Server start and model selection happen separately in the UI (handleSelect).
  */
 import type { ModeHandler, SwitchContext, ModeSetupResult } from "./mode-switch";
 import { clearGatewayAuth } from "./mode-switch-utils";
@@ -9,13 +12,12 @@ import {
   saveLocalModelBackup,
   clearLocalModelBackup,
 } from "./auth-persistence";
-import {
-  llamacppActions,
-  stopLlamacppServer,
-  startLlamacppServer,
-  warmupLocalModel,
-} from "../llamacppSlice";
-import { applyLocalModelConfig } from "../llamacpp-config";
+import { llamacppActions, stopLlamacppServer } from "../llamacppSlice";
+
+const LLAMACPP_AUTH_PROFILES = {
+  profiles: { "llamacpp:default": { provider: "llamacpp", mode: "api_key" } },
+  order: { llamacpp: ["llamacpp:default"] },
+};
 
 export const localModelHandler: ModeHandler = {
   async saveBackup(ctx: SwitchContext): Promise<void> {
@@ -65,65 +67,36 @@ export const localModelHandler: ModeHandler = {
   },
 
   async setup(ctx: SwitchContext): Promise<ModeSetupResult> {
-    let { modelId, modelName, contextLength } = ctx.extra;
     const backup = readLocalModelBackup();
-    console.log(
-      "[localModelHandler] setup start, modelId:",
-      modelId ?? "none",
-      "backup:",
-      backup?.activeModelId ?? "none"
-    );
+    console.log("[localModelHandler] setup start, backup:", backup?.activeModelId ?? "none");
 
-    if (!modelId && backup?.activeModelId) {
-      console.log(
-        "[localModelHandler] restoring from backup, starting server:",
-        backup.activeModelId
-      );
-      try {
-        const serverResult = await ctx.dispatch(startLlamacppServer(backup.activeModelId)).unwrap();
-        modelId = serverResult?.modelId ?? backup.activeModelId;
-        modelName = serverResult?.modelName ?? modelName;
-        contextLength = serverResult?.contextLength ?? contextLength;
-        console.log("[localModelHandler] server restored OK, modelId:", modelId);
-      } catch (err) {
-        console.warn("[localModelHandler] server restore failed:", err);
-      }
-    }
-
-    const cfgModelId = modelId ?? backup?.activeModelId ?? "local-model";
-    const cfgModelName = modelName ?? "Local Model";
-
+    // 1. Store API key in credentials
     if (ctx.api?.setApiKey) {
       try {
         await ctx.api.setApiKey("llamacpp", "LLAMACPP_LOCAL_KEY");
-        console.log("[localModelHandler] setApiKey(llamacpp) OK");
+        console.log("[localModelHandler] setApiKey OK");
       } catch (err) {
         console.warn("[localModelHandler] Failed to set llamacpp API key:", err);
       }
     }
 
-    try {
-      await applyLocalModelConfig({
-        request: ctx.request,
-        modelId: cfgModelId,
-        modelName: cfgModelName,
-        contextLength,
-      });
-      console.log(
-        "[localModelHandler] applyLocalModelConfig OK:",
-        cfgModelId,
-        "ctx:",
-        contextLength
-      );
-    } catch (err) {
-      console.warn("[localModelHandler] Failed to patch config:", err);
+    // 2. Write auth profiles to auth-profiles.json so secrets.reload picks them up
+    if (ctx.api?.authWriteProfiles) {
+      try {
+        await ctx.api.authWriteProfiles(LLAMACPP_AUTH_PROFILES);
+        console.log("[localModelHandler] authWriteProfiles OK");
+      } catch (err) {
+        console.warn("[localModelHandler] Failed to write auth profiles:", err);
+      }
     }
 
-    // Fire-and-forget warmup to pre-fill the KV cache with the system prompt
-    void ctx.dispatch(warmupLocalModel(ctx.request));
+    // Config is NOT patched here — teardown triggers a gateway restart (1012),
+    // so any RPC to the gateway would fail mid-restart.
+    // The full config (auth + provider + model + primary) is applied later
+    // by applyLocalModelConfig in handleSelect Phase 3, after the gateway is back.
 
     clearLocalModelBackup();
-    console.log("[localModelHandler] setup done, restoredModel:", `llamacpp/${cfgModelId}`);
-    return { hasBackup: !!backup, restoredModel: `llamacpp/${cfgModelId}` };
+    console.log("[localModelHandler] setup done");
+    return { hasBackup: !!backup };
   },
 };

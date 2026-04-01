@@ -39,7 +39,6 @@ export async function applyLocalModelConfig(params: {
   const currentDefaults = asObject(currentAgents.defaults);
   const currentDefaultModel = asObject(currentDefaults.model);
   const currentDefaultModels = asObject(currentDefaults.models);
-
   const localModelRef = `llamacpp/${params.modelId}`;
   const models: Array<Record<string, unknown>> = [];
   if (params.contextLength) {
