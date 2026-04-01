@@ -4,6 +4,10 @@
   margin-left: -112px;
 }
 
+.UiSetupModeHeaderTwoColumns :global(button.UiTextButton) {
+  margin-left: 0;
+}
+
 .UiSetupModeCard {
   display: flex;
   flex-direction: column;
@@ -18,6 +22,14 @@
   gap: 16px;
   margin-top: 16px;
   height: 100%;
+}
+
+.UiSetupModeCardTwoColumns {
+  width: min(566px, 90vw);
+}
+
+.UiSetupModeOptionsTwoColumns {
+  grid-template-columns: repeat(2, 1fr);
 }
 
 .UiSetupModeOption {

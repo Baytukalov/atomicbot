@@ -29,14 +29,18 @@ export function SetupModePage(props: {
       aria-label="Setup mode selection"
       context="onboarding"
     >
-      <div className={s.UiSetupModeHeader}>
+      <div
+        className={`${s.UiSetupModeHeader} ${props.showLocalModel ? "" : s.UiSetupModeHeaderTwoColumns}`}
+      >
         <OnboardingHeader
           totalSteps={props.totalSteps}
           activeStep={props.activeStep}
           onBack={props.onBack}
         />
       </div>
-      <GlassCard className={s.UiSetupModeCard}>
+      <GlassCard
+        className={`${s.UiSetupModeCard} ${props.showLocalModel ? "" : s.UiSetupModeCardTwoColumns}`}
+      >
         <div className="UiSectionContent">
           <div>
             <div className="UiSectionTitle">Set up your AI agent</div>
@@ -45,7 +49,9 @@ export function SetupModePage(props: {
             </div>
           </div>
 
-          <div className={s.UiSetupModeOptions}>
+          <div
+            className={`${s.UiSetupModeOptions} ${props.showLocalModel ? "" : s.UiSetupModeOptionsTwoColumns}`}
+          >
             <div className="UiSectionCard UiSectionCardGreen">
               <div>
                 <div className={s.UiSetupModeIconRow}>
