@@ -65,6 +65,8 @@ export class GatewayClient {
   private handshakeComplete = false;
   private reconnectDelayMs = 250;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  /** When non-zero, reconnection is suppressed until this timestamp (ms). */
+  private restartHoldOffUntil = 0;
 
   constructor(private opts: GatewayClientOptions) {}
 
@@ -98,6 +100,11 @@ export class GatewayClient {
     }
     // If a WebSocket is already in CONNECTING state, don't interrupt it.
     if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
+      return;
+    }
+    // During a gateway restart hold-off, skip the nudge so we don't race
+    // the port release. The scheduled reconnect will fire after the hold-off.
+    if (this.isInRestartHoldOff()) {
       return;
     }
     // Cancel any pending backoff timer and connect right away.
@@ -183,13 +190,50 @@ export class GatewayClient {
     if (this.reconnectTimer) {
       return;
     }
-    const delay = Math.min(this.resolveReconnectMaxDelayMs(), Math.max(0, this.reconnectDelayMs));
+    // During a known gateway restart, delay reconnection so the gateway can
+    // cleanly release the port before we attempt a new TCP connection.
+    const holdOffRemaining =
+      this.restartHoldOffUntil > 0 ? Math.max(0, this.restartHoldOffUntil - Date.now()) : 0;
+    const baseDelay = Math.min(
+      this.resolveReconnectMaxDelayMs(),
+      Math.max(0, this.reconnectDelayMs)
+    );
+    const delay = Math.max(baseDelay, holdOffRemaining);
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
+      this.restartHoldOffUntil = 0;
       this.connect();
     }, delay);
     // Exponential backoff with a reasonable cap.
-    this.reconnectDelayMs = Math.min(this.resolveReconnectMaxDelayMs(), Math.max(250, delay * 2));
+    this.reconnectDelayMs = Math.min(
+      this.resolveReconnectMaxDelayMs(),
+      Math.max(250, baseDelay * 2)
+    );
+  }
+
+  private handleShutdownEvent(payload: unknown): void {
+    const p = payload as { restartExpectedMs?: number } | undefined;
+    const holdMs =
+      typeof p?.restartExpectedMs === "number" && Number.isFinite(p.restartExpectedMs)
+        ? Math.min(Math.max(p.restartExpectedMs, 0), 30_000)
+        : 0;
+    if (holdMs > 0) {
+      // Suppress reconnection so the gateway can cleanly release the port.
+      const buffer = 500;
+      this.restartHoldOffUntil = Date.now() + holdMs + buffer;
+      console.info(`[GatewayClient] shutdown: holding off reconnect for ${holdMs + buffer}ms`);
+    }
+  }
+
+  private isInRestartHoldOff(): boolean {
+    if (this.restartHoldOffUntil <= 0) {
+      return false;
+    }
+    if (Date.now() >= this.restartHoldOffUntil) {
+      this.restartHoldOffUntil = 0;
+      return false;
+    }
+    return true;
   }
 
   private flushPending(err: Error) {
@@ -250,6 +294,9 @@ export class GatewayClient {
       return;
     }
     if (frame.type === "event") {
+      if (frame.event === "shutdown") {
+        this.handleShutdownEvent(frame.payload);
+      }
       this.opts.onEvent?.(frame);
       return;
     }
