@@ -4,7 +4,11 @@ import { getDesktopApiOrNull } from "@ipc/desktopApi";
 import { errorToMessage } from "../../ui/shared/toast";
 import type { GatewayRequest } from "./chat/chat-types";
 
-export const WARMUP_SESSION_KEY = "__warmup__";
+export const WARMUP_SESSION_KEY_PREFIX = "__warmup__";
+let warmupRoundCounter = 0;
+export function nextWarmupSessionKey(): string {
+  return `${WARMUP_SESSION_KEY_PREFIX}${++warmupRoundCounter}`;
+}
 
 export type LlamacppModelInfo = {
   id: string;
@@ -294,19 +298,16 @@ export const setLlamacppActiveModel = createAsyncThunk(
 export const warmupLocalModel = createAsyncThunk(
   "llamacpp/warmup",
   async (request: GatewayRequest, thunkApi) => {
-    console.log("[llamacpp/warmup] starting KV cache warmup");
+    const sessionKey = nextWarmupSessionKey();
+    console.log("[llamacpp/warmup] starting KV cache warmup, key:", sessionKey);
     thunkApi.dispatch(llamacppActions.setWarmupStatus("warming"));
 
     try {
-      // sessions.create with message triggers the full agent pipeline
-      // (fire-and-forget); completion is tracked via gateway event listener
-      // in useLocalModelWarmup hook which waits for first token.
       const res = await request<{ key: string }>("sessions.create", {
-        key: WARMUP_SESSION_KEY,
+        key: sessionKey,
         message: "warmup",
       });
-      // Gateway canonicalizes the key (e.g. "agent:default:__warmup__").
-      const canonicalKey = res?.key ?? WARMUP_SESSION_KEY;
+      const canonicalKey = res?.key ?? sessionKey;
       console.log("[llamacpp/warmup] session created, canonical key:", canonicalKey);
       return canonicalKey;
     } catch (err) {

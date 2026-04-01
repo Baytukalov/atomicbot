@@ -5,7 +5,6 @@ import {
   warmupLocalModel,
   fetchLlamacppServerStatus,
   llamacppActions,
-  WARMUP_SESSION_KEY,
 } from "@store/slices/llamacppSlice";
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
 
@@ -116,7 +115,7 @@ export function useLocalModelWarmup(): void {
       dispatch(llamacppActions.setWarmupStatus("error"));
       const api = getDesktopApiOrNull();
       void api?.llamacppWarmupSet?.({ state: "idle", modelId: null });
-      void gw.request("sessions.delete", { key: WARMUP_SESSION_KEY }).catch(() => {});
+      void gw.request("sessions.delete", { key: currentKey }).catch(() => {});
     }, WARMUP_TIMEOUT_MS);
 
     const markDone = () => {
@@ -129,7 +128,7 @@ export function useLocalModelWarmup(): void {
           modelId: s.modelId,
         });
       });
-      void gw.request("sessions.delete", { key: WARMUP_SESSION_KEY }).catch(() => {});
+      void gw.request("sessions.delete", { key: currentKey }).catch(() => {});
     };
 
     console.log("[warmup] listening for events on session:", currentKey);
@@ -156,14 +155,14 @@ export function useLocalModelWarmup(): void {
         dispatch(llamacppActions.setWarmupStatus("error"));
         const api = getDesktopApiOrNull();
         void api?.llamacppWarmupSet?.({ state: "idle", modelId: null });
-        void gw.request("sessions.delete", { key: WARMUP_SESSION_KEY }).catch(() => {});
+        void gw.request("sessions.delete", { key: currentKey }).catch(() => {});
       }
     });
 
     return () => {
       clearTimeout(timeout);
       unsubscribe();
-      void gw.request("sessions.delete", { key: WARMUP_SESSION_KEY }).catch(() => {});
+      void gw.request("sessions.delete", { key: currentKey }).catch(() => {});
     };
   }, [warmupStatus, warmupSessionKey, gw, dispatch]);
 }

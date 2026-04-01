@@ -13,11 +13,13 @@ export function WarmupBanner() {
       wasWarmingRef.current = true;
     }
     if (warmupStatus === "ready" && wasWarmingRef.current) {
+      wasWarmingRef.current = false;
       setShowReady(true);
       const timer = setTimeout(() => setShowReady(false), 3000);
       return () => clearTimeout(timer);
     }
-    if (warmupStatus !== "ready") {
+    if (warmupStatus === "idle" || warmupStatus === "error") {
+      wasWarmingRef.current = false;
       setShowReady(false);
     }
   }, [warmupStatus]);
