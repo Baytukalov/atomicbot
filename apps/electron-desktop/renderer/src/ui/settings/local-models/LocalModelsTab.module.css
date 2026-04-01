@@ -40,7 +40,7 @@
 }
 
 .serverRunning {
-  color: var(--lime);
+  color: #22c55e;
   font-weight: 600;
 }
 
@@ -152,8 +152,8 @@
 }
 
 .tagRecommended {
-  background: color-mix(in srgb, var(--lime) 15%, transparent);
-  color: var(--lime);
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
 }
 
 .tagHighPerformance {
