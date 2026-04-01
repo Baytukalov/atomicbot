@@ -1,12 +1,16 @@
 import { type ChildProcess, spawn } from "node:child_process";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 export const LLAMACPP_DEFAULT_PORT = 18790;
+const PID_FILENAME = "llamacpp-server.pid";
 
 type ServerState = {
   process: ChildProcess | null;
   modelPath: string | null;
   port: number;
   healthy: boolean;
+  stateDir: string | null;
 };
 
 const state: ServerState = {
@@ -14,7 +18,57 @@ const state: ServerState = {
   modelPath: null,
   port: LLAMACPP_DEFAULT_PORT,
   healthy: false,
+  stateDir: null,
 };
+
+function writePidFile(stateDir: string, pid: number): void {
+  try {
+    fs.mkdirSync(stateDir, { recursive: true });
+    fs.writeFileSync(path.join(stateDir, PID_FILENAME), String(pid), "utf-8");
+  } catch (err) {
+    console.warn("[llamacpp] writePidFile failed:", err);
+  }
+}
+
+function removePidFile(stateDir: string): void {
+  try {
+    fs.unlinkSync(path.join(stateDir, PID_FILENAME));
+  } catch {
+    // File may not exist — that's fine.
+  }
+}
+
+// Kill a llama-server left behind by a previous app session (crash, force-quit, dev reload).
+function killOrphanedServer(stateDir: string): number | null {
+  const pidPath = path.join(stateDir, PID_FILENAME);
+  let raw: string;
+  try {
+    raw = fs.readFileSync(pidPath, "utf-8").trim();
+  } catch {
+    return null;
+  }
+  const pid = Number(raw);
+  if (!Number.isFinite(pid) || pid <= 0) {
+    removePidFile(stateDir);
+    return null;
+  }
+
+  try {
+    process.kill(pid, 0);
+  } catch {
+    removePidFile(stateDir);
+    return null;
+  }
+
+  console.warn(`[llamacpp] killing orphaned llama-server (PID ${pid})`);
+  try {
+    process.kill(pid, "SIGKILL");
+  } catch {
+    // already dead
+  }
+  removePidFile(stateDir);
+  return pid;
+}
 
 async function checkHealth(port: number): Promise<"ok" | "loading" | "down"> {
   try {
@@ -43,10 +97,23 @@ async function waitForHealth(port: number, timeoutMs = 30_000): Promise<void> {
 export async function startLlamacppServer(
   binPath: string,
   modelPath: string,
-  opts?: { port?: number; contextLength?: number; modelId?: string; chatTemplateFile?: string }
+  opts?: {
+    port?: number;
+    contextLength?: number;
+    modelId?: string;
+    chatTemplateFile?: string;
+    stateDir?: string;
+  }
 ): Promise<{ port: number }> {
+  if (opts?.stateDir) state.stateDir = opts.stateDir;
+
   if (state.process && state.modelPath === modelPath && state.healthy) {
     return { port: state.port };
+  }
+
+  if (state.stateDir) {
+    const killed = killOrphanedServer(state.stateDir);
+    if (killed) console.log(`[llamacpp] cleaned up orphaned server (PID ${killed})`);
   }
 
   await stopLlamacppServer();
@@ -126,6 +193,10 @@ export async function startLlamacppServer(
   state.port = port;
   state.healthy = false;
 
+  if (child.pid != null && state.stateDir) {
+    writePidFile(state.stateDir, child.pid);
+  }
+
   try {
     await waitForHealth(port);
     state.healthy = true;
@@ -147,6 +218,8 @@ export async function stopLlamacppServer(): Promise<void> {
   state.process = null;
   state.healthy = false;
   state.modelPath = null;
+
+  if (state.stateDir) removePidFile(state.stateDir);
 
   return new Promise<void>((resolve) => {
     // Short grace period: llamacpp is stateless, no data to flush

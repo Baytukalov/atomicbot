@@ -237,6 +237,7 @@ export async function bootstrapApp(params: {
             contextLength: ctxLen,
             modelId: activeId,
             chatTemplateFile,
+            stateDir,
           }).catch((err) => {
             console.error(`[main] llama-server auto-start failed: ${String(err)}`);
           });

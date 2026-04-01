@@ -267,6 +267,7 @@ export function registerLlamacppIpcHandlers(params: LlamacppHandlerParams): void
         contextLength: ctxLen,
         modelId,
         chatTemplateFile,
+        stateDir,
       });
       writeActiveModelId(stateDir, modelId);
       return { ok: true, port, modelId, modelName: model.name, contextLength: ctxLen };
@@ -330,6 +331,7 @@ export function registerLlamacppIpcHandlers(params: LlamacppHandlerParams): void
         contextLength: ctxLen,
         modelId,
         chatTemplateFile,
+        stateDir,
       });
       return { ok: true, port, modelId, modelName: model.name, contextLength: ctxLen };
     } catch (err) {
