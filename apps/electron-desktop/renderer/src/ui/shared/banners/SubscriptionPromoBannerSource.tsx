@@ -47,7 +47,7 @@ export function SubscriptionPromoBannerSource() {
     }
   }, [dispatch, gw, navigate]);
 
-  const shouldShow = ready && authMode !== "paid";
+  const shouldShow = ready && authMode !== "paid" && authMode !== "local-model";
 
   const banner = React.useMemo<BannerItem | null>(() => {
     if (!shouldShow) return null;

@@ -88,6 +88,13 @@ describe("SubscriptionPromoBannerSource", () => {
     expect(screen.queryByText("100+ AI Models. One Subscription.")).toBeNull();
   });
 
+  it("does not show banner when mode is local-model", () => {
+    mockAuthState.mode = "local-model";
+    render(<TestHarness />);
+    act(() => vi.advanceTimersByTime(5000));
+    expect(screen.queryByText("100+ AI Models. One Subscription.")).toBeNull();
+  });
+
   it("shows banner when mode is null (e.g. old backup without mode)", () => {
     mockAuthState.mode = null;
     render(<TestHarness />);
