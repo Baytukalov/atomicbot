@@ -78,7 +78,28 @@ export function useLocalModelWarmup(): void {
         void dispatch(fetchLlamacppServerStatus());
 
         if (status.healthy && status.running) {
-          console.log("[warmup] server healthy, triggering warmup");
+          // Wait for gateway config to have a llamacpp model as primary.
+          // After mode-switch the gateway may still be applying the new config
+          // (applyLocalModelConfig), so sessions.create would fall back to
+          // the previous provider and fail.
+          const snap = await gw.request<{ config?: Record<string, unknown> }>("config.get", {});
+          const agents = snap?.config?.agents as Record<string, unknown> | undefined;
+          const defaults = agents?.defaults as Record<string, unknown> | undefined;
+          const model = defaults?.model as Record<string, unknown> | undefined;
+          const primary = typeof model?.primary === "string" ? model.primary : "";
+
+          if (!primary.startsWith("llamacpp/")) {
+            console.log(
+              "[warmup] server healthy but config not ready (primary=%s), waiting…",
+              primary
+            );
+            return;
+          }
+
+          console.log(
+            "[warmup] server healthy + config ready (primary=%s), triggering warmup",
+            primary
+          );
           if (cancelled || triggeredRef.current) return;
           triggeredRef.current = true;
 
