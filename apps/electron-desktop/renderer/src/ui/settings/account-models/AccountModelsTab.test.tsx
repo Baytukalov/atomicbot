@@ -36,6 +36,7 @@ vi.mock("@store/slices/auth/mode-switch", () => ({
 }));
 
 vi.mock("@shared/toast", () => ({
+  addToast: vi.fn(),
   addToastError: vi.fn(),
 }));
 
