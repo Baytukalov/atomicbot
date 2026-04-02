@@ -238,6 +238,35 @@
   color: var(--text);
 }
 
+.downloadingRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.downloadingText {
+  font-size: 12px;
+  color: var(--muted3);
+  white-space: nowrap;
+}
+
+.cancelIcon {
+  appearance: none;
+  border: none;
+  background: none;
+  color: var(--muted3);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 2px;
+  line-height: 1;
+  border-radius: var(--radius-xs);
+  transition: color var(--transition-base);
+}
+
+.cancelIcon:hover {
+  color: var(--error);
+}
+
 .downloadError {
   display: flex;
   align-items: center;

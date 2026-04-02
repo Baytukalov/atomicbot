@@ -8,6 +8,7 @@ import {
   downloadLlamacppBackend,
   checkLlamacppBackendUpdate,
   downloadLlamacppModel,
+  cancelLlamacppModelDownload,
   setLlamacppActiveModel,
   deleteLlamacppModel,
   llamacppActions,
@@ -198,9 +199,20 @@ export function LocalModelsTab(props: {
                     </div>
                   )
                 ) : isDownloading ? (
-                  <span className={s.activeLabel} aria-live="polite">
-                    Active
-                  </span>
+                  <div className={s.downloadingRow} aria-live="polite">
+                    <span className={s.downloadingText}>
+                      Downloading...{" "}
+                      {modelDownload.kind === "downloading" ? `${modelDownload.percent}%` : ""}
+                    </span>
+                    <button
+                      type="button"
+                      className={s.cancelIcon}
+                      onClick={() => void dispatch(cancelLlamacppModelDownload())}
+                      aria-label="Cancel download"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 ) : (
                   <SecondaryButton
                     size="sm"
