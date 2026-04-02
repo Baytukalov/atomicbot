@@ -14,6 +14,7 @@ import { OnboardingHeader } from "../OnboardingHeader";
 import qwenIcon from "@assets/ai-models/qwen.svg";
 import glmIcon from "@assets/ai-models/glm.svg";
 import nvidiaIcon from "@assets/ai-models/nvidia.svg";
+import googleIcon from "@assets/ai-models/google.svg";
 import s from "./LocalModelSelectPage.module.css";
 
 export function LocalModelSelectPage(props: {
@@ -94,6 +95,7 @@ export function LocalModelSelectPage(props: {
               qwen: qwenIcon,
               glm: glmIcon,
               nvidia: nvidiaIcon,
+              google: googleIcon,
             };
             const iconSrc = iconMap[model.icon];
 

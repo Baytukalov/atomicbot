@@ -20,6 +20,7 @@ import { SecondaryButton, Modal, ConfirmDialog } from "@shared/kit";
 import qwenIcon from "@assets/ai-models/qwen.svg";
 import glmIcon from "@assets/ai-models/glm.svg";
 import nvidiaIcon from "@assets/ai-models/nvidia.svg";
+import googleIcon from "@assets/ai-models/google.svg";
 import s from "./LocalModelsTab.module.css";
 
 type GatewayRequest = <T = unknown>(method: string, params?: unknown) => Promise<T>;
@@ -287,6 +288,7 @@ const MODEL_ICON_MAP: Record<string, string> = {
   qwen: qwenIcon,
   glm: glmIcon,
   nvidia: nvidiaIcon,
+  google: googleIcon,
 };
 
 function ModelIcon({ icon }: { icon: string }) {
