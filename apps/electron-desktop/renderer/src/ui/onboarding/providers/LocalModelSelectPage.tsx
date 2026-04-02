@@ -9,6 +9,7 @@ import {
 } from "@store/slices/llamacppSlice";
 import { GlassCard, HeroPageLayout, PrimaryButton, SecondaryButton, Modal } from "@shared/kit";
 import { addToastError } from "@shared/toast";
+import { useOnboardingStepEvent } from "@analytics/use-onboarding-step-event";
 import { OnboardingHeader } from "../OnboardingHeader";
 import qwenIcon from "@assets/ai-models/qwen.svg";
 import glmIcon from "@assets/ai-models/glm.svg";
@@ -22,6 +23,7 @@ export function LocalModelSelectPage(props: {
   onContinue: () => void;
   onBack: () => void;
 }) {
+  useOnboardingStepEvent("local_model_select", "local-model");
   const dispatch = useAppDispatch();
   const models = useAppSelector((st) => st.llamacpp.models);
   const systemInfo = useAppSelector((st) => st.llamacpp.systemInfo);
