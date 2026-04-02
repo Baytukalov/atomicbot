@@ -22,9 +22,8 @@ function DownloadIcon() {
 }
 
 /**
- * Floating banner (reuses UpdateBanner visuals) that appears when
- * llamacpp backend or model download is in progress.
- * Positioned below the UpdateBanner to avoid overlap.
+ * Floating banner (reuses UpdateBanner visuals) when llamacpp backend
+ * or model download is in progress. Stacked top-right with WarmupBanner.
  */
 export function LlamacppDownloadBanner() {
   const dispatch = useAppDispatch();
@@ -64,7 +63,7 @@ export function LlamacppDownloadBanner() {
 
   return (
     <div
-      className={`${s.UpdateBanner} ${s["UpdateBanner--bottomCenter"]}`}
+      className={`${s.UpdateBanner} ${s["UpdateBanner--right"]} ${s["UpdateBanner--inStack"]}`}
       role="status"
       aria-live="polite"
     >
