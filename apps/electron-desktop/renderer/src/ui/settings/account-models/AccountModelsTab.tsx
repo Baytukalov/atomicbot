@@ -13,7 +13,7 @@ import { useAppDispatch, useAppSelector } from "@store/hooks";
 import type { SetupMode } from "@store/slices/auth/authSlice";
 import { switchMode } from "@store/slices/auth/mode-switch";
 import type { ConfigData } from "@store/slices/configSlice";
-import { addToastError } from "@shared/toast";
+import { addToast, addToastError } from "@shared/toast";
 
 import {
   MODEL_PROVIDERS,
@@ -385,6 +385,15 @@ export function AccountModelsTab(props: {
 
   const isLocalModelsStatusLayout = statusDisplayMode === "local-model";
 
+  const copyLocalApiEndpoint = React.useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(LOCAL_MODELS_API_ENDPOINT);
+      addToast("Copied to clipboard");
+    } catch (err) {
+      addToastError(err);
+    }
+  }, []);
+
   return (
     <div className={s.root}>
       {!noTitle && <div className={s.title}>AI Models</div>}
@@ -420,16 +429,26 @@ export function AccountModelsTab(props: {
               </div>
               <div className={`${s.statusSegment} ${s.statusBarApiEndpoint}`}>
                 <span className={s.statusLabel}>API Endpoint</span>
-                <a
-                  className={s.apiEndpointLink}
-                  href={LOCAL_MODELS_API_ENDPOINT}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    openExternal(LOCAL_MODELS_API_ENDPOINT);
-                  }}
-                >
-                  {LOCAL_MODELS_API_ENDPOINT}
-                </a>
+                <span className={s.statusValue}>
+                  <span className={s.apiEndpointRow}>
+                    <a
+                      className={s.apiEndpointLink}
+                      href={LOCAL_MODELS_API_ENDPOINT}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {LOCAL_MODELS_API_ENDPOINT}
+                    </a>
+                    <button
+                      type="button"
+                      className={s.apiEndpointCopyBtn}
+                      onClick={() => void copyLocalApiEndpoint()}
+                      aria-label="Copy API endpoint URL"
+                    >
+                      <ApiEndpointCopyIcon />
+                    </button>
+                  </span>
+                </span>
               </div>
             </div>
           ) : (
@@ -561,5 +580,25 @@ export function AccountModelsTab(props: {
       {/* Paid: account / billing content */}
       {isPaidMode && !modeSwitchBusy && <AccountTab />}
     </div>
+  );
+}
+
+function ApiEndpointCopyIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={16}
+      height={16}
+      fill="none"
+      viewBox="0 0 16 16"
+      aria-hidden
+    >
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M12 2.5H8A1.5 1.5 0 0 0 6.5 4v1H8a3 3 0 0 1 3 3v1.5h1A1.5 1.5 0 0 0 13.5 8V4A1.5 1.5 0 0 0 12 2.5M11 11h1a3 3 0 0 0 3-3V4a3 3 0 0 0-3-3H8a3 3 0 0 0-3 3v1H4a3 3 0 0 0-3 3v4a3 3 0 0 0 3 3h4a3 3 0 0 0 3-3zM4 6.5h4A1.5 1.5 0 0 1 9.5 8v4A1.5 1.5 0 0 1 8 13.5H4A1.5 1.5 0 0 1 2.5 12V8A1.5 1.5 0 0 1 4 6.5"
+        clipRule="evenodd"
+      />
+    </svg>
   );
 }

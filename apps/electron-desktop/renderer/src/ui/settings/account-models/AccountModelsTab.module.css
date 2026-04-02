@@ -49,34 +49,73 @@
   width: 100%;
 }
 
-/* API Endpoint uses the same column layout as .statusSegment; dashed rule sits 1px below the link */
+/* API Endpoint uses the same column layout as .statusSegment */
 .statusBarHorizontal .statusBarApiEndpoint {
-  padding-bottom: 1px;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.28);
   max-width: 100%;
-  transition: border-bottom-color 0.15s ease;
-}
-
-.statusBarHorizontal .statusBarApiEndpoint:has(.apiEndpointLink:hover) {
-  border-bottom-color: rgba(255, 255, 255, 0.55);
 }
 
 .statusBarHorizontal .statusBarApiEndpoint .statusLabel {
   min-width: 0;
 }
 
+.apiEndpointRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
 .apiEndpointLink {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
   font-size: 13px;
   font-weight: 500;
+  line-height: 16px;
   color: rgba(255, 255, 255, 0.5);
-  text-decoration: none;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.35);
+  text-underline-offset: 2px;
   word-break: break-all;
   cursor: pointer;
-  transition: color 0.15s ease;
+  transition:
+    color 0.15s ease,
+    text-decoration-color 0.15s ease;
 }
 
 .apiEndpointLink:hover {
   color: rgba(255, 255, 255, 0.72);
+  text-decoration-color: rgba(255, 255, 255, 0.55);
+}
+
+.apiEndpointCopyBtn {
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 4px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.apiEndpointCopyBtn:hover {
+  color: rgba(255, 255, 255, 0.75);
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 /* Local models: each label/value pair stacks vertically (2px gap between them) */
@@ -98,6 +137,13 @@
 .statusBarHorizontal .statusValue {
   flex: 0 1 auto;
   align-self: stretch;
+  min-width: 0;
+  /* Same vertical rhythm as API row with 24px copy control */
+  min-height: 24px;
+}
+
+.statusBarHorizontal .statusBarApiEndpoint .statusValue {
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -131,6 +177,7 @@
 }
 
 .statusBarHorizontal .statusValueText {
+  line-height: 16px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
