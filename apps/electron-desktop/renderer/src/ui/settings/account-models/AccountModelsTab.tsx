@@ -499,7 +499,7 @@ export function AccountModelsTab(props: {
         </div>
       )}
 
-      {canShowModels && (
+      {canShowModels && tabMode === "paid" && (
         <>
           <div className={s.dropdownGroup}>
             <div className={s.dropdownLabel}>Model</div>
@@ -583,7 +583,7 @@ export function AccountModelsTab(props: {
       )}
 
       {/* Paid: account / billing content */}
-      {isPaidMode && !modeSwitchBusy && <AccountTab />}
+      {isPaidMode && !modeSwitchBusy && tabMode === "paid" && <AccountTab />}
     </div>
   );
 }
