@@ -435,7 +435,12 @@ export function AccountModelsTab(props: {
                       className={s.apiEndpointLink}
                       href={LOCAL_MODELS_API_ENDPOINT}
                       target="_blank"
-                      rel="noopener noreferrer"
+                      rel="noreferrer"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openExternal(LOCAL_MODELS_API_ENDPOINT);
+                      }}
                     >
                       {LOCAL_MODELS_API_ENDPOINT}
                     </a>
@@ -452,7 +457,7 @@ export function AccountModelsTab(props: {
               </div>
             </div>
           ) : (
-            <>
+            <div className={s.statusBarVerticalMain}>
               <div className={s.statusSegment}>
                 <span className={s.statusLabel}>Mode</span>
                 <span className={s.statusValue}>
@@ -465,7 +470,7 @@ export function AccountModelsTab(props: {
                   <span className={s.statusValueText}>{currentModelName ?? "Not selected"}</span>
                 </span>
               </div>
-            </>
+            </div>
           )}
         </div>
       )}
