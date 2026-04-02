@@ -31,7 +31,7 @@ import { InlineApiKey } from "./InlineApiKey";
 import { useAccountState } from "@ui/settings/account/useAccountState";
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
 import { LocalModelsTab } from "../local-models/LocalModelsTab";
-import { fetchLlamacppServerStatus, fetchLlamacppSystemInfo } from "@store/slices/llamacppSlice";
+import { fetchLlamacppServerStatus } from "@store/slices/llamacppSlice";
 
 import s from "./AccountModelsTab.module.css";
 
@@ -113,6 +113,9 @@ const SERVER_STATUS_LABELS: Record<string, string> = {
   error: "Error",
 };
 
+/** OpenAI-compatible base URL for bundled llama.cpp (matches default local provider `baseUrl`). */
+const LOCAL_MODELS_API_ENDPOINT = "http://127.0.0.1:18790/v1";
+
 const LLAMACPP_PRIMARY_PREFIX = "llamacpp/";
 
 /** Readable label when the catalog entry is not loaded yet (`provider/modelId`). */
@@ -171,10 +174,6 @@ export function AccountModelsTab(props: {
     () => getDefaultModelPrimary(configSnap?.config),
     [configSnap?.config]
   );
-
-  React.useEffect(() => {
-    void dispatch(fetchLlamacppSystemInfo());
-  }, [dispatch]);
 
   React.useEffect(() => {
     if (authMode === "local-model" || tabMode === "local-model") {
@@ -384,12 +383,6 @@ export function AccountModelsTab(props: {
   ]);
 
   const isLocalModelsStatusLayout = statusDisplayMode === "local-model";
-  const systemSummary =
-    llamacpp.systemInfo != null
-      ? `${llamacpp.systemInfo.totalRamGb} GB RAM · ${
-          llamacpp.systemInfo.isAppleSilicon ? "Apple Silicon" : llamacpp.systemInfo.arch
-        }`
-      : null;
 
   return (
     <div className={s.root}>
@@ -399,39 +392,59 @@ export function AccountModelsTab(props: {
         <div
           className={`${s.statusBar} ${isLocalModelsStatusLayout ? s.statusBarHorizontal : s.statusBarVertical}`}
         >
-          <div className={s.statusSegment}>
-            <span className={s.statusLabel}>Mode</span>
-            <span className={s.statusValue}>
-              <span className={s.statusValueText}>{statusModeLabel}</span>
-            </span>
-          </div>
-          <div className={s.statusSegment}>
-            <span className={s.statusLabel}>Model</span>
-            <span className={s.statusValue}>
-              <span className={s.statusValueText}>{currentModelName ?? "Not selected"}</span>
-            </span>
-          </div>
           {isLocalModelsStatusLayout ? (
-            <div className={s.statusSegment}>
-              <span className={s.statusLabel}>Server</span>
-              <span className={s.statusValue}>
-                <span
-                  className={`${s.serverDot} ${s[`serverDot--${llamacpp.serverStatus}`] ?? ""}`}
-                />
-                <span className={s.statusValueText}>
-                  {SERVER_STATUS_LABELS[llamacpp.serverStatus] ?? llamacpp.serverStatus}
+            <div className={s.statusBarHorizontalMain}>
+              <div className={s.statusSegment}>
+                <span className={s.statusLabel}>Mode</span>
+                <span className={s.statusValue}>
+                  <span className={s.statusValueText}>{statusModeLabel}</span>
                 </span>
-              </span>
+              </div>
+              <div className={s.statusSegment}>
+                <span className={s.statusLabel}>Model</span>
+                <span className={s.statusValue}>
+                  <span className={s.statusValueText}>{currentModelName ?? "Not selected"}</span>
+                </span>
+              </div>
+              <div className={s.statusSegment}>
+                <span className={s.statusLabel}>Server</span>
+                <span className={s.statusValue}>
+                  <span
+                    className={`${s.serverDot} ${s[`serverDot--${llamacpp.serverStatus}`] ?? ""}`}
+                  />
+                  <span className={s.statusValueText}>
+                    {SERVER_STATUS_LABELS[llamacpp.serverStatus] ?? llamacpp.serverStatus}
+                  </span>
+                </span>
+              </div>
+              <div className={`${s.statusSegment} ${s.statusBarApiEndpoint}`}>
+                <span className={s.statusLabel}>API Endpoint</span>
+                <a
+                  className={s.apiEndpointLink}
+                  href={LOCAL_MODELS_API_ENDPOINT}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {LOCAL_MODELS_API_ENDPOINT}
+                </a>
+              </div>
             </div>
-          ) : null}
-          {isLocalModelsStatusLayout && systemSummary ? (
-            <div className={s.statusSegment}>
-              <span className={s.statusLabel}>System</span>
-              <span className={s.statusValue}>
-                <span className={s.statusValueText}>{systemSummary}</span>
-              </span>
-            </div>
-          ) : null}
+          ) : (
+            <>
+              <div className={s.statusSegment}>
+                <span className={s.statusLabel}>Mode</span>
+                <span className={s.statusValue}>
+                  <span className={s.statusValueText}>{statusModeLabel}</span>
+                </span>
+              </div>
+              <div className={s.statusSegment}>
+                <span className={s.statusLabel}>Model</span>
+                <span className={s.statusValue}>
+                  <span className={s.statusValueText}>{currentModelName ?? "Not selected"}</span>
+                </span>
+              </div>
+            </>
+          )}
         </div>
       )}
 

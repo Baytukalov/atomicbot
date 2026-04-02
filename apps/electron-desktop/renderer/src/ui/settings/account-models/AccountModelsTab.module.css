@@ -31,14 +31,48 @@
   min-height: 20px;
 }
 
-/* Local models: row + wrap; blocks span full width with even spacing */
+/* Local models: one flex row — all status blocks + API endpoint share space-between + gap */
 .statusBarHorizontal {
   flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+}
+
+.statusBarHorizontalMain {
+  display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  column-gap: 6px;
+  column-gap: 4px;
   row-gap: 4px;
+  width: 100%;
+}
+
+/* API Endpoint uses the same column layout as .statusSegment; extra dashed rule below link */
+.statusBarHorizontal .statusBarApiEndpoint {
+  padding-bottom: 6px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.28);
+  max-width: 100%;
+}
+
+.statusBarHorizontal .statusBarApiEndpoint .statusLabel {
+  min-width: 0;
+}
+
+.apiEndpointLink {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.5);
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.35);
+  text-underline-offset: 2px;
+  word-break: break-all;
+}
+
+.apiEndpointLink:hover {
+  color: rgba(255, 255, 255, 0.72);
+  text-decoration-color: rgba(255, 255, 255, 0.45);
 }
 
 /* Local models: each label/value pair stacks vertically (2px gap between them) */
