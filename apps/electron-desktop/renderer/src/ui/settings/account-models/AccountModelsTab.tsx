@@ -30,6 +30,7 @@ import { RichSelect, type RichOption } from "./RichSelect";
 import { InlineApiKey } from "./InlineApiKey";
 import { useAccountState } from "@ui/settings/account/useAccountState";
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
+import { openExternal } from "@shared/utils/openExternal";
 import { LocalModelsTab } from "../local-models/LocalModelsTab";
 import { fetchLlamacppServerStatus } from "@store/slices/llamacppSlice";
 
@@ -422,8 +423,10 @@ export function AccountModelsTab(props: {
                 <a
                   className={s.apiEndpointLink}
                   href={LOCAL_MODELS_API_ENDPOINT}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    openExternal(LOCAL_MODELS_API_ENDPOINT);
+                  }}
                 >
                   {LOCAL_MODELS_API_ENDPOINT}
                 </a>
