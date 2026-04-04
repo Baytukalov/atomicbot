@@ -1,5 +1,6 @@
 import toast from "react-hot-toast";
 
+import { errorToMessage } from "@lib/error-format";
 export { errorToMessage } from "@lib/error-format";
 
 const defaultDuration = 3000;

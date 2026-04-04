@@ -17,10 +17,10 @@ export type ExtraModelEntry = {
 
 const EXTRA_MODELS: ExtraModelEntry[] = [
   {
-    id: "glm-5-turbo",
-    name: "GLM-5-Turbo",
-    provider: "zai",
-    contextWindow: 200_000,
+    id: "qwen/qwen3.6-plus:free",
+    name: "Qwen 3.6 Plus (free)",
+    provider: "openrouter",
+    contextWindow: 1_000_000,
     reasoning: true,
   },
 ];
