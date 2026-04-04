@@ -74,11 +74,10 @@ describe("SubscriptionPromoBannerSource", () => {
     expect(container.querySelector("[role='status']")).toBeNull();
   });
 
-  it("shows banner after 5 seconds when mode is self-managed", () => {
+  it("does not show banner when temporarily disabled", () => {
     render(<TestHarness />);
     act(() => vi.advanceTimersByTime(5000));
-    expect(screen.getByText("100+ AI Models. One Subscription.")).toBeTruthy();
-    expect(screen.getByText("Try now")).toBeTruthy();
+    expect(screen.queryByText("100+ AI Models. One Subscription.")).toBeNull();
   });
 
   it("does not show banner when mode is paid", () => {
@@ -95,35 +94,11 @@ describe("SubscriptionPromoBannerSource", () => {
     expect(screen.queryByText("100+ AI Models. One Subscription.")).toBeNull();
   });
 
-  it("shows banner when mode is null (e.g. old backup without mode)", () => {
+  it("does not show banner when mode is null (temporarily disabled)", () => {
     mockAuthState.mode = null;
     render(<TestHarness />);
     act(() => vi.advanceTimersByTime(5000));
-    expect(screen.getByText("100+ AI Models. One Subscription.")).toBeTruthy();
-  });
-
-  it("dispatches switchMode to paid and navigates on Try now click", async () => {
-    mockDispatch.mockReturnValue({ unwrap: vi.fn().mockResolvedValue(undefined) });
-
-    render(<TestHarness />);
-    act(() => vi.advanceTimersByTime(5000));
-
-    fireEvent.click(screen.getByText("Try now"));
-
-    expect(mockSwitchMode).toHaveBeenCalledWith({ request: mockRequest, target: "paid" });
-    expect(mockDispatch).toHaveBeenCalled();
-  });
-
-  it("hides banner permanently when dismiss button is clicked", () => {
-    render(<TestHarness />);
-    act(() => vi.advanceTimersByTime(5000));
-    expect(screen.getByText("100+ AI Models. One Subscription.")).toBeTruthy();
-
-    fireEvent.click(screen.getByRole("button", { name: /Dismiss banner/i }));
     expect(screen.queryByText("100+ AI Models. One Subscription.")).toBeNull();
-
-    const dismissed = JSON.parse(localStorage.getItem("banner-dismissed") ?? "[]");
-    expect(dismissed).toContain("subscription-promo");
   });
 
   it("does not show banner if previously dismissed persistently", () => {

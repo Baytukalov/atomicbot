@@ -1,7 +1,5 @@
 import { spawn } from "node:child_process";
-import { createHash } from "node:crypto";
 import * as fs from "node:fs";
-import * as path from "node:path";
 
 import type { GogExecResult } from "./types";
 import { getGogKeyringEnv } from "./gog-keyring";
@@ -161,78 +159,14 @@ async function clearGogAccountsBeforeAdd(params: {
   return null;
 }
 
-const GOG_CREDENTIALS_HASH_FILE = "gog-credentials-hash";
-
-function fileHash(filePath: string): string {
-  return createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
-}
-
-function readStoredCredentialsHash(stateDir: string): string {
-  try {
-    return fs.readFileSync(path.join(stateDir, GOG_CREDENTIALS_HASH_FILE), "utf-8").trim();
-  } catch {
-    return "";
-  }
-}
-
-function writeStoredCredentialsHash(stateDir: string, hash: string): void {
-  fs.writeFileSync(path.join(stateDir, GOG_CREDENTIALS_HASH_FILE), hash, "utf-8");
-}
-
-export async function ensureGogCredentialsConfigured(params: {
-  gogBin: string;
-  openclawDir: string;
-  credentialsJsonPath: string;
-  stateDir: string;
-}): Promise<void> {
-  if (!fs.existsSync(params.gogBin)) {
-    return;
-  }
-  if (!fs.existsSync(params.credentialsJsonPath)) {
-    return;
-  }
-
-  const bundledHash = fileHash(params.credentialsJsonPath);
-  const storedHash = readStoredCredentialsHash(params.stateDir);
-
-  if (bundledHash === storedHash) {
-    return;
-  }
-
-  const res = await runGog({
-    bin: params.gogBin,
-    args: ["auth", "credentials", "set", params.credentialsJsonPath, "--no-input"],
-    cwd: params.openclawDir,
-    stateDir: params.stateDir,
-    timeoutMs: 30_000,
-  });
-  if (res.ok) {
-    writeStoredCredentialsHash(params.stateDir, bundledHash);
-  } else {
-    const stderr = res.stderr.trim();
-    const stdout = res.stdout.trim();
-    console.warn(
-      `[electron-desktop] gog auth credentials set failed: ${stderr || stdout || "unknown error"} (bin: ${params.gogBin})`
-    );
-  }
-}
-
 export async function runGogAuthAdd(params: {
   gogBin: string;
   openclawDir: string;
-  credentialsJsonPath: string;
   stateDir: string;
   account: string;
   services: string;
   noInput?: boolean;
 }): Promise<GogExecResult> {
-  await ensureGogCredentialsConfigured({
-    gogBin: params.gogBin,
-    openclawDir: params.openclawDir,
-    credentialsJsonPath: params.credentialsJsonPath,
-    stateDir: params.stateDir,
-  });
-
   const cleanupError = await clearGogAccountsBeforeAdd(params);
   if (cleanupError) {
     return cleanupError;

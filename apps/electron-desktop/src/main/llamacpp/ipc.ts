@@ -3,6 +3,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { IPC, IPC_EVENTS } from "../../shared/ipc-channels";
+import { DEFAULT_LLAMACPP_MODEL_ID } from "../constants";
 import type { LlamacppHandlerParams } from "../ipc/types";
 import { downloadFile } from "../whisper/download";
 import { getSystemInfo, getModelCompatibility, computeContextLength } from "./hardware";
@@ -104,7 +105,7 @@ export function registerLlamacppIpcHandlers(params: LlamacppHandlerParams): void
   });
 
   ipcMain.handle(IPC.llamacppModelStatus, (_evt, p?: { model?: string }) => {
-    const modelId = (typeof p?.model === "string" ? p.model : "llama-3.2-3b") as LlamacppModelId;
+    const modelId = (typeof p?.model === "string" ? p.model : DEFAULT_LLAMACPP_MODEL_ID) as LlamacppModelId;
     const model = getLlamacppModelDef(modelId);
     const modelPath = resolveLlamacppModelPath(llamacppDataDir, model);
     const exists = fs.existsSync(modelPath);
@@ -125,7 +126,7 @@ export function registerLlamacppIpcHandlers(params: LlamacppHandlerParams): void
   });
 
   ipcMain.handle(IPC.llamacppModelDownload, async (_evt, p?: { model?: string }) => {
-    const modelId = (typeof p?.model === "string" ? p.model : "llama-3.2-3b") as LlamacppModelId;
+    const modelId = (typeof p?.model === "string" ? p.model : DEFAULT_LLAMACPP_MODEL_ID) as LlamacppModelId;
     const model = getLlamacppModelDef(modelId);
     const modelPath = resolveLlamacppModelPath(llamacppDataDir, model);
     fs.mkdirSync(path.dirname(modelPath), { recursive: true });
@@ -238,7 +239,7 @@ export function registerLlamacppIpcHandlers(params: LlamacppHandlerParams): void
 
   ipcMain.handle(IPC.llamacppServerStart, async (_evt, p?: { model?: string }) => {
     const modelId = (
-      typeof p?.model === "string" ? p.model : (readActiveModelId(stateDir) ?? "llama-3.2-3b")
+      typeof p?.model === "string" ? p.model : (readActiveModelId(stateDir) ?? DEFAULT_LLAMACPP_MODEL_ID)
     ) as LlamacppModelId;
     const model = getLlamacppModelDef(modelId);
     const modelPath = resolveLlamacppModelPath(llamacppDataDir, model);

@@ -13,17 +13,7 @@ import notesIcon from "@assets/set-up-skills/Notes.svg";
 import mediaImage from "@assets/set-up-skills/Media.svg";
 import webSearchImage from "@assets/set-up-skills/Web-Search.svg";
 
-export type GatewayRpc = {
-  request: <T = unknown>(method: string, params?: unknown) => Promise<T>;
-};
-
-export type ConfigSnapshotLike = {
-  path?: string;
-  exists?: boolean;
-  valid?: boolean;
-  hash?: string;
-  config?: unknown;
-};
+export type { GatewayRpcLike as GatewayRpc, ConfigSnapshot as ConfigSnapshotLike } from "../../onboarding/hooks/types";
 
 export type IconVariant =
   | "google"

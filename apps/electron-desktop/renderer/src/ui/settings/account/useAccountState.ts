@@ -146,7 +146,7 @@ export function useAccountState() {
     void backendApi
       .getSubscriptionInfo()
       .then(setSubscriptionPrice)
-      .catch(() => {});
+      .catch((err) => console.warn("[account] getSubscriptionInfo:", err));
   }, [needsSubscription, subscriptionPrice]);
 
   const handleSubscribe = React.useCallback(async () => {

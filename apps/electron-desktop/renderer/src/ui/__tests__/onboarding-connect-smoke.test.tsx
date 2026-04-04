@@ -310,6 +310,10 @@ describe("Onboarding connect-page smoke tests", () => {
           gogOutput={null}
           gogAccount=""
           setGogAccount={noop}
+          gogCredentialsSet={false}
+          gogCredentialsBusy={false}
+          gogCredentialsError={null}
+          onSetCredentials={vi.fn(() => Promise.resolve({ ok: true }))}
           onRunAuthAdd={vi.fn(() => Promise.resolve({ ok: true }))}
           onRunAuthList={vi.fn(() => Promise.resolve({}))}
           onFinish={noop}

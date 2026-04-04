@@ -5,10 +5,11 @@ import { ipcMain, shell } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 
+import { IPC } from "../../shared/ipc-channels";
 import type { FileHandlerParams } from "./types";
 
 export function registerFileHandlers(params: FileHandlerParams) {
-  ipcMain.handle("open-logs", async () => {
+  ipcMain.handle(IPC.openLogs, async () => {
     const logsDir = params.getLogsDir();
     if (!logsDir) {
       return;
@@ -16,7 +17,7 @@ export function registerFileHandlers(params: FileHandlerParams) {
     await shell.openPath(logsDir);
   });
 
-  ipcMain.handle("open-workspace-folder", async () => {
+  ipcMain.handle(IPC.openWorkspaceFolder, async () => {
     const workspaceDir = path.join(params.stateDir, "workspace");
     try {
       fs.mkdirSync(workspaceDir, { recursive: true });
@@ -26,7 +27,7 @@ export function registerFileHandlers(params: FileHandlerParams) {
     await shell.openPath(workspaceDir);
   });
 
-  ipcMain.handle("open-openclaw-folder", async () => {
+  ipcMain.handle(IPC.openOpenclawFolder, async () => {
     try {
       fs.mkdirSync(params.stateDir, { recursive: true });
     } catch (err) {
@@ -35,7 +36,7 @@ export function registerFileHandlers(params: FileHandlerParams) {
     await shell.openPath(params.stateDir);
   });
 
-  ipcMain.handle("devtools-toggle", async () => {
+  ipcMain.handle(IPC.devtoolsToggle, async () => {
     const win = params.getMainWindow();
     if (!win || win.isDestroyed()) {
       return;
@@ -48,7 +49,7 @@ export function registerFileHandlers(params: FileHandlerParams) {
     }
   });
 
-  ipcMain.handle("open-external", async (_evt, p: { url?: unknown }) => {
+  ipcMain.handle(IPC.openExternal, async (_evt, p: { url?: unknown }) => {
     const url = typeof p?.url === "string" ? p.url : "";
     if (!url) {
       return;
@@ -56,7 +57,7 @@ export function registerFileHandlers(params: FileHandlerParams) {
     await shell.openExternal(url);
   });
 
-  ipcMain.handle("focus-window", async () => {
+  ipcMain.handle(IPC.focusWindow, async () => {
     const win = params.getMainWindow();
     if (!win || win.isDestroyed()) {
       return;

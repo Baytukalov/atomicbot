@@ -1,27 +1,16 @@
 import React from "react";
 
 import { errorToMessage } from "@shared/toast";
+import type { ConfigSnapshot, GatewayRpcLike } from "../../onboarding/hooks/types";
 import { disableSkill, type SkillId } from "./useSkillsStatus";
-
-type GatewayRpc = {
-  request: <T = unknown>(method: string, params?: unknown) => Promise<T>;
-};
-
-type ConfigSnapshotLike = {
-  path?: string;
-  exists?: boolean;
-  valid?: boolean;
-  hash?: string;
-  config?: unknown;
-};
 
 /** Manages opening/closing skill modals and connect/disable actions. */
 export function useSkillModal(props: {
-  gw: GatewayRpc;
+  gw: GatewayRpcLike;
   markConnected: (id: SkillId) => void;
   markDisabled: (id: SkillId) => void;
   refresh: () => Promise<void>;
-  loadConfig: () => Promise<ConfigSnapshotLike>;
+  loadConfig: () => Promise<ConfigSnapshot>;
   onError: (value: string | null) => void;
 }) {
   const { gw, markConnected, markDisabled, refresh, loadConfig, onError } = props;

@@ -11,6 +11,9 @@
 /** The full desktop IPC API shape (mirrors env.d.ts declaration). */
 export type DesktopApi = NonNullable<Window["openclawDesktop"]>;
 
+/** Standard error message when the desktop bridge is absent (non-Electron context). */
+export const DESKTOP_API_UNAVAILABLE = "Desktop API not available";
+
 /**
  * Returns the desktop IPC API.
  * Throws if running outside Electron (e.g. in a browser or test

@@ -2,18 +2,7 @@ import React from "react";
 
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
 import { getObject } from "@shared/utils/configHelpers";
-
-type GatewayRpc = {
-  request: <T = unknown>(method: string, params?: unknown) => Promise<T>;
-};
-
-type ConfigSnapshotLike = {
-  path?: string;
-  exists?: boolean;
-  valid?: boolean;
-  hash?: string;
-  config?: unknown;
-};
+import type { ConfigSnapshot, GatewayRpcLike } from "../../onboarding/hooks/types";
 
 export type SkillId =
   | "google-workspace"
@@ -123,8 +112,8 @@ const SKILLS_ENTRY_KEYS: Partial<Record<SkillId, string>> = {
 };
 
 export async function disableSkill(
-  gw: GatewayRpc,
-  loadConfig: () => Promise<ConfigSnapshotLike>,
+  gw: GatewayRpcLike,
+  loadConfig: () => Promise<ConfigSnapshot>,
   skillId: SkillId
 ): Promise<void> {
   const entryKey = SKILLS_ENTRY_KEYS[skillId];
@@ -171,8 +160,8 @@ export async function disableSkill(
 }
 
 export function useSkillsStatus(props: {
-  gw: GatewayRpc;
-  configSnap: ConfigSnapshotLike | null;
+  gw: GatewayRpcLike;
+  configSnap: ConfigSnapshot | null;
   reload: () => Promise<void>;
 }) {
   const { gw, configSnap, reload } = props;
@@ -252,7 +241,7 @@ export function useSkillsStatus(props: {
 
   /** Provide a loadConfig helper compatible with onboarding hooks. */
   const loadConfig = React.useCallback(async () => {
-    return await gw.request<ConfigSnapshotLike>("config.get", {});
+    return await gw.request<ConfigSnapshot>("config.get", {});
   }, [gw]);
 
   return { statuses, loading, markConnected, markDisabled, refresh, loadConfig };

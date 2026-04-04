@@ -5,6 +5,7 @@ import { ipcMain } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 
+import { IPC } from "../../shared/ipc-channels";
 import type { ExecResult } from "../../shared/types";
 import type { ObsidianVaultEntry } from "../../shared/types";
 import { getPlatform } from "../platform";
@@ -49,7 +50,7 @@ export function parseObsidianVaultsFromJson(payload: unknown): ObsidianVaultEntr
 }
 
 export function registerObsidianHandlers(params: ObsidianHandlerParams) {
-  ipcMain.handle("obsidian-cli-check", async () => {
+  ipcMain.handle(IPC.obsidianCliCheck, async () => {
     const obsidianCliBin = params.obsidianCliBin;
     if (!fs.existsSync(obsidianCliBin)) {
       return createBinaryNotFoundResult(obsidianCliBin, PREPARE_CMD);
@@ -61,7 +62,7 @@ export function registerObsidianHandlers(params: ObsidianHandlerParams) {
     });
   });
 
-  ipcMain.handle("obsidian-cli-print-default-path", async () => {
+  ipcMain.handle(IPC.obsidianCliPrintDefaultPath, async () => {
     const obsidianCliBin = params.obsidianCliBin;
     if (!fs.existsSync(obsidianCliBin)) {
       return createBinaryNotFoundResult(obsidianCliBin, PREPARE_CMD);
@@ -118,7 +119,7 @@ export function registerObsidianHandlers(params: ObsidianHandlerParams) {
     } satisfies ExecResult;
   });
 
-  ipcMain.handle("obsidian-vaults-list", async () => {
+  ipcMain.handle(IPC.obsidianVaultsList, async () => {
     const cfgPath = getPlatform().obsidianConfigPath();
     try {
       if (!fs.existsSync(cfgPath)) {
@@ -151,7 +152,7 @@ export function registerObsidianHandlers(params: ObsidianHandlerParams) {
     }
   });
 
-  ipcMain.handle("obsidian-cli-set-default", async (_evt, p: { vaultName?: unknown }) => {
+  ipcMain.handle(IPC.obsidianCliSetDefault, async (_evt, p: { vaultName?: unknown }) => {
     const obsidianCliBin = params.obsidianCliBin;
     const vaultName = typeof p?.vaultName === "string" ? p.vaultName.trim() : "";
     if (!vaultName) {

@@ -18,44 +18,24 @@ function createMockChild() {
   return child;
 }
 
-const { existsSyncMock } = vi.hoisted(() => ({
-  existsSyncMock: vi.fn<(filePath: string) => boolean>(),
-}));
-
 vi.mock("node:child_process", () => ({
   spawn: vi.fn(),
 }));
-
-vi.mock("node:fs", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("node:fs")>();
-  return {
-    ...actual,
-    default: { ...actual, existsSync: existsSyncMock },
-    existsSync: existsSyncMock,
-  };
-});
 
 const { spawn } = await import("node:child_process");
 
 describe("runGogAuthAdd", () => {
   let tmpDir: string;
-  let credentialsPath: string;
   let stateDir: string;
 
   beforeEach(async () => {
     tmpDir = await fsp.mkdtemp(path.join(os.tmpdir(), "gog-auth-add-"));
-    credentialsPath = path.join(tmpDir, "gog-client-secret.json");
     stateDir = path.join(tmpDir, "state");
     await fsp.mkdir(stateDir, { recursive: true });
-    await fsp.writeFile(credentialsPath, JSON.stringify({ client_id: "test-id" }));
-    existsSyncMock.mockImplementation(
-      (filePath) => filePath === "/usr/bin/gog" || filePath === credentialsPath
-    );
     vi.mocked(spawn).mockReset();
   });
 
   afterEach(async () => {
-    existsSyncMock.mockReset();
     vi.mocked(spawn).mockReset();
     await fsp.rm(tmpDir, { recursive: true, force: true });
   });
@@ -71,7 +51,6 @@ describe("runGogAuthAdd", () => {
     const promise = runGogAuthAdd({
       gogBin: "/usr/bin/gog",
       openclawDir: "/tmp",
-      credentialsJsonPath: credentialsPath,
       stateDir,
       account: "new@test.com",
       services: "gmail",
@@ -79,15 +58,15 @@ describe("runGogAuthAdd", () => {
     });
 
     await new Promise((resolve) => setTimeout(resolve, 10));
-    children[0].emit("close", 0);
-
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    children[1].stdout.emit(
+    children[0].stdout.emit(
       "data",
       Buffer.from(
         JSON.stringify({ accounts: [{ email: "old@test.com" }, { email: "other@test.com" }] })
       )
     );
+    children[0].emit("close", 0);
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
     children[1].emit("close", 0);
 
     await new Promise((resolve) => setTimeout(resolve, 10));
@@ -96,29 +75,26 @@ describe("runGogAuthAdd", () => {
     await new Promise((resolve) => setTimeout(resolve, 10));
     children[3].emit("close", 0);
 
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    children[4].emit("close", 0);
-
     const result = await promise;
 
     expect(result.ok).toBe(true);
-    expect(vi.mocked(spawn).mock.calls).toHaveLength(5);
-    expect(vi.mocked(spawn).mock.calls[1]?.[1]).toEqual(["auth", "list", "--json", "--no-input"]);
-    expect(vi.mocked(spawn).mock.calls[2]?.[1]).toEqual([
+    expect(vi.mocked(spawn).mock.calls).toHaveLength(4);
+    expect(vi.mocked(spawn).mock.calls[0]?.[1]).toEqual(["auth", "list", "--json", "--no-input"]);
+    expect(vi.mocked(spawn).mock.calls[1]?.[1]).toEqual([
       "auth",
       "remove",
       "old@test.com",
       "--force",
       "--no-input",
     ]);
-    expect(vi.mocked(spawn).mock.calls[3]?.[1]).toEqual([
+    expect(vi.mocked(spawn).mock.calls[2]?.[1]).toEqual([
       "auth",
       "remove",
       "other@test.com",
       "--force",
       "--no-input",
     ]);
-    expect(vi.mocked(spawn).mock.calls[4]?.[1]).toEqual([
+    expect(vi.mocked(spawn).mock.calls[3]?.[1]).toEqual([
       "auth",
       "add",
       "new@test.com",
@@ -139,24 +115,20 @@ describe("runGogAuthAdd", () => {
     const promise = runGogAuthAdd({
       gogBin: "/usr/bin/gog",
       openclawDir: "/tmp",
-      credentialsJsonPath: credentialsPath,
       stateDir,
       account: "new@test.com",
       services: "gmail",
     });
 
     await new Promise((resolve) => setTimeout(resolve, 10));
-    children[0].emit("close", 0);
-
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    children[1].stderr.emit("data", Buffer.from("list failed"));
-    children[1].emit("close", 1);
+    children[0].stderr.emit("data", Buffer.from("list failed"));
+    children[0].emit("close", 1);
 
     const result = await promise;
 
     expect(result.ok).toBe(false);
     expect(result.stderr).toContain("gog auth list failed");
-    expect(vi.mocked(spawn).mock.calls).toHaveLength(2);
+    expect(vi.mocked(spawn).mock.calls).toHaveLength(1);
   });
 
   it("returns an error when cleanup cannot remove an old account", async () => {
@@ -170,30 +142,26 @@ describe("runGogAuthAdd", () => {
     const promise = runGogAuthAdd({
       gogBin: "/usr/bin/gog",
       openclawDir: "/tmp",
-      credentialsJsonPath: credentialsPath,
       stateDir,
       account: "new@test.com",
       services: "gmail",
     });
 
     await new Promise((resolve) => setTimeout(resolve, 10));
-    children[0].emit("close", 0);
-
-    await new Promise((resolve) => setTimeout(resolve, 10));
-    children[1].stdout.emit(
+    children[0].stdout.emit(
       "data",
       Buffer.from(JSON.stringify({ accounts: [{ email: "old@test.com" }] }))
     );
-    children[1].emit("close", 0);
+    children[0].emit("close", 0);
 
     await new Promise((resolve) => setTimeout(resolve, 10));
-    children[2].stderr.emit("data", Buffer.from("permission denied"));
-    children[2].emit("close", 1);
+    children[1].stderr.emit("data", Buffer.from("permission denied"));
+    children[1].emit("close", 1);
 
     const result = await promise;
 
     expect(result.ok).toBe(false);
     expect(result.stderr).toContain("gog auth remove failed for old@test.com");
-    expect(vi.mocked(spawn).mock.calls).toHaveLength(3);
+    expect(vi.mocked(spawn).mock.calls).toHaveLength(2);
   });
 });

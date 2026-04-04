@@ -11,7 +11,6 @@ import type { NavigateFunction } from "react-router-dom";
 import { useGatewayRpc } from "@gateway/context";
 import { useAppDispatch, useAppSelector } from "@store/hooks";
 import {
-  storeAuthToken,
   authActions,
   fetchAutoTopUpSettings,
   fetchDesktopStatus,
@@ -20,8 +19,7 @@ import {
 import { upgradePaywallActions } from "@store/slices/upgradePaywallSlice";
 import { setOnboarded } from "@store/slices/onboardingSlice";
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
-import { backendApi, type SubscriptionPriceInfo } from "@ipc/backendApi";
-import { openExternal } from "@shared/utils/openExternal";
+import { backendApi } from "@ipc/backendApi";
 import { useDeepLinkAuth } from "@shared/hooks/useDeepLinkAuth";
 import { persistDesktopMode } from "../../shared/persistMode";
 import { addToastError } from "@shared/toast";
@@ -30,21 +28,10 @@ import { routes } from "../../app/routes";
 
 import { usePaidNavigation } from "./usePaidNavigation";
 import { usePaidConfig } from "./usePaidConfig";
-import { useWelcomeSkillState } from "./useWelcomeSkillState";
-import { useWelcomeNotion } from "./useWelcomeNotion";
-import { useWelcomeTrello } from "./useWelcomeTrello";
-import { useWelcomeGitHub } from "./useWelcomeGitHub";
-import { useWelcomeObsidian } from "./useWelcomeObsidian";
-import { useWelcomeAppleNotes } from "./useWelcomeAppleNotes";
-import { useWelcomeAppleReminders } from "./useWelcomeAppleReminders";
-import { useWelcomeWebSearch } from "./useWelcomeWebSearch";
-import { useWelcomeMediaUnderstanding } from "./useWelcomeMediaUnderstanding";
-import { useWelcomeSlack } from "./useWelcomeSlack";
-import { useWelcomeTelegram } from "./useWelcomeTelegram";
-import { useWelcomeGog } from "./useWelcomeGog";
-import { useWelcomeApiKey } from "./useWelcomeApiKey";
+import { useSharedOnboardingSkills } from "./useSharedOnboardingSkills";
+import { usePaidGoogleAuth } from "./usePaidGoogleAuth";
+import { usePaidCheckout } from "./usePaidCheckout";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://api.atomicbot.ai";
 type BackendKeys = { openrouterApiKey: string | null; openaiApiKey: string | null };
 
 type PaidOnboardingInput = {
@@ -60,16 +47,6 @@ export function usePaidOnboarding({ navigate }: PaidOnboardingInput) {
 
   const [selectedModel, setSelectedModel] = React.useState<string | null>(null);
   const [selectedModelName, setSelectedModelName] = React.useState<string | null>(null);
-  const [authBusy, setAuthBusy] = React.useState(false);
-  const [authError, setAuthError] = React.useState<string | null>(null);
-  const [payBusy, setPayBusy] = React.useState(false);
-  const [payError, setPayError] = React.useState<string | null>(null);
-  const [paymentPending, setPaymentPending] = React.useState(false);
-  const [alreadySubscribed, setAlreadySubscribed] = React.useState(false);
-
-  const [subscriptionPrice, setSubscriptionPrice] = React.useState<SubscriptionPriceInfo | null>(
-    null
-  );
 
   const [skillStatus, setSkillStatus] = React.useState<string | null>(null);
   const [skillError, setSkillErrorState] = React.useState<string | null>(null);
@@ -86,101 +63,39 @@ export function usePaidOnboarding({ navigate }: PaidOnboardingInput) {
   const { models, saveDefaultModel } = config;
   const { goPaidModelSelect, goPaidSkills, goSetupReview, goSuccess } = nav;
 
-  // Complex navigation (calls refreshProviderFlags before navigating)
+  const checkout = usePaidCheckout(jwt);
+
+  const onAuthSuccess = React.useCallback(async () => {
+    await savePlaceholderOpenRouterKey();
+    void checkout.loadSubscriptionPrice();
+    await loadModels();
+    goPaidModelSelect();
+  }, [savePlaceholderOpenRouterKey, checkout.loadSubscriptionPrice, loadModels, goPaidModelSelect]);
+
+  const googleAuth = usePaidGoogleAuth({ onAuthSuccess });
+
   const goPaidMediaUnderstanding = React.useCallback(() => {
     void refreshProviderFlags();
     void navigate(`${routes.welcome}/media-understanding`);
   }, [navigate, refreshProviderFlags]);
 
-  // ── Skills & Connections state ──
+  // ── Shared skill/connection composition ──
 
-  const skillState = useWelcomeSkillState({ setError: setSkillError, setStatus: setSkillStatus });
-  const { skills, markSkillConnected } = skillState;
-
-  const commonDeps = {
+  const shared = useSharedOnboardingSkills({
     gw,
     loadConfig,
     setError: setSkillError,
     setStatus: setSkillStatus,
-  } as const;
-  const skillCommon = { ...commonDeps, markSkillConnected, goSkills: nav.goPaidSkills } as const;
-
-  const { onNotionApiKeySubmit } = useWelcomeNotion({
-    ...skillCommon,
-    run: skillState.runNotion,
-  });
-
-  const { onTrelloSubmit } = useWelcomeTrello({
-    ...skillCommon,
-    run: skillState.runTrello,
-  });
-
-  const { onGitHubConnect } = useWelcomeGitHub({
-    ...skillCommon,
-    run: skillState.runGitHub,
-  });
-
-  const obsidian = useWelcomeObsidian({
-    ...skillCommon,
-    run: skillState.runObsidian,
-    goObsidianPage: nav.goPaidObsidianPage,
-  });
-
-  const { onAppleNotesCheckAndEnable } = useWelcomeAppleNotes({
-    ...skillCommon,
-    run: skillState.runAppleNotes,
-  });
-
-  const { onAppleRemindersAuthorizeAndEnable } = useWelcomeAppleReminders({
-    ...skillCommon,
-    run: skillState.runAppleReminders,
-  });
-
-  const { onWebSearchSubmit } = useWelcomeWebSearch({
-    ...skillCommon,
-    run: skillState.runWebSearch,
-  });
-
-  const { onMediaUnderstandingSubmit } = useWelcomeMediaUnderstanding({
-    gw,
-    loadConfig: config.loadConfig,
-    setStatus: setSkillStatus,
-    run: skillState.runMediaUnderstanding,
-    markSkillConnected,
+    loadModels,
+    refreshProviderFlags,
     goSkills: nav.goPaidSkills,
-  });
-
-  const { onSlackConnect } = useWelcomeSlack({
-    ...commonDeps,
-    run: skillState.runSlack,
-    markSkillConnected,
+    goObsidianPage: nav.goPaidObsidianPage,
     goSlackReturn: nav.goPaidSlackBack,
-  });
-
-  const telegram = useWelcomeTelegram({
-    ...commonDeps,
     goTelegramUser: nav.goPaidTelegramUser,
     goConnections: nav.goPaidConnections,
   });
 
-  const gog = useWelcomeGog({ gw });
-
-  const { onMediaProviderKeySubmit } = useWelcomeApiKey({
-    ...commonDeps,
-    loadModels: config.loadModels,
-    refreshProviderFlags: config.refreshProviderFlags,
-  });
-
   // ── Flow handlers ──
-
-  const loadSubscriptionPrice = React.useCallback(async () => {
-    try {
-      const info = await backendApi.getSubscriptionInfo();
-      setSubscriptionPrice(info);
-    } catch {
-      // Non-critical: UI will show a fallback price
-    }
-  }, []);
 
   const onStartChat = React.useCallback(
     async (keys: BackendKeys | null) => {
@@ -227,45 +142,6 @@ export function usePaidOnboarding({ navigate }: PaidOnboardingInput) {
     [dispatch, gw, loadConfig, navigate]
   );
 
-  const onGoogleAuthSuccess = React.useCallback(
-    async (params: { jwt: string; email: string; userId: string; isNewUser: boolean }) => {
-      try {
-        await dispatch(storeAuthToken(params));
-
-        try {
-          const status = await backendApi.getStatus(params.jwt);
-          if (status.subscription && status.hasKey) {
-            setAlreadySubscribed(true);
-          }
-        } catch {
-          // Status check failed — continue with normal onboarding flow
-        }
-
-        await savePlaceholderOpenRouterKey();
-        void loadSubscriptionPrice();
-        await loadModels();
-        goPaidModelSelect();
-      } catch (err) {
-        setAuthError(String(err));
-      } finally {
-        setAuthBusy(false);
-      }
-    },
-    [dispatch, savePlaceholderOpenRouterKey, loadSubscriptionPrice, loadModels, goPaidModelSelect]
-  );
-
-  const startGoogleAuth = React.useCallback(async () => {
-    setAuthError(null);
-    setAuthBusy(true);
-    try {
-      const url = `${BACKEND_URL}/auth/google/desktop`;
-      openExternal(url);
-    } catch (err) {
-      setAuthError(String(err));
-      setAuthBusy(false);
-    }
-  }, []);
-
   const onPaidModelSelect = React.useCallback(
     async (modelId: string) => {
       setSelectedModel(modelId);
@@ -279,7 +155,7 @@ export function usePaidOnboarding({ navigate }: PaidOnboardingInput) {
   );
 
   const onPaidConnectionsContinue = React.useCallback(async () => {
-    if (alreadySubscribed && jwt) {
+    if (googleAuth.alreadySubscribed && jwt) {
       try {
         const keys = await backendApi.getKeys(jwt);
         await onStartChat(keys);
@@ -289,29 +165,7 @@ export function usePaidOnboarding({ navigate }: PaidOnboardingInput) {
       return;
     }
     goSetupReview();
-  }, [alreadySubscribed, goSetupReview, jwt, onStartChat]);
-
-  const onPay = React.useCallback(async () => {
-    if (!jwt) {
-      setPayError("Not authenticated");
-      return;
-    }
-
-    setPayBusy(true);
-    setPayError(null);
-
-    try {
-      const result = await backendApi.createSetupCheckout(jwt, {});
-
-      openExternal(result.checkoutUrl);
-
-      setPaymentPending(true);
-    } catch (err) {
-      setPayError(String(err));
-    } finally {
-      setPayBusy(false);
-    }
-  }, [jwt]);
+  }, [googleAuth.alreadySubscribed, goSetupReview, jwt, onStartChat]);
 
   React.useEffect(() => {
     if (!jwt || autoTopUpLoaded || autoTopUpLoading) {
@@ -334,12 +188,9 @@ export function usePaidOnboarding({ navigate }: PaidOnboardingInput) {
 
   useDeepLinkAuth({
     onAuth: (params) => {
-      void onGoogleAuthSuccess(params);
+      void googleAuth.onGoogleAuthSuccess(params);
     },
-    onAuthError: () => {
-      setAuthError("Authentication failed — missing token data");
-      setAuthBusy(false);
-    },
+    onAuthError: googleAuth.onAuthError,
     onStripeSuccess: () => {
       void dispatch(fetchDesktopStatus()).finally(() => {
         dispatch(upgradePaywallActions.close());
@@ -351,15 +202,21 @@ export function usePaidOnboarding({ navigate }: PaidOnboardingInput) {
   return {
     // ── Domain-grouped properties (used directly by WelcomePage routes) ──
 
-    auth: { jwt, busy: authBusy, error: authError, startGoogleAuth, alreadySubscribed },
+    auth: {
+      jwt,
+      busy: googleAuth.authBusy,
+      error: googleAuth.authError,
+      startGoogleAuth: googleAuth.startGoogleAuth,
+      alreadySubscribed: googleAuth.alreadySubscribed,
+    },
     pay: {
-      busy: payBusy,
-      error: payError,
-      pending: paymentPending,
-      cancelPending: React.useCallback(() => setPaymentPending(false), []),
-      onPay,
-      subscriptionPrice,
-      loadSubscriptionPrice,
+      busy: checkout.payBusy,
+      error: checkout.payError,
+      pending: checkout.paymentPending,
+      cancelPending: checkout.cancelPending,
+      onPay: checkout.onPay,
+      subscriptionPrice: checkout.subscriptionPrice,
+      loadSubscriptionPrice: checkout.loadSubscriptionPrice,
     },
     model: {
       selected: selectedModel,
@@ -380,7 +237,7 @@ export function usePaidOnboarding({ navigate }: PaidOnboardingInput) {
       goPaidSlackFromSkills: nav.goPaidSlackFromSkills,
       goPaidSlackFromConnections: nav.goPaidSlackFromConnections,
       goPaidSlackBack: nav.goPaidSlackBack,
-      goObsidian: obsidian.goObsidian,
+      goObsidian: shared.goObsidian,
     },
     flow: { onPaidConnectionsContinue, onStartChat },
 
@@ -390,52 +247,56 @@ export function usePaidOnboarding({ navigate }: PaidOnboardingInput) {
 
     // ── Flat FlowSource-compatible properties (passed through to SharedFlowRoutes) ──
 
-    skills,
-    markSkillConnected,
+    skills: shared.skills,
+    markSkillConnected: shared.markSkillConnected,
     hasOpenAiProvider: config.hasOpenAiProvider,
 
-    notionBusy: skillState.notionBusy,
-    trelloBusy: skillState.trelloBusy,
-    githubBusy: skillState.githubBusy,
-    obsidianBusy: skillState.obsidianBusy,
-    appleNotesBusy: skillState.appleNotesBusy,
-    appleRemindersBusy: skillState.appleRemindersBusy,
-    webSearchBusy: skillState.webSearchBusy,
-    mediaUnderstandingBusy: skillState.mediaUnderstandingBusy,
-    slackBusy: skillState.slackBusy,
+    notionBusy: shared.notionBusy,
+    trelloBusy: shared.trelloBusy,
+    githubBusy: shared.githubBusy,
+    obsidianBusy: shared.obsidianBusy,
+    appleNotesBusy: shared.appleNotesBusy,
+    appleRemindersBusy: shared.appleRemindersBusy,
+    webSearchBusy: shared.webSearchBusy,
+    mediaUnderstandingBusy: shared.mediaUnderstandingBusy,
+    slackBusy: shared.slackBusy,
 
-    obsidianVaults: obsidian.obsidianVaults,
-    obsidianVaultsLoading: obsidian.obsidianVaultsLoading,
-    onObsidianRecheck: obsidian.onObsidianRecheck,
-    onObsidianSetDefaultAndEnable: obsidian.onObsidianSetDefaultAndEnable,
-    selectedObsidianVaultName: obsidian.selectedObsidianVaultName,
-    setSelectedObsidianVaultName: obsidian.setSelectedObsidianVaultName,
+    obsidianVaults: shared.obsidianVaults,
+    obsidianVaultsLoading: shared.obsidianVaultsLoading,
+    onObsidianRecheck: shared.onObsidianRecheck,
+    onObsidianSetDefaultAndEnable: shared.onObsidianSetDefaultAndEnable,
+    selectedObsidianVaultName: shared.selectedObsidianVaultName,
+    setSelectedObsidianVaultName: shared.setSelectedObsidianVaultName,
 
-    channelsProbe: telegram.channelsProbe,
-    onTelegramTokenNext: telegram.onTelegramTokenNext,
-    onTelegramUserNext: telegram.onTelegramUserNext,
-    setTelegramToken: telegram.setTelegramToken,
-    setTelegramUserId: telegram.setTelegramUserId,
-    telegramStatus: telegram.telegramStatus,
-    telegramToken: telegram.telegramToken,
-    telegramUserId: telegram.telegramUserId,
+    channelsProbe: shared.channelsProbe,
+    onTelegramTokenNext: shared.onTelegramTokenNext,
+    onTelegramUserNext: shared.onTelegramUserNext,
+    setTelegramToken: shared.setTelegramToken,
+    setTelegramUserId: shared.setTelegramUserId,
+    telegramStatus: shared.telegramStatus,
+    telegramToken: shared.telegramToken,
+    telegramUserId: shared.telegramUserId,
 
-    gogAccount: gog.gogAccount,
-    gogBusy: gog.gogBusy,
-    gogError: gog.gogError,
-    gogOutput: gog.gogOutput,
-    onGogAuthAdd: gog.onGogAuthAdd,
-    onGogAuthList: gog.onGogAuthList,
-    setGogAccount: gog.setGogAccount,
+    gogAccount: shared.gogAccount,
+    gogBusy: shared.gogBusy,
+    gogError: shared.gogError,
+    gogOutput: shared.gogOutput,
+    gogCredentialsSet: shared.gogCredentialsSet,
+    gogCredentialsBusy: shared.gogCredentialsBusy,
+    gogCredentialsError: shared.gogCredentialsError,
+    onGogAuthAdd: shared.onGogAuthAdd,
+    onGogAuthList: shared.onGogAuthList,
+    onGogSetCredentials: shared.onGogSetCredentials,
+    setGogAccount: shared.setGogAccount,
 
-    onNotionApiKeySubmit,
-    onTrelloSubmit,
-    onGitHubConnect,
-    onAppleNotesCheckAndEnable,
-    onAppleRemindersAuthorizeAndEnable,
-    onWebSearchSubmit,
-    onMediaUnderstandingSubmit,
-    onMediaProviderKeySubmit,
-    onSlackConnect,
+    onNotionApiKeySubmit: shared.onNotionApiKeySubmit,
+    onTrelloSubmit: shared.onTrelloSubmit,
+    onGitHubConnect: shared.onGitHubConnect,
+    onAppleNotesCheckAndEnable: shared.onAppleNotesCheckAndEnable,
+    onAppleRemindersAuthorizeAndEnable: shared.onAppleRemindersAuthorizeAndEnable,
+    onWebSearchSubmit: shared.onWebSearchSubmit,
+    onMediaUnderstandingSubmit: shared.onMediaUnderstandingSubmit,
+    onMediaProviderKeySubmit: shared.onMediaProviderKeySubmit,
+    onSlackConnect: shared.onSlackConnect,
   };
 }

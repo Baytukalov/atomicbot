@@ -68,8 +68,12 @@ type FlowSourceKeys =
   | "gogOutput"
   | "gogAccount"
   | "setGogAccount"
+  | "gogCredentialsSet"
+  | "gogCredentialsBusy"
+  | "gogCredentialsError"
   | "onGogAuthAdd"
-  | "onGogAuthList";
+  | "onGogAuthList"
+  | "onGogSetCredentials";
 
 type FlowSource = Pick<ReturnType<typeof useWelcomeState>, FlowSourceKeys>;
 
@@ -350,6 +354,10 @@ export function renderSharedFlowRoutes({
             gogOutput={fs.gogOutput}
             gogAccount={fs.gogAccount}
             setGogAccount={fs.setGogAccount}
+            gogCredentialsSet={fs.gogCredentialsSet}
+            gogCredentialsBusy={fs.gogCredentialsBusy}
+            gogCredentialsError={fs.gogCredentialsError}
+            onSetCredentials={(json) => fs.onGogSetCredentials(json)}
             onRunAuthAdd={async (servicesCsv) => {
               const res = await fs.onGogAuthAdd(servicesCsv);
               if (res.ok) {

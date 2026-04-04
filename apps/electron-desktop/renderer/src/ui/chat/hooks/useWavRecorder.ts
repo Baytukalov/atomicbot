@@ -71,7 +71,7 @@ export function useWavRecorder(): WavRecorderResult {
     processorRef.current?.disconnect();
     sourceRef.current?.disconnect();
     mediaStreamRef.current?.getTracks().forEach((t) => t.stop());
-    audioContextRef.current?.close().catch(() => {});
+    audioContextRef.current?.close().catch((err) => console.warn("[wav-recorder] AudioContext.close (cleanup):", err));
     processorRef.current = null;
     sourceRef.current = null;
     mediaStreamRef.current = null;
@@ -125,7 +125,9 @@ export function useWavRecorder(): WavRecorderResult {
     const chunks = chunksRef.current;
     chunksRef.current = [];
 
-    await audioContextRef.current.close().catch(() => {});
+    await audioContextRef.current
+      .close()
+      .catch((err) => console.warn("[wav-recorder] AudioContext.close (stop):", err));
     audioContextRef.current = null;
     mediaStreamRef.current = null;
     sourceRef.current = null;

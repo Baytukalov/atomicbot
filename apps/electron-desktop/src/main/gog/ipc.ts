@@ -16,26 +16,6 @@ const PREPARE_CMD = "cd apps/electron-desktop && npm run fetch:gog";
 export function registerGogIpcHandlers(params: GogHandlerParams) {
   const { gogBin, openclawDir, userData, stateDir } = params;
 
-  // Discover the staged OAuth client secret used for "gog auth add".
-  // Packaged app: Resources/gog-credentials/gog-client-secret.json
-  // Dev: <repoRoot>/apps/electron-desktop/.gog-runtime/credentials/gog-client-secret.json
-  const bundledCredentialsPath = path.join(
-    process.resourcesPath,
-    "gog-credentials",
-    "gog-client-secret.json"
-  );
-  const devCredentialsPath = path.join(
-    openclawDir,
-    "apps",
-    "electron-desktop",
-    ".gog-runtime",
-    "credentials",
-    "gog-client-secret.json"
-  );
-  const gogCredentialsPath = fs.existsSync(bundledCredentialsPath)
-    ? bundledCredentialsPath
-    : devCredentialsPath;
-
   ipcMain.handle(IPC.gogAuthList, async () => {
     const notFound = checkBinaryExists(gogBin, PREPARE_CMD);
     if (notFound) return notFound;
@@ -62,7 +42,6 @@ export function registerGogIpcHandlers(params: GogHandlerParams) {
       return await runGogAuthAdd({
         gogBin,
         openclawDir,
-        credentialsJsonPath: gogCredentialsPath,
         stateDir,
         account,
         services,

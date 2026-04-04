@@ -13,24 +13,12 @@ import { routes } from "../../app/routes";
 import type { Provider } from "../providers/ProviderSelectPage";
 import { MODEL_PROVIDER_BY_ID } from "@shared/models/providers";
 import { setVoiceProvider } from "../../chat/hooks/useVoiceInput";
-import { useWelcomeApiKey } from "./useWelcomeApiKey";
-import { useWelcomeAppleNotes } from "./useWelcomeAppleNotes";
-import { useWelcomeAppleReminders } from "./useWelcomeAppleReminders";
 import { useWelcomeConfig } from "./useWelcomeConfig";
-import { useWelcomeGitHub } from "./useWelcomeGitHub";
-import { useWelcomeGog } from "./useWelcomeGog";
-import { useWelcomeMediaUnderstanding } from "./useWelcomeMediaUnderstanding";
 import { useWelcomeModels } from "./useWelcomeModels";
 import { useWelcomeNavigation } from "./useWelcomeNavigation";
-import { useWelcomeNotion } from "./useWelcomeNotion";
-import { useWelcomeObsidian } from "./useWelcomeObsidian";
-import { useWelcomeSkillState } from "./useWelcomeSkillState";
-import { useWelcomeSlack } from "./useWelcomeSlack";
-import { useWelcomeTelegram } from "./useWelcomeTelegram";
-import { useWelcomeTrello } from "./useWelcomeTrello";
-import { useWelcomeWebSearch } from "./useWelcomeWebSearch";
 import { addToastError, errorToMessage } from "@shared/toast";
 import { patchAuthProfile } from "../../shared/utils/authProfiles";
+import { useSharedOnboardingSkills } from "./useSharedOnboardingSkills";
 
 type WelcomeStateInput = {
   state: Extract<GatewayState, { kind: "ready" }>;
@@ -62,9 +50,6 @@ export function useWelcomeState({ state, navigate }: WelcomeStateInput) {
 
   // --- Composed hooks ---
 
-  const skillState = useWelcomeSkillState({ setError, setStatus });
-  const { skills, markSkillConnected } = skillState;
-
   const nav = useWelcomeNavigation(navigate);
   const { goApiKey, goOAuthProvider, goOllamaSetup, goModelSelect } = nav;
 
@@ -82,72 +67,29 @@ export function useWelcomeState({ state, navigate }: WelcomeStateInput) {
   });
   const { loadConfig, refreshProviderFlags } = config;
 
-  // Shared deps passed to most domain hooks.
-  const commonDeps = { gw, loadConfig, setError, setStatus } as const;
-  const skillCommon = { ...commonDeps, markSkillConnected, goSkills: nav.goSkills } as const;
-
   const { loadModels, models, modelsError, modelsLoading, onModelSelect } = useWelcomeModels({
-    ...commonDeps,
-    goSkills: nav.goSkills,
-  });
-
-  const { saveApiKey, saveSetupToken, onMediaProviderKeySubmit } = useWelcomeApiKey({
-    ...commonDeps,
-    loadModels,
-    refreshProviderFlags,
-  });
-
-  const { onAppleNotesCheckAndEnable } = useWelcomeAppleNotes({
-    ...skillCommon,
-    run: skillState.runAppleNotes,
-  });
-  const { onAppleRemindersAuthorizeAndEnable } = useWelcomeAppleReminders({
-    ...skillCommon,
-    run: skillState.runAppleReminders,
-  });
-  const obsidian = useWelcomeObsidian({
-    ...skillCommon,
-    run: skillState.runObsidian,
-    goObsidianPage: nav.goObsidianPage,
-  });
-  const { onGitHubConnect } = useWelcomeGitHub({
-    ...skillCommon,
-    run: skillState.runGitHub,
-  });
-  const { onNotionApiKeySubmit } = useWelcomeNotion({
-    ...skillCommon,
-    run: skillState.runNotion,
-  });
-  const { onTrelloSubmit } = useWelcomeTrello({
-    ...skillCommon,
-    run: skillState.runTrello,
-  });
-  const { onSlackConnect } = useWelcomeSlack({
-    ...commonDeps,
-    run: skillState.runSlack,
-    markSkillConnected,
-    goSlackReturn: nav.goSlackBack,
-  });
-  const { onWebSearchSubmit } = useWelcomeWebSearch({
-    ...skillCommon,
-    run: skillState.runWebSearch,
-  });
-  const { onMediaUnderstandingSubmit } = useWelcomeMediaUnderstanding({
     gw,
     loadConfig,
+    setError,
     setStatus,
-    run: skillState.runMediaUnderstanding,
-    markSkillConnected,
     goSkills: nav.goSkills,
   });
 
-  const telegram = useWelcomeTelegram({
-    ...commonDeps,
+  // --- Shared skill/connection composition ---
+
+  const shared = useSharedOnboardingSkills({
+    gw,
+    loadConfig,
+    setError,
+    setStatus,
+    loadModels,
+    refreshProviderFlags,
+    goSkills: nav.goSkills,
+    goObsidianPage: nav.goObsidianPage,
+    goSlackReturn: nav.goSlackBack,
     goTelegramUser: nav.goTelegramUser,
     goConnections: nav.goConnections,
   });
-
-  const gog = useWelcomeGog({ gw });
 
   // --- Orchestrator-level handlers ---
 
@@ -193,7 +135,6 @@ export function useWelcomeState({ state, navigate }: WelcomeStateInput) {
   const onOAuthSuccess = React.useCallback(
     async (profileId: string) => {
       try {
-        // Update config with auth profile entry (same pattern as saveApiKey).
         const provider = profileId.split(":")[0] ?? "";
         const snap = await loadConfig();
         const baseHash =
@@ -226,7 +167,7 @@ export function useWelcomeState({ state, navigate }: WelcomeStateInput) {
       setApiKeyBusy(true);
       setError(null);
       try {
-        const ok = await saveApiKey(selectedProvider, apiKey);
+        const ok = await shared.saveApiKey(selectedProvider, apiKey);
         if (ok) {
           if (selectedProvider === "openai") {
             setVoiceProvider("openai");
@@ -240,7 +181,7 @@ export function useWelcomeState({ state, navigate }: WelcomeStateInput) {
         setApiKeyBusy(false);
       }
     },
-    [goModelSelect, loadModels, saveApiKey, selectedProvider, setError]
+    [goModelSelect, loadModels, shared.saveApiKey, selectedProvider, setError]
   );
 
   const onOllamaSubmit = React.useCallback(
@@ -312,7 +253,7 @@ export function useWelcomeState({ state, navigate }: WelcomeStateInput) {
       setApiKeyBusy(true);
       setError(null);
       try {
-        const ok = await saveSetupToken(selectedProvider, token);
+        const ok = await shared.saveSetupToken(selectedProvider, token);
         if (ok) {
           await loadModels();
           goModelSelect();
@@ -323,22 +264,22 @@ export function useWelcomeState({ state, navigate }: WelcomeStateInput) {
         setApiKeyBusy(false);
       }
     },
-    [goModelSelect, loadModels, saveSetupToken, selectedProvider, setError]
+    [goModelSelect, loadModels, shared.saveSetupToken, selectedProvider, setError]
   );
 
   return {
-    // Skill busy flags
-    appleNotesBusy: skillState.appleNotesBusy,
-    appleRemindersBusy: skillState.appleRemindersBusy,
-    githubBusy: skillState.githubBusy,
-    mediaUnderstandingBusy: skillState.mediaUnderstandingBusy,
-    notionBusy: skillState.notionBusy,
-    obsidianBusy: skillState.obsidianBusy,
-    slackBusy: skillState.slackBusy,
-    trelloBusy: skillState.trelloBusy,
-    webSearchBusy: skillState.webSearchBusy,
-    skills,
-    markSkillConnected,
+    // Skill busy flags (from shared)
+    appleNotesBusy: shared.appleNotesBusy,
+    appleRemindersBusy: shared.appleRemindersBusy,
+    githubBusy: shared.githubBusy,
+    mediaUnderstandingBusy: shared.mediaUnderstandingBusy,
+    notionBusy: shared.notionBusy,
+    obsidianBusy: shared.obsidianBusy,
+    slackBusy: shared.slackBusy,
+    trelloBusy: shared.trelloBusy,
+    webSearchBusy: shared.webSearchBusy,
+    skills: shared.skills,
+    markSkillConnected: shared.markSkillConnected,
 
     // Navigation (spread)
     ...nav,
@@ -355,44 +296,48 @@ export function useWelcomeState({ state, navigate }: WelcomeStateInput) {
     modelsError,
     modelsLoading,
 
-    // Obsidian (spread domain state)
-    goObsidian: obsidian.goObsidian,
-    obsidianVaults: obsidian.obsidianVaults,
-    obsidianVaultsLoading: obsidian.obsidianVaultsLoading,
-    onObsidianRecheck: obsidian.onObsidianRecheck,
-    onObsidianSetDefaultAndEnable: obsidian.onObsidianSetDefaultAndEnable,
-    selectedObsidianVaultName: obsidian.selectedObsidianVaultName,
-    setSelectedObsidianVaultName: obsidian.setSelectedObsidianVaultName,
+    // Obsidian (from shared)
+    goObsidian: shared.goObsidian,
+    obsidianVaults: shared.obsidianVaults,
+    obsidianVaultsLoading: shared.obsidianVaultsLoading,
+    onObsidianRecheck: shared.onObsidianRecheck,
+    onObsidianSetDefaultAndEnable: shared.onObsidianSetDefaultAndEnable,
+    selectedObsidianVaultName: shared.selectedObsidianVaultName,
+    setSelectedObsidianVaultName: shared.setSelectedObsidianVaultName,
 
-    // Telegram
-    channelsProbe: telegram.channelsProbe,
-    onTelegramTokenNext: telegram.onTelegramTokenNext,
-    onTelegramUserNext: telegram.onTelegramUserNext,
-    setTelegramToken: telegram.setTelegramToken,
-    setTelegramUserId: telegram.setTelegramUserId,
-    telegramStatus: telegram.telegramStatus,
-    telegramToken: telegram.telegramToken,
-    telegramUserId: telegram.telegramUserId,
+    // Telegram (from shared)
+    channelsProbe: shared.channelsProbe,
+    onTelegramTokenNext: shared.onTelegramTokenNext,
+    onTelegramUserNext: shared.onTelegramUserNext,
+    setTelegramToken: shared.setTelegramToken,
+    setTelegramUserId: shared.setTelegramUserId,
+    telegramStatus: shared.telegramStatus,
+    telegramToken: shared.telegramToken,
+    telegramUserId: shared.telegramUserId,
 
-    // Gog
-    gogAccount: gog.gogAccount,
-    gogBusy: gog.gogBusy,
-    gogError: gog.gogError,
-    gogOutput: gog.gogOutput,
-    onGogAuthAdd: gog.onGogAuthAdd,
-    onGogAuthList: gog.onGogAuthList,
-    setGogAccount: gog.setGogAccount,
+    // Gog (from shared)
+    gogAccount: shared.gogAccount,
+    gogBusy: shared.gogBusy,
+    gogError: shared.gogError,
+    gogOutput: shared.gogOutput,
+    gogCredentialsSet: shared.gogCredentialsSet,
+    gogCredentialsBusy: shared.gogCredentialsBusy,
+    gogCredentialsError: shared.gogCredentialsError,
+    onGogAuthAdd: shared.onGogAuthAdd,
+    onGogAuthList: shared.onGogAuthList,
+    onGogSetCredentials: shared.onGogSetCredentials,
+    setGogAccount: shared.setGogAccount,
 
-    // Handlers from domain hooks
-    onAppleNotesCheckAndEnable,
-    onAppleRemindersAuthorizeAndEnable,
-    onGitHubConnect,
-    onMediaProviderKeySubmit,
-    onMediaUnderstandingSubmit,
-    onNotionApiKeySubmit,
-    onSlackConnect,
-    onTrelloSubmit,
-    onWebSearchSubmit,
+    // Handlers from shared domain hooks
+    onAppleNotesCheckAndEnable: shared.onAppleNotesCheckAndEnable,
+    onAppleRemindersAuthorizeAndEnable: shared.onAppleRemindersAuthorizeAndEnable,
+    onGitHubConnect: shared.onGitHubConnect,
+    onMediaProviderKeySubmit: shared.onMediaProviderKeySubmit,
+    onMediaUnderstandingSubmit: shared.onMediaUnderstandingSubmit,
+    onNotionApiKeySubmit: shared.onNotionApiKeySubmit,
+    onSlackConnect: shared.onSlackConnect,
+    onTrelloSubmit: shared.onTrelloSubmit,
+    onWebSearchSubmit: shared.onWebSearchSubmit,
 
     // Orchestrator handlers
     apiKeyBusy,

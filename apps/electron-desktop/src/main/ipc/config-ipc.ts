@@ -5,25 +5,26 @@ import { app, ipcMain } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 
+import { IPC } from "../../shared/ipc-channels";
 import type { ConfigHandlerParams } from "./types";
 
 export function registerConfigHandlers(params: ConfigHandlerParams) {
-  ipcMain.handle("gateway-get-info", async () => ({ state: params.getGatewayState() }));
+  ipcMain.handle(IPC.gatewayGetInfo, async () => ({ state: params.getGatewayState() }));
 
-  ipcMain.handle("consent-get", async () => ({ accepted: params.getConsentAccepted() }));
+  ipcMain.handle(IPC.consentGet, async () => ({ accepted: params.getConsentAccepted() }));
 
-  ipcMain.handle("consent-accept", async () => {
+  ipcMain.handle(IPC.consentAccept, async () => {
     await params.acceptConsent();
     await params.startGateway();
     return { ok: true } as const;
   });
 
-  ipcMain.handle("gateway-start", async () => {
+  ipcMain.handle(IPC.gatewayStart, async () => {
     await params.startGateway();
     return { ok: true } as const;
   });
 
-  ipcMain.handle("gateway-retry", async () => {
+  ipcMain.handle(IPC.gatewayRetry, async () => {
     app.relaunch();
     app.exit(0);
   });
@@ -31,7 +32,7 @@ export function registerConfigHandlers(params: ConfigHandlerParams) {
   // OpenClaw config (openclaw.json) read/write.
   const configJsonPath = path.join(params.stateDir, "openclaw.json");
 
-  ipcMain.handle("config-read", async () => {
+  ipcMain.handle(IPC.configRead, async () => {
     try {
       if (!fs.existsSync(configJsonPath)) {
         return { ok: true, content: "" };
@@ -43,7 +44,7 @@ export function registerConfigHandlers(params: ConfigHandlerParams) {
     }
   });
 
-  ipcMain.handle("config-write", async (_evt, p: { content?: unknown }) => {
+  ipcMain.handle(IPC.configWrite, async (_evt, p: { content?: unknown }) => {
     const content = typeof p?.content === "string" ? p.content : "";
     try {
       JSON.parse(content);
@@ -61,19 +62,19 @@ export function registerConfigHandlers(params: ConfigHandlerParams) {
   });
 
   // Launch at login (auto-start) IPC handlers.
-  ipcMain.handle("launch-at-login-get", () => {
+  ipcMain.handle(IPC.launchAtLoginGet, () => {
     const settings = app.getLoginItemSettings();
     return { enabled: settings.openAtLogin };
   });
 
-  ipcMain.handle("launch-at-login-set", (_evt, p: { enabled?: unknown }) => {
+  ipcMain.handle(IPC.launchAtLoginSet, (_evt, p: { enabled?: unknown }) => {
     const enabled = typeof p?.enabled === "boolean" ? p.enabled : false;
     app.setLoginItemSettings({ openAtLogin: enabled });
     return { ok: true } as const;
   });
 
   // App version
-  ipcMain.handle("get-app-version", () => {
+  ipcMain.handle(IPC.getAppVersion, () => {
     return { version: app.getVersion() };
   });
 }

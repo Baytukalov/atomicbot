@@ -1,8 +1,8 @@
 import React from "react";
 
 import sm from "./SkillModal.module.css";
+import { useSkillModalState } from "./useSkillModalState";
 import { ActionButton, InlineError, TextInput } from "@shared/kit";
-import { errorToMessage } from "@shared/toast";
 import { getObject } from "@shared/utils/configHelpers";
 import { useWelcomeNotion } from "@ui/onboarding/hooks/useWelcomeNotion";
 import type { ConfigSnapshot, GatewayRpcLike } from "@ui/onboarding/hooks/types";
@@ -17,12 +17,8 @@ export function NotionModalContent(props: {
   const { gw, loadConfig, isConnected, onConnected, onDisabled } = props;
   const [apiKey, setApiKey] = React.useState("");
   const [hasExistingKey, setHasExistingKey] = React.useState(false);
-  const [busy, setBusy] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [status, setStatus] = React.useState<string | null>(null);
-  const run = React.useCallback(async <T,>(fn: () => Promise<T>) => fn(), []);
-  const markSkillConnected = React.useCallback(() => {}, []);
-  const goSkills = React.useCallback(() => {}, []);
+  const { busy, error, status, setError, setStatus, run, markSkillConnected, goSkills, wrapAction } =
+    useSkillModalState();
 
   const { saveNotionApiKey } = useWelcomeNotion({
     gw,
@@ -63,20 +59,14 @@ export function NotionModalContent(props: {
   }, [isConnected, loadConfig]);
 
   const handleConnect = React.useCallback(async () => {
-    setBusy(true);
-    setError(null);
-    setStatus(null);
-    try {
+    await wrapAction(async () => {
+      setStatus(null);
       const ok = await saveNotionApiKey(apiKey);
       if (ok) {
         onConnected();
       }
-    } catch (err) {
-      setError(errorToMessage(err));
-    } finally {
-      setBusy(false);
-    }
-  }, [apiKey, onConnected, saveNotionApiKey]);
+    });
+  }, [apiKey, onConnected, saveNotionApiKey, wrapAction, setStatus]);
 
   return (
     <div className={sm.UiSkillModalContent}>

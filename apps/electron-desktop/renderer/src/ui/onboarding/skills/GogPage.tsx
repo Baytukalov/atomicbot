@@ -6,7 +6,6 @@ import { GlassCard, HeroPageLayout, PrimaryButton, TextInput } from "@shared/kit
 import { OnboardingHeader } from "../OnboardingHeader";
 import { DEFAULT_GOG_SERVICES } from "../hooks/constants";
 import { UiCheckbox } from "@shared/kit/forms";
-import connectGoogleImage from "@assets/connect-google.png";
 
 type ServiceOption = {
   id: string;
@@ -53,6 +52,96 @@ function parseDefaultServicesCsv(): string[] {
     .filter(Boolean);
 }
 
+const GOOGLE_CLOUD_CONSOLE_URL = "https://console.cloud.google.com/apis/credentials";
+const GOOGLE_CLOUD_NEW_PROJECT_URL = "https://console.cloud.google.com/projectcreate";
+const GOOGLE_CLOUD_OAUTH_CONSENT_URL =
+  "https://console.cloud.google.com/apis/credentials/consent";
+const GOOGLE_CLOUD_ENABLE_APIS_URL = "https://console.cloud.google.com/apis/library";
+
+function readFileAsText(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsText(file);
+  });
+}
+
+function ExternalLink({ href, children }: { href: string; children: React.ReactNode }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="UiLink"
+      onClick={(e) => {
+        e.preventDefault();
+        openExternal(href);
+      }}
+    >
+      {children}
+    </a>
+  );
+}
+
+export function GogCredentialsInstructions() {
+  return (
+    <div className="UiBanner" style={{ marginTop: "16px" }}>
+      <div>
+        <div className="UiBannerTitle">How to get your credentials</div>
+        <ol
+          style={{
+            color: "#ffffffb2",
+            fontSize: "13px",
+            lineHeight: "20px",
+            margin: "0",
+            paddingLeft: "18px",
+          }}
+        >
+          <li style={{ marginBottom: "6px" }}>
+            Open the{" "}
+            <ExternalLink href={GOOGLE_CLOUD_CONSOLE_URL}>
+              Google Cloud Console ↗
+            </ExternalLink>{" "}
+            and sign in. If you do not have a project yet,{" "}
+            <ExternalLink href={GOOGLE_CLOUD_NEW_PROJECT_URL}>
+              create one ↗
+            </ExternalLink>
+            .
+          </li>
+          <li style={{ marginBottom: "6px" }}>
+            Enable the APIs you need (Gmail, Calendar, Drive, etc.) in the{" "}
+            <ExternalLink href={GOOGLE_CLOUD_ENABLE_APIS_URL}>
+              API Library ↗
+            </ExternalLink>
+            .
+          </li>
+          <li style={{ marginBottom: "6px" }}>
+            Go to{" "}
+            <ExternalLink href={GOOGLE_CLOUD_OAUTH_CONSENT_URL}>
+              OAuth consent screen ↗
+            </ExternalLink>{" "}
+            and configure it (choose "External", fill in the app name and your email).
+          </li>
+          <li style={{ marginBottom: "6px" }}>
+            Go to{" "}
+            <ExternalLink href={GOOGLE_CLOUD_CONSOLE_URL}>
+              Credentials ↗
+            </ExternalLink>{" "}
+            {"→"} <strong>Create Credentials</strong> {"→"}{" "}
+            <strong>OAuth client ID</strong>. Select application type{" "}
+            <strong>Desktop app</strong>.
+          </li>
+          <li>
+            Click <strong>Download JSON</strong> (or copy the JSON). Paste it above or
+            use the file picker.
+          </li>
+        </ol>
+      </div>
+    </div>
+  );
+}
+
 export function GogPage(props: {
   status: string | null;
   error: string | null;
@@ -61,6 +150,10 @@ export function GogPage(props: {
   gogOutput: string | null;
   gogAccount: string;
   setGogAccount: (value: string) => void;
+  gogCredentialsSet: boolean;
+  gogCredentialsBusy: boolean;
+  gogCredentialsError: string | null;
+  onSetCredentials: (json: string) => Promise<{ ok: boolean }>;
   onRunAuthAdd: (servicesCsv: string) => Promise<{ ok: boolean }>;
   onRunAuthList: () => Promise<unknown>;
   onFinish: () => void;
@@ -71,9 +164,11 @@ export function GogPage(props: {
   finishText?: string;
   skipText?: string;
 }) {
-  const { gogAccount, onRunAuthAdd } = props;
+  const { gogAccount, onRunAuthAdd, onSetCredentials } = props;
   const [_, setConnected] = React.useState(false);
   const [errorText, setErrorText] = React.useState("");
+  const [credentialsJson, setCredentialsJson] = React.useState("");
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [services, setServices] = React.useState<Record<string, boolean>>(() => {
     const defaults = new Set(parseDefaultServicesCsv());
     return Object.fromEntries(SERVICE_OPTIONS.map((s) => [s.id, defaults.has(s.id)]));
@@ -84,6 +179,26 @@ export function GogPage(props: {
     [services]
   );
   const servicesCsv = selectedServices.join(",");
+
+  const handleSetCredentials = React.useCallback(async () => {
+    const trimmed = credentialsJson.trim();
+    if (!trimmed) {
+      return;
+    }
+    await onSetCredentials(trimmed);
+  }, [credentialsJson, onSetCredentials]);
+
+  const handleFilePick = React.useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await readFileAsText(file);
+      setCredentialsJson(text);
+    } catch {
+      // Best-effort; user can paste manually.
+    }
+    e.target.value = "";
+  }, []);
 
   const onConnect = React.useCallback(async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -123,127 +238,122 @@ export function GogPage(props: {
       <GlassCard className={`${gw.card} UiGlassCardOnboarding`}>
         <div className="UiSectionTitle">Google Workspace</div>
         <div className="UiContentWrapper scrollable">
-          <div>
-            <div className="UiSectionSubtitle">
-              Get your email address from the Google{" "}
-              <a
-                href="https://accounts.google.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="UiLink"
-                onClick={(e) => {
-                  e.preventDefault();
-                  openExternal("https://accounts.google.com/");
-                }}
-              >
-                Open Google ↗
-              </a>
-            </div>
-            {/*{connected ? (*/}
-            {/*  <div className="UiGoogleWorkspaceConnected" aria-label="Connected">*/}
-            {/*    ✓ Connected*/}
-            {/*  </div>*/}
-            {/*) : null}*/}
-
-            {/*<div className="UiBanner">*/}
-            {/*  <div>*/}
-            {/*    <svg*/}
-            {/*      xmlns="http://www.w3.org/2000/svg"*/}
-            {/*      fill="none"*/}
-            {/*      height="24"*/}
-            {/*      width="24"*/}
-            {/*      viewBox="0 0 24 24"*/}
-            {/*    >*/}
-            {/*      <path*/}
-            {/*        stroke="#fff"*/}
-            {/*        strokeLinecap="round"*/}
-            {/*        strokeLinejoin="round"*/}
-            {/*        strokeWidth="2"*/}
-            {/*        d="m6 6 4.5 4.5M6 6H3L2 3l1-1 3 1zm13.26-3.26-2.63 2.63c-.4.4-.6.6-.67.82a1 1 0 0 0 0 .62c.08.23.28.43.67.82l.24.24c.4.4.6.6.82.67a1 1 0 0 0 .62 0c.23-.08.43-.28.82-.67L21.6 5.4A5.48 5.48 0 0 1 16.5 13q-.55 0-1.07-.1c-.49-.1-.73-.15-.88-.13a1 1 0 0 0-.37.11c-.13.07-.26.2-.52.46L6.5 20.5a2.12 2.12 0 0 1-3-3l7.16-7.16c.26-.26.39-.39.46-.52.07-.14.1-.22.11-.37.02-.15-.03-.4-.13-.88A5.53 5.53 0 0 1 16.5 2c1 0 1.95.27 2.76.74M12 15l5.5 5.5a2.12 2.12 0 0 0 3-3l-4.52-4.52a6 6 0 0 1-.94-.18c-.39-.1-.82-.02-1.1.26z"*/}
-            {/*      />*/}
-            {/*    </svg>*/}
-            {/*  </div>*/}
-            {/*  <div className="UiBannerText">*/}
-            {/*    <div className="UiBannerTitle">Temporary Google sign-in notice</div>*/}
-            {/*    <div className="UiBannerSubtitle">*/}
-            {/*      We’re completing Google’s verification, so there’s one extra step. To continue,*/}
-            {/*      click Advanced, then Go to well-pin and allow requested permissions.*/}
-            {/*    </div>*/}
-            {/*  </div>*/}
-            {/*</div>*/}
-
-            <div className={gw.form}>
-              <TextInput
-                type="text"
-                value={props.gogAccount}
-                onChange={props.setGogAccount}
-                placeholder="you@gmail.com"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                disabled={props.gogBusy}
-                label={"Gmail Address"}
-                isError={errorText}
-              />
-
-              <div className="UiSectionSubtitle" style={{ margin: "14px 0 0" }}>
-                Enable
-              </div>
-              <div className={gw.servicesCheckboxes}>
-                {SERVICE_OPTIONS.map((svc) => (
-                  <UiCheckbox
-                    key={svc.id}
-                    checked={Boolean(services[svc.id])}
-                    label={svc.label}
-                    onChange={(checked) => {
-                      setServices((prev) => ({ ...prev, [svc.id]: checked }));
-                    }}
-                  ></UiCheckbox>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/*{props.gogOutput ? (*/}
-          {/*  <details className="UiGoogleWorkspaceDetails">*/}
-          {/*    <summary className="UiGoogleWorkspaceDetailsSummary">Details</summary>*/}
-          {/*    <pre className="UiGoogleWorkspaceDetailsPre">{props.gogOutput}</pre>*/}
-          {/*  </details>*/}
-          {/*) : null}*/}
-
-          <div className="UiBanner" style={{ marginTop: "24px" }}>
+          {!props.gogCredentialsSet ? (
             <div>
-              <div className="UiBannerTitle">How to connect your Google account</div>
-              <div className="UiBannerSubtitle">
-                Google may show an extra verification screen while our app is under review. This is
-                normal for new apps. To continue safely сlick “Advanced” and select “Go to Atomic
-                Bot”. Your Google account remains protected.
+              <div className="UiSectionSubtitle">
+                Paste your Google OAuth <code>client_secret.json</code> below. See the
+                instructions for how to create one.
+              </div>
+
+              <div className={gw.form}>
+                <textarea
+                  className="UiTextarea"
+                  value={credentialsJson}
+                  onChange={(e) => setCredentialsJson(e.target.value)}
+                  placeholder="Paste your client_secret.json contents here..."
+                  rows={6}
+                  disabled={props.gogCredentialsBusy}
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    fontFamily: "monospace",
+                    fontSize: "12px",
+                    resize: "vertical",
+                    background: "rgba(0,0,0,0.2)",
+                    border: "1px solid #ffffff14",
+                    borderRadius: "var(--radius-14)",
+                    padding: "10px 12px",
+                    color: "inherit",
+                  }}
+                />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json,application/json"
+                  style={{ display: "none" }}
+                  onChange={(e) => void handleFilePick(e)}
+                />
+              </div>
+
+              {props.gogCredentialsError && (
+                <div className="UiErrorText" style={{ marginTop: "8px" }}>
+                  {props.gogCredentialsError}
+                </div>
+              )}
+
+              <GogCredentialsInstructions />
+            </div>
+          ) : (
+            <div>
+              <div className="UiSectionSubtitle">
+                Credentials set. Enter your Google account email to connect.
+              </div>
+
+              <div className={gw.form}>
+                <TextInput
+                  type="text"
+                  value={props.gogAccount}
+                  onChange={props.setGogAccount}
+                  placeholder="you@gmail.com"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  disabled={props.gogBusy}
+                  label={"Gmail Address"}
+                  isError={errorText}
+                />
+
+                <div className="UiSectionSubtitle" style={{ margin: "14px 0 0" }}>
+                  Enable
+                </div>
+                <div className={gw.servicesCheckboxes}>
+                  {SERVICE_OPTIONS.map((svc) => (
+                    <UiCheckbox
+                      key={svc.id}
+                      checked={Boolean(services[svc.id])}
+                      label={svc.label}
+                      onChange={(checked) => {
+                        setServices((prev) => ({ ...prev, [svc.id]: checked }));
+                      }}
+                    ></UiCheckbox>
+                  ))}
+                </div>
               </div>
             </div>
-            <div className="UiBannerImageContainer">
-              <img src={connectGoogleImage} alt="" />
-            </div>
-          </div>
+          )}
         </div>
 
         <div className={gw.bottomRow}>
           <div />
           <div className={gw.actions}>
-            <PrimaryButton
-              size={"sm"}
-              disabled={props.gogBusy || selectedServices.length === 0}
-              onClick={() => void onConnect()}
-            >
-              {props.gogBusy ? "Connecting…" : "Connect"}
-            </PrimaryButton>
+            {!props.gogCredentialsSet ? (
+              <>
+                <PrimaryButton
+                  size={"sm"}
+                  disabled={props.gogCredentialsBusy}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  Choose File
+                </PrimaryButton>
+                <PrimaryButton
+                  size={"sm"}
+                  disabled={props.gogCredentialsBusy || !credentialsJson.trim()}
+                  onClick={() => void handleSetCredentials()}
+                >
+                  {props.gogCredentialsBusy ? "Setting..." : "Set Credentials"}
+                </PrimaryButton>
+              </>
+            ) : (
+              <PrimaryButton
+                size={"sm"}
+                disabled={props.gogBusy || selectedServices.length === 0}
+                onClick={() => void onConnect()}
+              >
+                {props.gogBusy ? "Connecting..." : "Connect"}
+              </PrimaryButton>
+            )}
           </div>
         </div>
-
-        {/*<div className="UiGoogleWorkspaceFooterRow">*/}
-        {/*  <button className="UiTextButton" onClick={props.onFinish} type="button" disabled={props.gogBusy}>*/}
-        {/*    {finishText}*/}
-        {/*  </button>*/}
-        {/*</div>*/}
       </GlassCard>
     </HeroPageLayout>
   );

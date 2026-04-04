@@ -69,7 +69,7 @@ export async function bootstrapApp(params: {
   if (killedPid) {
     console.log(`[main] Cleaned up orphaned gateway process (PID ${killedPid})`);
   }
-  // TODO: remove after 1-2 releases once orphan cleanup is proven reliable.
+  // TODO: remove after 1-2 releases once orphan cleanup is proven reliable. (since v1.0.x)
   // Skip in e2e: parallel test workers each spawn their own gateway;
   // a blanket pkill would tear down sibling instances.
   if (!process.env.OPENCLAW_E2E_BUNDLE_DIR) {

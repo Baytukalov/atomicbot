@@ -9,6 +9,7 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { getDesktopApiOrNull } from "@ipc/desktopApi";
 import type { DesktopApi } from "@ipc/desktopApi";
+import { debugLog, debugWarn } from "@lib/debug-log";
 import type { GatewayRequest } from "../chat/chatSlice";
 import type { SetupMode } from "./auth-types";
 import type { AppDispatch, RootState } from "../../store";
@@ -70,10 +71,10 @@ export const switchMode = createAsyncThunk(
     const dispatch = thunkApi.dispatch as AppDispatch;
     const current = getState().auth.mode;
 
-    console.log(`[switchMode] ${current ?? "null"} → ${target}`, extra);
+    debugLog("mode-switch", `${current ?? "null"} → ${target}`, extra);
 
     if (current === target) {
-      console.log("[switchMode] same mode, skipping");
+      debugLog("mode-switch", "same mode, skipping");
       return { hasBackup: true } as ModeSetupResult;
     }
 
@@ -82,9 +83,9 @@ export const switchMode = createAsyncThunk(
 
     // Phase 1 + 2: save backup & teardown current mode
     if (current) {
-      console.log(`[switchMode] phase 1: saveBackup(${current})`);
+      debugLog("mode-switch", `phase 1: saveBackup(${current})`);
       await handlers[current].saveBackup(ctx);
-      console.log(`[switchMode] phase 2: teardown(${current})`);
+      debugLog("mode-switch", `phase 2: teardown(${current})`);
       await handlers[current].teardown(ctx);
     }
 
@@ -93,9 +94,9 @@ export const switchMode = createAsyncThunk(
     dispatch(authActions.clearAuthState());
 
     // Phase 3: setup target mode
-    console.log(`[switchMode] phase 3: setup(${target})`);
+    debugLog("mode-switch", `phase 3: setup(${target})`);
     const result = await handlers[target].setup(ctx);
-    console.log("[switchMode] setup result:", result);
+    debugLog("mode-switch", "setup result:", result);
 
     // Phase 4: finalize
     dispatch(authActions.setMode(target));
@@ -108,16 +109,16 @@ export const switchMode = createAsyncThunk(
 
     try {
       await request("secrets.reload", {});
-      console.log("[switchMode] secrets.reload OK");
+      debugLog("mode-switch", "secrets.reload OK");
     } catch (err) {
-      console.warn("[switchMode] secrets.reload failed:", err);
+      debugWarn("mode-switch", "secrets.reload failed:", err);
     }
 
-    console.log("[switchMode] resetting session model selection");
+    debugLog("mode-switch", "resetting session model selection");
     await resetSessionModelSelection(request);
     await dispatch(reloadConfig({ request }));
 
-    console.log(`[switchMode] done: ${current ?? "null"} → ${target}`);
+    debugLog("mode-switch", `done: ${current ?? "null"} → ${target}`);
     return result;
   }
 );

@@ -3,11 +3,12 @@
  */
 import { ipcMain } from "electron";
 
+import { IPC } from "../../shared/ipc-channels";
 import { checkForUpdates, downloadUpdate, installUpdate } from "../updater";
 
 export function registerUpdaterIpcHandlers() {
   ipcMain.handle(
-    "fetch-release-notes",
+    IPC.fetchReleaseNotes,
     async (_evt, p: { version?: string; owner?: string; repo?: string }) => {
       const version = typeof p?.version === "string" ? p.version : "";
       const owner = typeof p?.owner === "string" ? p.owner : "";
@@ -33,17 +34,17 @@ export function registerUpdaterIpcHandlers() {
     }
   );
 
-  ipcMain.handle("updater-check", async () => {
+  ipcMain.handle(IPC.updaterCheck, async () => {
     await checkForUpdates();
     return { ok: true } as const;
   });
 
-  ipcMain.handle("updater-download", async () => {
+  ipcMain.handle(IPC.updaterDownload, async () => {
     await downloadUpdate();
     return { ok: true } as const;
   });
 
-  ipcMain.handle("updater-install", async () => {
+  ipcMain.handle(IPC.updaterInstall, async () => {
     installUpdate();
     return { ok: true } as const;
   });

@@ -3,7 +3,7 @@ import { getDesktopApi } from "@ipc/desktopApi";
 import { errorToMessage } from "@shared/toast";
 import { DEFAULT_GOG_SERVICES } from "./constants";
 import type { ConfigSnapshot, GatewayRpcLike, GogExecResult } from "./types";
-import { getObject, getStringArray, unique } from "./utils";
+import { getObject, getStringArray, unique } from "./onboarding-config-helpers";
 
 type UseWelcomeGogInput = {
   gw: GatewayRpcLike;
@@ -14,6 +14,9 @@ export function useWelcomeGog({ gw }: UseWelcomeGogInput) {
   const [gogBusy, setGogBusy] = React.useState(false);
   const [gogError, setGogError] = React.useState<string | null>(null);
   const [gogOutput, setGogOutput] = React.useState<string | null>(null);
+  const [gogCredentialsSet, setGogCredentialsSet] = React.useState(false);
+  const [gogCredentialsBusy, setGogCredentialsBusy] = React.useState(false);
+  const [gogCredentialsError, setGogCredentialsError] = React.useState<string | null>(null);
 
   const runGog = React.useCallback(async (fn: () => Promise<GogExecResult>) => {
     setGogError(null);
@@ -39,6 +42,26 @@ export function useWelcomeGog({ gw }: UseWelcomeGogInput) {
       throw err;
     } finally {
       setGogBusy(false);
+    }
+  }, []);
+
+  const onGogSetCredentials = React.useCallback(async (json: string) => {
+    setGogCredentialsError(null);
+    setGogCredentialsBusy(true);
+    try {
+      const api = getDesktopApi();
+      const res = await api.gogAuthCredentials({ credentialsJson: json });
+      if (res.ok) {
+        setGogCredentialsSet(true);
+      } else {
+        setGogCredentialsError(res.stderr?.trim() || "Failed to set credentials");
+      }
+      return res;
+    } catch (err) {
+      setGogCredentialsError(errorToMessage(err));
+      return { ok: false, code: null, stdout: "", stderr: errorToMessage(err) };
+    } finally {
+      setGogCredentialsBusy(false);
     }
   }, []);
 
@@ -112,8 +135,12 @@ export function useWelcomeGog({ gw }: UseWelcomeGogInput) {
     gogBusy,
     gogError,
     gogOutput,
+    gogCredentialsSet,
+    gogCredentialsBusy,
+    gogCredentialsError,
     onGogAuthAdd,
     onGogAuthList,
+    onGogSetCredentials,
     setGogAccount,
   };
 }

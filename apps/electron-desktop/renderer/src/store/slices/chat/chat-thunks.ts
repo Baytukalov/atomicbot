@@ -1,13 +1,13 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import type { RootState } from "../../store";
-import { errorToMessage } from "../../../ui/shared/toast";
+import { errorToMessage } from "@lib/error-format";
 import type {
   ChatAttachmentInput,
   ChatHistoryResult,
   GatewayRequest,
   UiMessageAttachment,
 } from "./chat-types";
-import { dataUrlToBase64, parseHistoryMessages } from "./chat-utils";
+import { dataUrlToBase64, parseHistoryMessages } from "./parse-history-messages";
 import { chatActions } from "./chatSlice";
 import { captureRenderer, ANALYTICS_EVENTS } from "@analytics";
 
