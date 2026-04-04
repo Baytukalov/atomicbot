@@ -13,8 +13,8 @@ export type BackendVersionInfo = {
 };
 
 function resolveAssetName(arch: string): string {
-  if (arch === "arm64") return "llama-turboquant-macos-arm64.tar.gz";
-  if (arch === "x64") return "llama-turboquant-macos-x64.tar.gz";
+  if (arch === "arm64") return "llama-turboquant-macos-arm64.zip";
+  if (arch === "x64") return "llama-turboquant-macos-x64.zip";
   throw new Error(`Unsupported architecture for llamacpp backend: ${arch}`);
 }
 
@@ -110,11 +110,10 @@ export async function downloadBackend(
     signal: opts?.signal,
   });
 
-  // Extract tar.gz — llama-server lives at build/bin/llama-server inside the archive
   const extractDir = path.join(backendDir, "_extract");
   fs.mkdirSync(extractDir, { recursive: true });
   try {
-    execSync(`tar -xzf "${archivePath}" -C "${extractDir}"`, {
+    execSync(`unzip -o "${archivePath}" -d "${extractDir}"`, {
       timeout: 60_000,
     });
   } catch (err) {
@@ -136,7 +135,13 @@ export async function downloadBackend(
     fs.chmodSync(dest, 0o755);
   }
 
-  // Clean up
+  // Strip macOS quarantine/provenance xattrs so Gatekeeper won't block the binary
+  try {
+    execSync(`xattr -cr "${backendDir}"`, { timeout: 10_000 });
+  } catch {
+    // xattr may fail on non-macOS or if attributes are already absent
+  }
+
   fs.rmSync(extractDir, { recursive: true, force: true });
   fs.rmSync(archivePath, { force: true });
 
