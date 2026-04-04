@@ -348,8 +348,12 @@ export function usePaidOnboarding({ navigate }: PaidOnboardingInput) {
     gogBusy: shared.gogBusy,
     gogError: shared.gogError,
     gogOutput: shared.gogOutput,
+    gogCredentialsSet: shared.gogCredentialsSet,
+    gogCredentialsBusy: shared.gogCredentialsBusy,
+    gogCredentialsError: shared.gogCredentialsError,
     onGogAuthAdd: shared.onGogAuthAdd,
     onGogAuthList: shared.onGogAuthList,
+    onGogSetCredentials: shared.onGogSetCredentials,
     setGogAccount: shared.setGogAccount,
 
     onNotionApiKeySubmit: shared.onNotionApiKeySubmit,

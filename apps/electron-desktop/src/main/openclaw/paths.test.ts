@@ -13,9 +13,6 @@ import {
   bundledBin,
   downloadedBin,
   resolveBin,
-  resolveBundledGogCredentialsPath,
-  resolveDownloadedGogCredentialsPath,
-  resolveGogCredentialsPaths,
   resolveRendererIndex,
   resolvePreloadPath,
 } from "./paths";
@@ -57,11 +54,6 @@ describe("resolveBundled* functions", () => {
     }
   });
 
-  it("resolveBundledGogCredentialsPath returns correct path", () => {
-    expect(resolveBundledGogCredentialsPath()).toBe(
-      path.join(MOCK_RESOURCES, "gog-credentials", "gog-client-secret.json")
-    );
-  });
 });
 
 describe("bundledBin", () => {
@@ -114,28 +106,6 @@ describe("resolveBin", () => {
       expect(resolveBin(tool, { isPackaged: false, mainDir })).toBe(
         path.join(appDir, `.${tool}-runtime`, platArch, `${tool}${ext}`)
       );
-    }
-  });
-});
-
-describe("resolveDownloadedGogCredentialsPath", () => {
-  const mainDir = "/app/electron-desktop/dist";
-  const appDir = path.resolve(mainDir, "..");
-
-  it("returns correct path", () => {
-    expect(resolveDownloadedGogCredentialsPath(mainDir)).toBe(
-      path.join(appDir, ".gog-runtime", "credentials", "gog-client-secret.json")
-    );
-  });
-});
-
-describe("resolveGogCredentialsPaths", () => {
-  it("returns an array of paths", () => {
-    const paths = resolveGogCredentialsPaths();
-    expect(Array.isArray(paths)).toBe(true);
-    expect(paths.length).toBeGreaterThanOrEqual(1);
-    for (const p of paths) {
-      expect(p).toContain("credentials.json");
     }
   });
 });

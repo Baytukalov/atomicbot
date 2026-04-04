@@ -49,22 +49,6 @@ export function resolveBin(tool: string, opts: { isPackaged: boolean; mainDir: s
   return opts.isPackaged ? bundledBin(tool) : downloadedBin(opts.mainDir, tool);
 }
 
-export function resolveBundledGogCredentialsPath(): string {
-  return path.join(process.resourcesPath, "gog-credentials", "gog-client-secret.json");
-}
-
-export function resolveDownloadedGogCredentialsPath(mainDir: string): string {
-  // In dev, the entry file compiles to apps/electron-desktop/dist/main.js.
-  const appDir = path.resolve(mainDir, "..");
-  return path.join(appDir, ".gog-runtime", "credentials", "gog-client-secret.json");
-}
-
-export function resolveGogCredentialsPaths(): string[] {
-  return getPlatform()
-    .appConfigSearchPaths("gogcli")
-    .map((dir) => path.join(dir, "credentials.json"));
-}
-
 export function resolveRendererIndex(params: {
   isPackaged: boolean;
   appPath: string;

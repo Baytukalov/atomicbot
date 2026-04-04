@@ -9,7 +9,7 @@
   "license": "PolyForm-Noncommercial-1.0.0",
   "scripts": {
     "build:all": "npm run build && npm run build:renderer",
-    "prepare:gog:all": "npm run fetch:gog && npm run prepare:gog:credentials && npm run prepare:gog",
+    "prepare:gog:all": "npm run fetch:gog && npm run prepare:gog",
     "prepare:jq:all": "npm run fetch:jq && npm run prepare:jq",
     "prepare:memo:all": "npm run fetch:memo && npm run build:memo && npm run prepare:memo",
     "prepare:remindctl:all": "npm run fetch:remindctl && npm run prepare:remindctl",
@@ -36,7 +36,6 @@
     "fetch:gh": "node scripts/fetch-gh-runtime.mjs",
     "fetch:whisper-cli": "node scripts/fetch-whisper-cli-runtime.mjs",
     "build:memo": "node scripts/build-memo-runtime.mjs",
-    "prepare:gog:credentials": "node --env-file=.env scripts/prepare-gog-credentials.mjs",
     "prepare:gog": "node scripts/prepare-gog-runtime.mjs",
     "prepare:jq": "node scripts/prepare-jq-runtime.mjs",
     "prepare:memo": "node scripts/prepare-memo-runtime.mjs",
@@ -213,10 +212,6 @@
       {
         "from": "vendor/whisper-cli",
         "to": "whisper-cli"
-      },
-      {
-        "from": ".gog-runtime/credentials",
-        "to": "gog-credentials"
       }
     ],
     "publish": {

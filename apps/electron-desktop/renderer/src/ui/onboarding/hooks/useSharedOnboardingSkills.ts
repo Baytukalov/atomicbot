@@ -156,8 +156,12 @@ export function useSharedOnboardingSkills({
     gogBusy: gog.gogBusy,
     gogError: gog.gogError,
     gogOutput: gog.gogOutput,
+    gogCredentialsSet: gog.gogCredentialsSet,
+    gogCredentialsBusy: gog.gogCredentialsBusy,
+    gogCredentialsError: gog.gogCredentialsError,
     onGogAuthAdd: gog.onGogAuthAdd,
     onGogAuthList: gog.onGogAuthList,
+    onGogSetCredentials: gog.onGogSetCredentials,
     setGogAccount: gog.setGogAccount,
 
     onNotionApiKeySubmit,
