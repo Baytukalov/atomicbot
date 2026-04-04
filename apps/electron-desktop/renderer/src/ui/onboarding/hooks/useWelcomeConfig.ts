@@ -130,11 +130,39 @@ export function useWelcomeConfig({
     if (!baseHash) {
       throw new Error("Config base hash missing. Reload and try again.");
     }
-    await gw.request("config.patch", {
-      baseHash,
-      raw: JSON.stringify(patch, null, 2),
-      note: "Welcome: ensure onboarding defaults (workspace/gateway)",
-    });
+
+    // config.patch may trigger a SIGUSR1 gateway restart (when gateway.* paths
+    // change), dropping the WebSocket mid-flight. Retry with backoff so the
+    // onboarding flow survives transient restarts instead of showing "Setup failed".
+    const maxAttempts = 5;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const freshSnap = attempt === 1 ? snap : await loadConfig();
+        const freshHash =
+          typeof freshSnap.hash === "string" && freshSnap.hash.trim()
+            ? freshSnap.hash.trim()
+            : null;
+        if (!freshHash) {
+          throw new Error("Config base hash missing after retry. Reload and try again.");
+        }
+        await gw.request("config.patch", {
+          baseHash: freshHash,
+          raw: JSON.stringify(patch, null, 2),
+          note: "Welcome: ensure onboarding defaults (workspace/gateway)",
+        });
+        break;
+      } catch (retryErr) {
+        const msg = String(retryErr);
+        const isRestart =
+          msg.includes("1012") ||
+          msg.includes("service restart") ||
+          msg.includes("gateway closed") ||
+          msg.includes("did not persist");
+        if (!isRestart || attempt === maxAttempts) throw retryErr;
+        setStatus(`Gateway restarting… retrying (${attempt}/${maxAttempts})`);
+        await new Promise((r) => setTimeout(r, 800 * attempt));
+      }
+    }
     setStatus("Config updated.");
   }, [gw, loadConfig, setError, setStatus, state.port, state.token]);
 
