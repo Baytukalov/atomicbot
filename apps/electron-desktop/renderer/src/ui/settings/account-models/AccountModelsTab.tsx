@@ -33,18 +33,12 @@ import { getDesktopApiOrNull } from "@ipc/desktopApi";
 import { openExternal } from "@shared/utils/openExternal";
 import { LocalModelsTab } from "../local-models/LocalModelsTab";
 import { fetchLlamacppServerStatus } from "@store/slices/llamacppSlice";
+import { LLAMACPP_LOCAL_BASE_URL } from "../../../../../src/main/constants";
 
 import s from "./AccountModelsTab.module.css";
+import type { ConfigSnapshot, GatewayRpcLike } from "../../onboarding/hooks/types";
 
-type GatewayRpc = {
-  request: <T = unknown>(method: string, params?: unknown) => Promise<T>;
-  connected?: boolean;
-};
-
-type ConfigSnapshotLike = {
-  hash?: string;
-  config?: ConfigData;
-};
+type GatewayRpcWithStatus = GatewayRpcLike & { connected?: boolean };
 
 function providerBadge(p: (typeof MODEL_PROVIDERS)[number]):
   | {
@@ -112,7 +106,7 @@ const SERVER_STATUS_LABELS: Record<string, string> = {
 };
 
 /** OpenAI-compatible base URL for bundled llama.cpp (matches default local provider `baseUrl`). */
-const LOCAL_MODELS_API_ENDPOINT = "http://127.0.0.1:18790/v1";
+const LOCAL_MODELS_API_ENDPOINT = `${LLAMACPP_LOCAL_BASE_URL}/v1`;
 
 const LLAMACPP_PRIMARY_PREFIX = "llamacpp/";
 
@@ -127,8 +121,8 @@ function formatModelIdForStatusBar(rawId: string): string {
 }
 
 export function AccountModelsTab(props: {
-  gw: GatewayRpc;
-  configSnap: ConfigSnapshotLike | null;
+  gw: GatewayRpcWithStatus;
+  configSnap: ConfigSnapshot | null;
   reload: () => Promise<void>;
   onError: (value: string | null) => void;
   noTitle?: boolean;
@@ -169,7 +163,7 @@ export function AccountModelsTab(props: {
   const llamacpp = useAppSelector((st) => st.llamacpp);
 
   const configPrimaryModelId = React.useMemo(
-    () => getDefaultModelPrimary(configSnap?.config),
+    () => getDefaultModelPrimary(configSnap?.config as ConfigData | undefined),
     [configSnap?.config]
   );
 

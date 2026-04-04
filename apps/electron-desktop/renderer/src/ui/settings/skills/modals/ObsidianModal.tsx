@@ -1,6 +1,7 @@
 import React from "react";
 
 import sm from "./SkillModal.module.css";
+import { useSettingsSkillAdapter } from "./useSettingsSkillAdapter";
 import { getDesktopApi, getDesktopApiOrNull } from "@ipc/desktopApi";
 import { ActionButton, InlineError } from "@shared/kit";
 import { errorToMessage } from "@shared/toast";
@@ -26,9 +27,7 @@ export function ObsidianModalContent(props: {
   const [vaults, setVaults] = React.useState<ObsidianVault[]>([]);
   const [vaultsLoading, setVaultsLoading] = React.useState(false);
   const [selectedVault, setSelectedVault] = React.useState("");
-  const run = React.useCallback(async <T,>(fn: () => Promise<T>) => fn(), []);
-  const markSkillConnected = React.useCallback(() => {}, []);
-  const goSkills = React.useCallback(() => {}, []);
+  const { run, markSkillConnected, goSkills } = useSettingsSkillAdapter();
   const goObsidianPage = React.useCallback(() => {}, []);
 
   const { enableObsidian } = useWelcomeObsidian({

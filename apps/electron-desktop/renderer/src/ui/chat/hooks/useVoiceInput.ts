@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getDesktopApiOrNull } from "@ipc/desktopApi";
+import { DESKTOP_API_UNAVAILABLE, getDesktopApiOrNull } from "@ipc/desktopApi";
 import { errorToMessage } from "@shared/toast";
 import { uint8ToBase64 } from "@shared/utils/base64";
 import { useWavRecorder } from "./useWavRecorder";
@@ -116,7 +116,7 @@ export function useVoiceInput(gwRequest: GatewayRequest): UseVoiceInputResult {
 
         const api = getDesktopApiOrNull();
         if (!api?.whisperTranscribe) {
-          setError("Desktop API not available for local transcription.");
+          setError(`${DESKTOP_API_UNAVAILABLE} for local transcription.`);
           return null;
         }
 

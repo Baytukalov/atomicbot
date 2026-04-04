@@ -93,7 +93,9 @@ export function LocalModelsTab(props: {
                 contextLength: serverResult?.contextLength,
               });
 
-              await props.gatewayRequest("secrets.reload", {}).catch(() => {});
+              await props
+                .gatewayRequest("secrets.reload", {})
+                .catch((err) => console.warn("[local-models] secrets.reload:", err));
               await resetSessionModelSelection(props.gatewayRequest);
 
               break;
@@ -113,11 +115,11 @@ export function LocalModelsTab(props: {
           }
 
           if (props.onReload) {
-            await props.onReload().catch(() => {});
+            await props.onReload().catch((err) => console.warn("[local-models] onReload:", err));
           } else {
             await dispatch(reloadConfig({ request: props.gatewayRequest }))
               .unwrap()
-              .catch(() => {});
+              .catch((err) => console.warn("[local-models] reloadConfig:", err));
           }
         }
       } catch (err) {

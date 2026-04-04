@@ -5,6 +5,7 @@ import { ipcMain } from "electron";
 import fs from "node:fs";
 import path from "node:path";
 
+import { IPC } from "../../shared/ipc-channels";
 import type { ExecResult } from "../../shared/types";
 import type { GhHandlerParams } from "./types";
 import { createBinaryNotFoundResult, runCommand, runSyncCheck } from "./exec";
@@ -12,7 +13,7 @@ import { createBinaryNotFoundResult, runCommand, runSyncCheck } from "./exec";
 const PREPARE_CMD = "cd apps/electron-desktop && npm run prepare:gh:all";
 
 export function registerGhHandlers(params: GhHandlerParams) {
-  ipcMain.handle("gh-check", async () => {
+  ipcMain.handle(IPC.ghCheck, async () => {
     const ghBin = params.ghBin;
     if (!fs.existsSync(ghBin)) {
       return createBinaryNotFoundResult(ghBin, PREPARE_CMD);
@@ -25,7 +26,7 @@ export function registerGhHandlers(params: GhHandlerParams) {
     });
   });
 
-  ipcMain.handle("gh-auth-login-pat", async (_evt, p: { pat?: unknown }) => {
+  ipcMain.handle(IPC.ghAuthLoginPat, async (_evt, p: { pat?: unknown }) => {
     const ghBin = params.ghBin;
     const pat = typeof p?.pat === "string" ? p.pat : "";
     if (!pat) {
@@ -56,7 +57,7 @@ export function registerGhHandlers(params: GhHandlerParams) {
     });
   });
 
-  ipcMain.handle("gh-auth-status", async () => {
+  ipcMain.handle(IPC.ghAuthStatus, async () => {
     const ghBin = params.ghBin;
     if (!fs.existsSync(ghBin)) {
       return createBinaryNotFoundResult(ghBin, PREPARE_CMD);
@@ -76,7 +77,7 @@ export function registerGhHandlers(params: GhHandlerParams) {
     });
   });
 
-  ipcMain.handle("gh-api-user", async () => {
+  ipcMain.handle(IPC.ghApiUser, async () => {
     const ghBin = params.ghBin;
     if (!fs.existsSync(ghBin)) {
       return createBinaryNotFoundResult(ghBin, PREPARE_CMD);

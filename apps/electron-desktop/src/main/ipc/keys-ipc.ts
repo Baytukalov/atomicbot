@@ -3,6 +3,7 @@
  */
 import { ipcMain } from "electron";
 
+import { IPC } from "../../shared/ipc-channels";
 import { upsertApiKeyProfile, upsertTokenProfile } from "../keys/apiKeys";
 import {
   readAuthProfilesStore,
@@ -13,7 +14,7 @@ import type { AuthProfilesStore } from "../keys/authProfilesStore";
 import type { KeyHandlerParams } from "./types";
 
 export function registerKeyHandlers(params: KeyHandlerParams) {
-  ipcMain.handle("auth-set-api-key", async (_evt, p: { provider?: unknown; apiKey?: unknown }) => {
+  ipcMain.handle(IPC.authSetApiKey, async (_evt, p: { provider?: unknown; apiKey?: unknown }) => {
     const provider = typeof p?.provider === "string" ? p.provider.trim() : "";
     const apiKey = typeof p?.apiKey === "string" ? p.apiKey : "";
     if (!provider) {
@@ -29,7 +30,7 @@ export function registerKeyHandlers(params: KeyHandlerParams) {
   });
 
   ipcMain.handle(
-    "auth-validate-api-key",
+    IPC.authValidateApiKey,
     async (_evt, p: { provider?: unknown; apiKey?: unknown }) => {
       const provider = typeof p?.provider === "string" ? p.provider.trim() : "";
       const apiKey = typeof p?.apiKey === "string" ? p.apiKey : "";
@@ -45,7 +46,7 @@ export function registerKeyHandlers(params: KeyHandlerParams) {
   );
 
   ipcMain.handle(
-    "auth-set-setup-token",
+    IPC.authSetSetupToken,
     async (_evt, p: { provider?: unknown; token?: unknown }) => {
       const provider = typeof p?.provider === "string" ? p.provider.trim() : "";
       const token = typeof p?.token === "string" ? p.token : "";
@@ -62,7 +63,7 @@ export function registerKeyHandlers(params: KeyHandlerParams) {
     }
   );
 
-  ipcMain.handle("auth-has-api-key", async (_evt, p: { provider?: unknown }) => {
+  ipcMain.handle(IPC.authHasApiKey, async (_evt, p: { provider?: unknown }) => {
     const provider = typeof p?.provider === "string" ? p.provider.trim().toLowerCase() : "";
     if (!provider) {
       throw new Error("provider is required");
@@ -82,14 +83,14 @@ export function registerKeyHandlers(params: KeyHandlerParams) {
     return { configured } as const;
   });
 
-  ipcMain.handle("auth-read-profiles", async () => {
+  ipcMain.handle(IPC.authReadProfiles, async () => {
     const authProfilesPath = resolveAuthProfilesPath({ stateDir: params.stateDir });
     const store = readAuthProfilesStore({ authProfilesPath });
     return { profiles: store.profiles, order: store.order } as const;
   });
 
   ipcMain.handle(
-    "auth-write-profiles",
+    IPC.authWriteProfiles,
     async (_evt, p: { profiles?: unknown; order?: unknown }) => {
       const authProfilesPath = resolveAuthProfilesPath({ stateDir: params.stateDir });
       const profiles =

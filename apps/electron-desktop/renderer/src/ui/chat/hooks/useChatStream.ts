@@ -8,8 +8,13 @@ import {
   loadChatHistory,
 } from "@store/slices/chat/chatSlice";
 import { HIDDEN_TOOL_NAMES } from "../components/ToolCallCard";
+import type { GatewayRpcLike } from "../../onboarding/hooks/types";
 
 const HISTORY_RELOAD_DELAY_MS = 500;
+
+type ChatGatewayRpc = GatewayRpcLike & {
+  onEvent: (cb: (evt: { event: string; payload: unknown }) => void) => () => void;
+};
 
 type ChatEvent = {
   runId: string;
@@ -29,13 +34,8 @@ type AgentEvent = {
   data: Record<string, unknown>;
 };
 
-type GatewayRpc = {
-  request: <T = unknown>(method: string, params?: unknown) => Promise<T>;
-  onEvent: (cb: (evt: { event: string; payload: unknown }) => void) => () => void;
-};
-
 /** Subscribe to gateway chat events and dispatch stream actions for the given session. */
-export function useChatStream(gw: GatewayRpc, dispatch: AppDispatch, sessionKey: string) {
+export function useChatStream(gw: ChatGatewayRpc, dispatch: AppDispatch, sessionKey: string) {
   React.useEffect(() => {
     let reloadTimer: ReturnType<typeof setTimeout> | null = null;
 

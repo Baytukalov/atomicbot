@@ -272,7 +272,9 @@ export function WelcomePage({ state }: { state: Extract<GatewayState, { kind: "r
                         modelName: cfgModelName,
                         contextLength: serverResult?.contextLength,
                       });
-                      await gw.request("secrets.reload", {}).catch(() => {});
+                      await gw
+                        .request("secrets.reload", {})
+                        .catch((err) => console.warn("[onboarding] secrets.reload:", err));
                       await resetSessionModelSelection(gw.request);
                       break;
                     } catch (retryErr) {
@@ -289,7 +291,7 @@ export function WelcomePage({ state }: { state: Extract<GatewayState, { kind: "r
 
                   await dispatch(reloadConfig({ request: gw.request }))
                     .unwrap()
-                    .catch(() => {});
+                    .catch((err) => console.warn("[onboarding] reloadConfig:", err));
                 }
                 welcome.goSkills();
               }}

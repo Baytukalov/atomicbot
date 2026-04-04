@@ -1,18 +1,7 @@
 import React from "react";
 
 import { getObject } from "@shared/utils/configHelpers";
-
-type GatewayRpc = {
-  request: <T = unknown>(method: string, params?: unknown) => Promise<T>;
-};
-
-type ConfigSnapshotLike = {
-  path?: string;
-  exists?: boolean;
-  valid?: boolean;
-  hash?: string;
-  config?: unknown;
-};
+import type { ConfigSnapshot, GatewayRpcLike } from "../../onboarding/hooks/types";
 
 export type ConnectorId =
   | "telegram"
@@ -47,22 +36,6 @@ function deriveStatusFromConfig(config: unknown): Record<ConnectorId, ConnectorS
   // Telegram: check botToken.
   const telegramStatus = resolveChannel("telegram", "botToken");
 
-  // NOTE commented unused variables discordStatus, whatsappStatus, signalStatus, imessageStatus
-  // Discord: check token.
-  // const discordStatus = resolveChannel("discord", "token");
-
-  // WhatsApp: check accounts array or enabled flag.
-  // const whatsapp = getObject(channels.whatsapp);
-  // let whatsappStatus: ConnectorStatus = "connect";
-  // if (whatsapp.enabled === false && "enabled" in whatsapp) {
-  //   whatsappStatus = "disabled";
-  // } else if (
-  //   whatsapp.enabled === true ||
-  //   (Array.isArray(whatsapp.accounts) && whatsapp.accounts.length > 0)
-  // ) {
-  //   whatsappStatus = "connected";
-  // }
-
   // Slack: check botToken + appToken.
   const slack = getObject(channels.slack);
   let slackStatus: ConnectorStatus = "connect";
@@ -75,26 +48,6 @@ function deriveStatusFromConfig(config: unknown): Record<ConnectorId, ConnectorS
       slackStatus = "connected";
     }
   }
-
-  // Signal: check account.
-  // const signal = getObject(channels.signal);
-  // let signalStatus: ConnectorStatus = "connect";
-  // if (signal.enabled === false && "enabled" in signal) {
-  //   signalStatus = "disabled";
-  // } else if (typeof signal.account === "string" && signal.account.trim().length > 0) {
-  //   signalStatus = "connected";
-  // }
-
-  // iMessage: check cliPath or enabled.
-  // const imessage = getObject(channels.imessage);
-  // let imessageStatus: ConnectorStatus = "connect";
-  // if (imessage.enabled === false && "enabled" in imessage) {
-  //   imessageStatus = "disabled";
-  // } else if (typeof imessage.cliPath === "string" && imessage.cliPath.trim().length > 0) {
-  //   imessageStatus = "connected";
-  // } else if (imessage.enabled === true) {
-  //   imessageStatus = "connected";
-  // }
 
   return {
     telegram: telegramStatus,
@@ -110,8 +63,8 @@ function deriveStatusFromConfig(config: unknown): Record<ConnectorId, ConnectorS
 
 /** Map connector IDs to the disable config.patch payload. */
 export async function disableConnector(
-  gw: GatewayRpc,
-  loadConfig: () => Promise<ConfigSnapshotLike>,
+  gw: GatewayRpcLike,
+  loadConfig: () => Promise<ConfigSnapshot>,
   connectorId: ConnectorId
 ): Promise<void> {
   const snap = await loadConfig();
@@ -136,8 +89,8 @@ export async function disableConnector(
 }
 
 export function useConnectorsStatus(props: {
-  gw: GatewayRpc;
-  configSnap: ConfigSnapshotLike | null;
+  gw: GatewayRpcLike;
+  configSnap: ConfigSnapshot | null;
   reload: () => Promise<void>;
 }) {
   const { gw, configSnap, reload } = props;
@@ -180,7 +133,7 @@ export function useConnectorsStatus(props: {
 
   /** Provide a loadConfig helper. */
   const loadConfig = React.useCallback(async () => {
-    return await gw.request<ConfigSnapshotLike>("config.get", {});
+    return await gw.request<ConfigSnapshot>("config.get", {});
   }, [gw]);
 
   return { statuses, markConnected, markDisabled, refresh, loadConfig };

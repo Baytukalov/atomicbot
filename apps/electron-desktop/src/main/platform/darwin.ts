@@ -46,7 +46,9 @@ function run(argv) {
 
   try {
     win.appearance = $.NSAppearance.appearanceNamed('NSAppearanceNameDarkAqua');
-  } catch (e) {}
+  } catch (e) {
+    console.log('[darwin JXA] NSAppearance dark aqua failed:', e);
+  }
 
   win.collectionBehavior = 1 << 0;
 
@@ -72,7 +74,9 @@ function run(argv) {
         textW = Math.min(Math.ceil(w) + 16, cw);
         textX = (cw - textW) / 2;
       }
-    } catch (e) {}
+    } catch (e) {
+      console.log('[darwin JXA] attributed string sizing failed:', e);
+    }
     var field = $.NSTextField.alloc.initWithFrame($.NSMakeRect(textX, y, textW, h));
     field.stringValue = text;
     field.setBezeled(false);
@@ -152,7 +156,9 @@ function run(argv) {
               cleanup(sentinelPath);
               return;
             }
-          } catch (e) {}
+          } catch (e) {
+            console.log('[darwin JXA] bundle identifier unwrap/compare failed:', e);
+          }
         }
       }
     }
@@ -165,7 +171,9 @@ function cleanup(sentinelPath) {
   if (sentinelPath) {
     try {
       $.NSFileManager.defaultManager.removeItemAtPathError(sentinelPath, null);
-    } catch (e) {}
+    } catch (e) {
+      console.log('[darwin JXA] remove sentinel file failed:', e);
+    }
   }
 }
 `;
@@ -192,11 +200,13 @@ export class DarwinPlatform implements Platform {
   killProcessTree(pid: number): void {
     try {
       process.kill(-pid, "SIGKILL");
-    } catch {
+    } catch (err) {
+      console.debug("[platform/darwin] killProcessTree: process group SIGKILL failed:", err);
       try {
         process.kill(pid, "SIGKILL");
-      } catch {
+      } catch (err2) {
         // Already dead.
+        console.debug("[platform/darwin] killProcessTree: direct SIGKILL failed:", err2);
       }
     }
   }
@@ -204,8 +214,9 @@ export class DarwinPlatform implements Platform {
   killAllByName(name: string): void {
     try {
       execSync(`pkill -9 ${name}`, { stdio: "ignore" });
-    } catch {
+    } catch (err) {
       // pkill exits non-zero when no matching processes found — expected.
+      console.debug("[platform/darwin] pkill:", err);
     }
   }
 
@@ -247,8 +258,9 @@ export class DarwinPlatform implements Platform {
     const wrapperPath = path.join(params.binDir, params.name);
     try {
       fs.unlinkSync(wrapperPath);
-    } catch {
+    } catch (err) {
       // may not exist
+      console.debug("[platform/darwin] unlink cli wrapper (ignored):", err);
     }
     const isAbsoluteNodeBin = path.isAbsolute(params.nodeBin);
     const nodeCmd = isAbsoluteNodeBin ? params.nodeBin : "node";
@@ -344,8 +356,9 @@ export class DarwinPlatform implements Platform {
       if (pid > 0) {
         try {
           process.kill(pid, "SIGTERM");
-        } catch {
+        } catch (err) {
           // already dead
+          console.debug("[platform/darwin] killUpdateSplash SIGTERM:", err);
         }
       }
       fs.unlinkSync(sentinelPath);

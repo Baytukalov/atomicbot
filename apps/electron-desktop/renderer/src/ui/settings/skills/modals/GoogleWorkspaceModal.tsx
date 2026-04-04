@@ -1,7 +1,7 @@
 import React from "react";
 
 import sm from "./SkillModal.module.css";
-import { getDesktopApiOrNull } from "@ipc/desktopApi";
+import { DESKTOP_API_UNAVAILABLE, getDesktopApiOrNull } from "@ipc/desktopApi";
 import { ActionButton, TextInput } from "@shared/kit";
 import { errorToMessage } from "@shared/toast";
 import connectGoogleImage from "@assets/connect-google.png";
@@ -84,7 +84,7 @@ export function GoogleWorkspaceModalContent(props: {
   const handleConnect = React.useCallback(async () => {
     const api = getDesktopApiOrNull();
     if (!api) {
-      setError("Desktop API not available");
+      setError(DESKTOP_API_UNAVAILABLE);
       return;
     }
     try {
@@ -112,7 +112,7 @@ export function GoogleWorkspaceModalContent(props: {
 
     const api = getDesktopApiOrNull();
     if (!api) {
-      setError("Desktop API not available");
+      setError(DESKTOP_API_UNAVAILABLE);
       return;
     }
     try {

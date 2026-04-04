@@ -138,7 +138,9 @@ export function useLocalModelWarmup(): void {
       dispatch(llamacppActions.setWarmupStatus("error"));
       const api = getDesktopApiOrNull();
       void api?.llamacppWarmupSet?.({ state: "idle", modelId: null });
-      void gw.request("sessions.delete", { key: currentKey }).catch(() => {});
+      void gw
+        .request("sessions.delete", { key: currentKey })
+        .catch((err) => console.warn("[warmup] sessions.delete (timeout):", err));
     }, WARMUP_TIMEOUT_MS);
 
     const markDone = () => {
@@ -151,7 +153,9 @@ export function useLocalModelWarmup(): void {
           modelId: s.modelId,
         });
       });
-      void gw.request("sessions.delete", { key: currentKey }).catch(() => {});
+      void gw
+        .request("sessions.delete", { key: currentKey })
+        .catch((err) => console.warn("[warmup] sessions.delete (after success):", err));
     };
 
     console.log("[warmup] listening for events on session:", currentKey);
@@ -178,14 +182,18 @@ export function useLocalModelWarmup(): void {
         dispatch(llamacppActions.setWarmupStatus("error"));
         const api = getDesktopApiOrNull();
         void api?.llamacppWarmupSet?.({ state: "idle", modelId: null });
-        void gw.request("sessions.delete", { key: currentKey }).catch(() => {});
+        void gw
+          .request("sessions.delete", { key: currentKey })
+          .catch((err) => console.warn("[warmup] sessions.delete (run error):", err));
       }
     });
 
     return () => {
       clearTimeout(timeout);
       unsubscribe();
-      void gw.request("sessions.delete", { key: currentKey }).catch(() => {});
+      void gw
+        .request("sessions.delete", { key: currentKey })
+        .catch((err) => console.warn("[warmup] sessions.delete (cleanup):", err));
     };
   }, [warmupStatus, warmupSessionKey, gw, dispatch]);
 }

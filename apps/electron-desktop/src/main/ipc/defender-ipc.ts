@@ -11,6 +11,7 @@ import { execFile } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
+import { IPC } from "../../shared/ipc-channels";
 import type { DefenderHandlerParams } from "./types";
 
 type DefenderStatus = {
@@ -85,25 +86,25 @@ export function registerDefenderHandlers(params: DefenderHandlerParams) {
   if (process.platform !== "win32") {
     // Register no-op handlers so the renderer doesn't get "No handler" errors
     // when calling from non-Windows platforms during development.
-    ipcMain.handle("defender-status", async () => ({
+    ipcMain.handle(IPC.defenderStatus, async () => ({
       applied: false,
       dismissed: false,
       isWindows: false,
     }));
     ipcMain.handle(
-      "defender-apply-exclusions",
+      IPC.defenderApplyExclusions,
       async (): Promise<DefenderApplyResult> => ({ ok: true })
     );
-    ipcMain.handle("defender-dismiss", async () => ({ ok: true }));
+    ipcMain.handle(IPC.defenderDismiss, async () => ({ ok: true }));
     return;
   }
 
-  ipcMain.handle("defender-status", async (): Promise<DefenderStatus> => {
+  ipcMain.handle(IPC.defenderStatus, async (): Promise<DefenderStatus> => {
     const state = readDefenderState(params.stateDir);
     return { ...state, isWindows: true };
   });
 
-  ipcMain.handle("defender-apply-exclusions", async (): Promise<DefenderApplyResult> => {
+  ipcMain.handle(IPC.defenderApplyExclusions, async (): Promise<DefenderApplyResult> => {
     const script = buildExclusionScript(params.stateDir);
 
     return new Promise<DefenderApplyResult>((resolve) => {
@@ -149,7 +150,7 @@ export function registerDefenderHandlers(params: DefenderHandlerParams) {
     });
   });
 
-  ipcMain.handle("defender-dismiss", async () => {
+  ipcMain.handle(IPC.defenderDismiss, async () => {
     const state = readDefenderState(params.stateDir);
     writeDefenderState(params.stateDir, { ...state, dismissed: true });
     return { ok: true };

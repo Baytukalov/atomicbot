@@ -13,6 +13,7 @@ import path from "node:path";
 import { randomBytes } from "node:crypto";
 
 import JSZip from "jszip";
+import { IPC } from "../../shared/ipc-channels";
 import type { BackupHandlerParams } from "./types";
 import {
   addDirToZip,
@@ -34,7 +35,7 @@ export function registerBackupHandlers(params: BackupHandlerParams) {
   } = params;
 
   // ── Create backup ──────────────────────────────────────────────────────
-  ipcMain.handle("backup-create", async (_evt, p: { mode?: unknown }) => {
+  ipcMain.handle(IPC.backupCreate, async (_evt, p: { mode?: unknown }) => {
     try {
       const mode = typeof p?.mode === "string" ? p.mode : "self-managed";
 
@@ -69,7 +70,7 @@ export function registerBackupHandlers(params: BackupHandlerParams) {
   });
 
   // ── Restore from backup archive ───────────────────────────────────────
-  ipcMain.handle("backup-restore", async (_evt, p: { data?: unknown; filename?: unknown }) => {
+  ipcMain.handle(IPC.backupRestore, async (_evt, p: { data?: unknown; filename?: unknown }) => {
     const b64 = typeof p?.data === "string" ? p.data : "";
     if (!b64) {
       return { ok: false, error: "No data provided" };
@@ -108,7 +109,7 @@ export function registerBackupHandlers(params: BackupHandlerParams) {
   });
 
   // ── Detect local OpenClaw instance at ~/.openclaw ─────────────────────
-  ipcMain.handle("backup-detect-local", async () => {
+  ipcMain.handle(IPC.backupDetectLocal, async () => {
     try {
       const openclawDir = path.join(os.homedir(), ".openclaw");
       const configPath = path.join(openclawDir, "openclaw.json");
@@ -121,7 +122,7 @@ export function registerBackupHandlers(params: BackupHandlerParams) {
   });
 
   // ── Restore from a directory (local instance or user-picked folder) ───
-  ipcMain.handle("backup-restore-from-dir", async (_evt, p: { dirPath?: unknown }) => {
+  ipcMain.handle(IPC.backupRestoreFromDir, async (_evt, p: { dirPath?: unknown }) => {
     const dirPath = typeof p?.dirPath === "string" ? p.dirPath.trim() : "";
     if (!dirPath) {
       return { ok: false, error: "No directory path provided" };
@@ -154,7 +155,7 @@ export function registerBackupHandlers(params: BackupHandlerParams) {
   });
 
   // ── Open folder picker and validate it contains openclaw.json ─────────
-  ipcMain.handle("backup-select-folder", async () => {
+  ipcMain.handle(IPC.backupSelectFolder, async () => {
     try {
       const result = await showOpenclawFolderDialog(getMainWindow());
 

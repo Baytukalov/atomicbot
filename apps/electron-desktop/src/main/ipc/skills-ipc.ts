@@ -9,6 +9,7 @@ import { randomBytes } from "node:crypto";
 
 import JSZip from "jszip";
 
+import { IPC } from "../../shared/ipc-channels";
 import type { CustomSkillMeta } from "../../shared/types";
 import type { SkillHandlerParams } from "./types";
 
@@ -127,7 +128,7 @@ export async function listCustomSkillsFromDir(skillsDir: string): Promise<Custom
 export function registerSkillHandlers(params: SkillHandlerParams) {
   const workspaceSkillsDir = path.join(params.stateDir, "workspace", "skills");
 
-  ipcMain.handle("install-custom-skill", async (_evt, p: { data?: unknown }) => {
+  ipcMain.handle(IPC.installCustomSkill, async (_evt, p: { data?: unknown }) => {
     const b64 = typeof p?.data === "string" ? p.data : "";
     if (!b64) {
       return { ok: false, error: "No data provided" };
@@ -188,7 +189,7 @@ export function registerSkillHandlers(params: SkillHandlerParams) {
     }
   });
 
-  ipcMain.handle("list-custom-skills", async () => {
+  ipcMain.handle(IPC.listCustomSkills, async () => {
     try {
       const skills = await listCustomSkillsFromDir(workspaceSkillsDir);
       return { ok: true, skills };
@@ -198,7 +199,7 @@ export function registerSkillHandlers(params: SkillHandlerParams) {
     }
   });
 
-  ipcMain.handle("remove-custom-skill", async (_evt, p: { dirName?: unknown }) => {
+  ipcMain.handle(IPC.removeCustomSkill, async (_evt, p: { dirName?: unknown }) => {
     const dirName = typeof p?.dirName === "string" ? p.dirName.trim() : "";
     if (!dirName) {
       return { ok: false, error: "Skill directory name is required" };

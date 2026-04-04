@@ -30,19 +30,7 @@ import { routes } from "../../app/routes";
 
 import { usePaidNavigation } from "./usePaidNavigation";
 import { usePaidConfig } from "./usePaidConfig";
-import { useWelcomeSkillState } from "./useWelcomeSkillState";
-import { useWelcomeNotion } from "./useWelcomeNotion";
-import { useWelcomeTrello } from "./useWelcomeTrello";
-import { useWelcomeGitHub } from "./useWelcomeGitHub";
-import { useWelcomeObsidian } from "./useWelcomeObsidian";
-import { useWelcomeAppleNotes } from "./useWelcomeAppleNotes";
-import { useWelcomeAppleReminders } from "./useWelcomeAppleReminders";
-import { useWelcomeWebSearch } from "./useWelcomeWebSearch";
-import { useWelcomeMediaUnderstanding } from "./useWelcomeMediaUnderstanding";
-import { useWelcomeSlack } from "./useWelcomeSlack";
-import { useWelcomeTelegram } from "./useWelcomeTelegram";
-import { useWelcomeGog } from "./useWelcomeGog";
-import { useWelcomeApiKey } from "./useWelcomeApiKey";
+import { useSharedOnboardingSkills } from "./useSharedOnboardingSkills";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "https://api.atomicbot.ai";
 type BackendKeys = { openrouterApiKey: string | null; openaiApiKey: string | null };
@@ -86,89 +74,25 @@ export function usePaidOnboarding({ navigate }: PaidOnboardingInput) {
   const { models, saveDefaultModel } = config;
   const { goPaidModelSelect, goPaidSkills, goSetupReview, goSuccess } = nav;
 
-  // Complex navigation (calls refreshProviderFlags before navigating)
   const goPaidMediaUnderstanding = React.useCallback(() => {
     void refreshProviderFlags();
     void navigate(`${routes.welcome}/media-understanding`);
   }, [navigate, refreshProviderFlags]);
 
-  // ── Skills & Connections state ──
+  // ── Shared skill/connection composition ──
 
-  const skillState = useWelcomeSkillState({ setError: setSkillError, setStatus: setSkillStatus });
-  const { skills, markSkillConnected } = skillState;
-
-  const commonDeps = {
+  const shared = useSharedOnboardingSkills({
     gw,
     loadConfig,
     setError: setSkillError,
     setStatus: setSkillStatus,
-  } as const;
-  const skillCommon = { ...commonDeps, markSkillConnected, goSkills: nav.goPaidSkills } as const;
-
-  const { onNotionApiKeySubmit } = useWelcomeNotion({
-    ...skillCommon,
-    run: skillState.runNotion,
-  });
-
-  const { onTrelloSubmit } = useWelcomeTrello({
-    ...skillCommon,
-    run: skillState.runTrello,
-  });
-
-  const { onGitHubConnect } = useWelcomeGitHub({
-    ...skillCommon,
-    run: skillState.runGitHub,
-  });
-
-  const obsidian = useWelcomeObsidian({
-    ...skillCommon,
-    run: skillState.runObsidian,
-    goObsidianPage: nav.goPaidObsidianPage,
-  });
-
-  const { onAppleNotesCheckAndEnable } = useWelcomeAppleNotes({
-    ...skillCommon,
-    run: skillState.runAppleNotes,
-  });
-
-  const { onAppleRemindersAuthorizeAndEnable } = useWelcomeAppleReminders({
-    ...skillCommon,
-    run: skillState.runAppleReminders,
-  });
-
-  const { onWebSearchSubmit } = useWelcomeWebSearch({
-    ...skillCommon,
-    run: skillState.runWebSearch,
-  });
-
-  const { onMediaUnderstandingSubmit } = useWelcomeMediaUnderstanding({
-    gw,
-    loadConfig: config.loadConfig,
-    setStatus: setSkillStatus,
-    run: skillState.runMediaUnderstanding,
-    markSkillConnected,
+    loadModels,
+    refreshProviderFlags,
     goSkills: nav.goPaidSkills,
-  });
-
-  const { onSlackConnect } = useWelcomeSlack({
-    ...commonDeps,
-    run: skillState.runSlack,
-    markSkillConnected,
+    goObsidianPage: nav.goPaidObsidianPage,
     goSlackReturn: nav.goPaidSlackBack,
-  });
-
-  const telegram = useWelcomeTelegram({
-    ...commonDeps,
     goTelegramUser: nav.goPaidTelegramUser,
     goConnections: nav.goPaidConnections,
-  });
-
-  const gog = useWelcomeGog({ gw });
-
-  const { onMediaProviderKeySubmit } = useWelcomeApiKey({
-    ...commonDeps,
-    loadModels: config.loadModels,
-    refreshProviderFlags: config.refreshProviderFlags,
   });
 
   // ── Flow handlers ──
@@ -380,7 +304,7 @@ export function usePaidOnboarding({ navigate }: PaidOnboardingInput) {
       goPaidSlackFromSkills: nav.goPaidSlackFromSkills,
       goPaidSlackFromConnections: nav.goPaidSlackFromConnections,
       goPaidSlackBack: nav.goPaidSlackBack,
-      goObsidian: obsidian.goObsidian,
+      goObsidian: shared.goObsidian,
     },
     flow: { onPaidConnectionsContinue, onStartChat },
 
@@ -390,52 +314,52 @@ export function usePaidOnboarding({ navigate }: PaidOnboardingInput) {
 
     // ── Flat FlowSource-compatible properties (passed through to SharedFlowRoutes) ──
 
-    skills,
-    markSkillConnected,
+    skills: shared.skills,
+    markSkillConnected: shared.markSkillConnected,
     hasOpenAiProvider: config.hasOpenAiProvider,
 
-    notionBusy: skillState.notionBusy,
-    trelloBusy: skillState.trelloBusy,
-    githubBusy: skillState.githubBusy,
-    obsidianBusy: skillState.obsidianBusy,
-    appleNotesBusy: skillState.appleNotesBusy,
-    appleRemindersBusy: skillState.appleRemindersBusy,
-    webSearchBusy: skillState.webSearchBusy,
-    mediaUnderstandingBusy: skillState.mediaUnderstandingBusy,
-    slackBusy: skillState.slackBusy,
+    notionBusy: shared.notionBusy,
+    trelloBusy: shared.trelloBusy,
+    githubBusy: shared.githubBusy,
+    obsidianBusy: shared.obsidianBusy,
+    appleNotesBusy: shared.appleNotesBusy,
+    appleRemindersBusy: shared.appleRemindersBusy,
+    webSearchBusy: shared.webSearchBusy,
+    mediaUnderstandingBusy: shared.mediaUnderstandingBusy,
+    slackBusy: shared.slackBusy,
 
-    obsidianVaults: obsidian.obsidianVaults,
-    obsidianVaultsLoading: obsidian.obsidianVaultsLoading,
-    onObsidianRecheck: obsidian.onObsidianRecheck,
-    onObsidianSetDefaultAndEnable: obsidian.onObsidianSetDefaultAndEnable,
-    selectedObsidianVaultName: obsidian.selectedObsidianVaultName,
-    setSelectedObsidianVaultName: obsidian.setSelectedObsidianVaultName,
+    obsidianVaults: shared.obsidianVaults,
+    obsidianVaultsLoading: shared.obsidianVaultsLoading,
+    onObsidianRecheck: shared.onObsidianRecheck,
+    onObsidianSetDefaultAndEnable: shared.onObsidianSetDefaultAndEnable,
+    selectedObsidianVaultName: shared.selectedObsidianVaultName,
+    setSelectedObsidianVaultName: shared.setSelectedObsidianVaultName,
 
-    channelsProbe: telegram.channelsProbe,
-    onTelegramTokenNext: telegram.onTelegramTokenNext,
-    onTelegramUserNext: telegram.onTelegramUserNext,
-    setTelegramToken: telegram.setTelegramToken,
-    setTelegramUserId: telegram.setTelegramUserId,
-    telegramStatus: telegram.telegramStatus,
-    telegramToken: telegram.telegramToken,
-    telegramUserId: telegram.telegramUserId,
+    channelsProbe: shared.channelsProbe,
+    onTelegramTokenNext: shared.onTelegramTokenNext,
+    onTelegramUserNext: shared.onTelegramUserNext,
+    setTelegramToken: shared.setTelegramToken,
+    setTelegramUserId: shared.setTelegramUserId,
+    telegramStatus: shared.telegramStatus,
+    telegramToken: shared.telegramToken,
+    telegramUserId: shared.telegramUserId,
 
-    gogAccount: gog.gogAccount,
-    gogBusy: gog.gogBusy,
-    gogError: gog.gogError,
-    gogOutput: gog.gogOutput,
-    onGogAuthAdd: gog.onGogAuthAdd,
-    onGogAuthList: gog.onGogAuthList,
-    setGogAccount: gog.setGogAccount,
+    gogAccount: shared.gogAccount,
+    gogBusy: shared.gogBusy,
+    gogError: shared.gogError,
+    gogOutput: shared.gogOutput,
+    onGogAuthAdd: shared.onGogAuthAdd,
+    onGogAuthList: shared.onGogAuthList,
+    setGogAccount: shared.setGogAccount,
 
-    onNotionApiKeySubmit,
-    onTrelloSubmit,
-    onGitHubConnect,
-    onAppleNotesCheckAndEnable,
-    onAppleRemindersAuthorizeAndEnable,
-    onWebSearchSubmit,
-    onMediaUnderstandingSubmit,
-    onMediaProviderKeySubmit,
-    onSlackConnect,
+    onNotionApiKeySubmit: shared.onNotionApiKeySubmit,
+    onTrelloSubmit: shared.onTrelloSubmit,
+    onGitHubConnect: shared.onGitHubConnect,
+    onAppleNotesCheckAndEnable: shared.onAppleNotesCheckAndEnable,
+    onAppleRemindersAuthorizeAndEnable: shared.onAppleRemindersAuthorizeAndEnable,
+    onWebSearchSubmit: shared.onWebSearchSubmit,
+    onMediaUnderstandingSubmit: shared.onMediaUnderstandingSubmit,
+    onMediaProviderKeySubmit: shared.onMediaProviderKeySubmit,
+    onSlackConnect: shared.onSlackConnect,
   };
 }

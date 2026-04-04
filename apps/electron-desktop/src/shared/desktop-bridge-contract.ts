@@ -149,7 +149,7 @@ export type ClawHubComment = {
   createdAt: number;
 };
 
-export interface OpenclawDesktopApi {
+export interface DesktopCoreApi {
   platform: DesktopPlatform;
   version: string;
   openLogs: () => Promise<void>;
@@ -173,6 +173,19 @@ export interface OpenclawDesktopApi {
       reasoning?: boolean;
     }>
   >;
+  readConfig: () => Promise<{ ok: boolean; content: string; error?: string }>;
+  writeConfig: (content: string) => Promise<{ ok: boolean; error?: string }>;
+  getLaunchAtLogin: () => Promise<{ enabled: boolean }>;
+  setLaunchAtLogin: (enabled: boolean) => Promise<{ ok: true }>;
+  getAppVersion: () => Promise<{ version: string }>;
+  focusWindow: () => Promise<void>;
+  onGatewayState: (cb: (state: GatewayState) => void) => () => void;
+  onDeepLink: (
+    cb: (payload: { host: string; pathname: string; params: Record<string, string> }) => void
+  ) => () => void;
+}
+
+export interface DesktopAuthApi {
   setApiKey: (provider: string, apiKey: string) => Promise<{ ok: true }>;
   setSetupToken: (provider: string, token: string) => Promise<{ ok: true }>;
   setSetupModeMarker: (mode?: SetupModeMarker) => Promise<{ ok: true }>;
@@ -188,6 +201,9 @@ export interface OpenclawDesktopApi {
   }) => Promise<{ ok: true }>;
   oauthLogin: (provider: string) => Promise<{ ok: true; profileId: string }>;
   onOAuthProgress: (cb: (payload: { provider: string; message: string }) => void) => () => void;
+}
+
+export interface DesktopGogApi {
   gogAuthList: () => Promise<GogExecResult>;
   gogAuthAdd: (params: {
     account: string;
@@ -198,6 +214,9 @@ export interface OpenclawDesktopApi {
     credentialsJson: string;
     filename?: string;
   }) => Promise<GogExecResult>;
+}
+
+export interface DesktopToolsApi {
   memoCheck: () => Promise<ExecResult>;
   remindctlAuthorize: () => Promise<ExecResult>;
   remindctlTodayJson: () => Promise<ExecResult>;
@@ -209,12 +228,9 @@ export interface OpenclawDesktopApi {
   ghAuthLoginPat: (params: { pat: string }) => Promise<ExecResult>;
   ghAuthStatus: () => Promise<ExecResult>;
   ghApiUser: () => Promise<ExecResult>;
-  onGatewayState: (cb: (state: GatewayState) => void) => () => void;
-  readConfig: () => Promise<{ ok: boolean; content: string; error?: string }>;
-  writeConfig: (content: string) => Promise<{ ok: boolean; error?: string }>;
-  getLaunchAtLogin: () => Promise<{ enabled: boolean }>;
-  setLaunchAtLogin: (enabled: boolean) => Promise<{ ok: true }>;
-  getAppVersion: () => Promise<{ version: string }>;
+}
+
+export interface DesktopUpdateApi {
   fetchReleaseNotes: (
     version: string,
     owner: string,
@@ -227,6 +243,9 @@ export interface OpenclawDesktopApi {
   onUpdateDownloadProgress: (cb: (payload: UpdateDownloadProgressPayload) => void) => () => void;
   onUpdateDownloaded: (cb: (payload: UpdateDownloadedPayload) => void) => () => void;
   onUpdateError: (cb: (payload: UpdateErrorPayload) => void) => () => void;
+}
+
+export interface DesktopBackupApi {
   createBackup: (mode?: string) => Promise<{ ok: boolean; cancelled?: boolean; error?: string }>;
   restoreBackup: (
     data: string,
@@ -242,6 +261,9 @@ export interface OpenclawDesktopApi {
     cancelled?: boolean;
     error?: string;
   }>;
+}
+
+export interface DesktopSkillsApi {
   installCustomSkill: (data: string) => Promise<{
     ok: boolean;
     skill?: { name: string; description: string; emoji: string; dirName: string };
@@ -252,6 +274,9 @@ export interface OpenclawDesktopApi {
     skills: Array<{ name: string; description: string; emoji: string; dirName: string }>;
   }>;
   removeCustomSkill: (dirName: string) => Promise<{ ok: boolean; error?: string }>;
+}
+
+export interface DesktopClawHubApi {
   clawhubListSkills: (params?: {
     q?: string;
     limit?: number;
@@ -282,6 +307,9 @@ export interface OpenclawDesktopApi {
     comments: ClawHubComment[];
     error?: string;
   }>;
+}
+
+export interface DesktopLlamacppApi {
   llamacppSystemInfo: () => Promise<{
     totalRamGb: number;
     arch: string;
@@ -370,6 +398,9 @@ export interface OpenclawDesktopApi {
     state: "idle" | "warming" | "done";
     modelId: string | null;
   }) => Promise<{ ok: boolean }>;
+}
+
+export interface DesktopWhisperApi {
   whisperModelStatus: (params?: { model?: string }) => Promise<{
     modelReady: boolean;
     binReady: boolean;
@@ -402,15 +433,9 @@ export interface OpenclawDesktopApi {
     language?: string;
     model?: string;
   }) => Promise<{ ok: boolean; text?: string; error?: string }>;
-  focusWindow: () => Promise<void>;
-  analyticsGet: () => Promise<{ enabled: boolean; userId: string; prompted: boolean }>;
-  analyticsSet: (enabled: boolean) => Promise<{ ok: true }>;
-  defenderStatus: () => Promise<{ applied: boolean; dismissed: boolean; isWindows: boolean }>;
-  defenderApplyExclusions: () => Promise<{ ok: boolean; error?: string }>;
-  defenderDismiss: () => Promise<{ ok: boolean }>;
-  onDeepLink: (
-    cb: (payload: { host: string; pathname: string; params: Record<string, string> }) => void
-  ) => () => void;
+}
+
+export interface DesktopTerminalApi {
   terminalCreate: () => Promise<{ id: string }>;
   terminalWrite: (id: string, data: string) => Promise<void>;
   terminalResize: (id: string, cols: number, rows: number) => Promise<void>;
@@ -422,6 +447,31 @@ export interface OpenclawDesktopApi {
     cb: (payload: { id: string; exitCode: number; signal?: number }) => void
   ) => () => void;
 }
+
+export interface DesktopAnalyticsApi {
+  analyticsGet: () => Promise<{ enabled: boolean; userId: string; prompted: boolean }>;
+  analyticsSet: (enabled: boolean) => Promise<{ ok: true }>;
+}
+
+export interface DesktopDefenderApi {
+  defenderStatus: () => Promise<{ applied: boolean; dismissed: boolean; isWindows: boolean }>;
+  defenderApplyExclusions: () => Promise<{ ok: boolean; error?: string }>;
+  defenderDismiss: () => Promise<{ ok: boolean }>;
+}
+
+export type OpenclawDesktopApi = DesktopCoreApi &
+  DesktopAuthApi &
+  DesktopGogApi &
+  DesktopToolsApi &
+  DesktopUpdateApi &
+  DesktopBackupApi &
+  DesktopSkillsApi &
+  DesktopClawHubApi &
+  DesktopLlamacppApi &
+  DesktopWhisperApi &
+  DesktopTerminalApi &
+  DesktopAnalyticsApi &
+  DesktopDefenderApi;
 
 export const DESKTOP_BRIDGE_KEYS: ReadonlyArray<keyof OpenclawDesktopApi> = [
   "platform",
@@ -530,3 +580,12 @@ export const DESKTOP_BRIDGE_KEYS: ReadonlyArray<keyof OpenclawDesktopApi> = [
   "analyticsGet",
   "analyticsSet",
 ];
+
+type AssertExhaustive<T extends readonly (keyof OpenclawDesktopApi)[]> = Exclude<
+  keyof OpenclawDesktopApi,
+  T[number]
+> extends never
+  ? T
+  : never;
+
+const _bridgeKeysCheck: AssertExhaustive<typeof DESKTOP_BRIDGE_KEYS> = DESKTOP_BRIDGE_KEYS;

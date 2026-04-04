@@ -5,6 +5,7 @@ import { FeatureCta, Modal } from "@shared/kit";
 import { errorToMessage } from "@shared/toast";
 import { useConnectorsStatus, disableConnector, type ConnectorId } from "./useConnectorsStatus";
 import { TelegramModalContent, SlackConnectorModalContent } from "./modals";
+import type { ConfigSnapshot, GatewayRpcLike } from "../../onboarding/hooks/types";
 
 import telegramImage from "@assets/messangers/Telegram.svg";
 import slackImage from "@assets/set-up-skills/Slack.svg";
@@ -14,18 +15,6 @@ import whatsappImage from "@assets/messangers/WhatsApp.svg";
 import imessageImage from "@assets/messangers/iMessage.svg";
 import matrixImage from "@assets/messangers/Matrix.svg";
 import msteamsImage from "@assets/messangers/Microsoft-Teams.svg";
-
-type GatewayRpc = {
-  request: <T = unknown>(method: string, params?: unknown) => Promise<T>;
-};
-
-type ConfigSnapshotLike = {
-  path?: string;
-  exists?: boolean;
-  valid?: boolean;
-  hash?: string;
-  config?: unknown;
-};
 
 type ConnectorDefinition = {
   id: ConnectorId;
@@ -106,8 +95,8 @@ const CONNECTORS: ConnectorDefinition[] = [
 // ---------- Main tab component ----------
 
 export function ConnectorsTab(props: {
-  gw: GatewayRpc;
-  configSnap: ConfigSnapshotLike | null;
+  gw: GatewayRpcLike;
+  configSnap: ConfigSnapshot | null;
   reload: () => Promise<void>;
   onError: (value: string | null) => void;
 }) {

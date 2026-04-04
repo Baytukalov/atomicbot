@@ -13,11 +13,12 @@
  */
 import { ipcMain, shell } from "electron";
 
+import { IPC } from "../../shared/ipc-channels";
 import { upsertOAuthProfile } from "../keys/authProfilesStore";
 import type { OAuthHandlerParams } from "./types";
 
 export function registerOAuthHandlers(params: OAuthHandlerParams) {
-  ipcMain.handle("oauth:login", async (_evt, p: { provider?: unknown }) => {
+  ipcMain.handle(IPC.oauthLogin, async (_evt, p: { provider?: unknown }) => {
     const providerId = typeof p?.provider === "string" ? p.provider.trim() : "";
     if (!providerId) {
       throw new Error("provider is required");

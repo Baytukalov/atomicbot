@@ -1,6 +1,7 @@
 import React from "react";
 
 import sm from "./SkillModal.module.css";
+import { useSettingsSkillAdapter } from "./useSettingsSkillAdapter";
 import { ActionButton, InlineError, TextInput } from "@shared/kit";
 import { errorToMessage } from "@shared/toast";
 import { useWelcomeSlack } from "@ui/onboarding/hooks/useWelcomeSlack";
@@ -19,9 +20,7 @@ export function SlackModalContent(props: {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [status, setStatus] = React.useState<string | null>(null);
-  const run = React.useCallback(async <T,>(fn: () => Promise<T>) => fn(), []);
-  const markSkillConnected = React.useCallback(() => {}, []);
-  const goSlackReturn = React.useCallback(() => {}, []);
+  const { run, markSkillConnected, goSkills: goSlackReturn } = useSettingsSkillAdapter();
 
   const { saveSlackConfig } = useWelcomeSlack({
     gw: props.gw,

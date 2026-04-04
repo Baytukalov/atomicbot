@@ -18,23 +18,16 @@ import { errorToMessage } from "@shared/toast";
 import type { ConfigData } from "@store/slices/configSlice";
 import { patchAuthProfile } from "../../shared/utils/authProfiles";
 import { getDefaultModelPrimary, getConfiguredProviders } from "./configParsing";
+import type { ConfigSnapshot, GatewayRpcLike } from "../../onboarding/hooks/types";
+
+type GatewayRpcWithStatus = GatewayRpcLike & { connected?: boolean };
 
 // TODO: move model catalog state (models, loading, error, keyConfiguredProviders)
 // into a Redux slice so any component can access it and gateway-reconnect
-// refresh logic lives in one place instead of a per-hook effect.
-type GatewayRpc = {
-  request: <T = unknown>(method: string, params?: unknown) => Promise<T>;
-  connected?: boolean;
-};
-
-type ConfigSnapshotLike = {
-  hash?: string;
-  config?: ConfigData;
-};
-
+// refresh logic lives in one place instead of a per-hook effect. (no tracking issue)
 export function useModelProvidersState(props: {
-  gw: GatewayRpc;
-  configSnap: ConfigSnapshotLike | null;
+  gw: GatewayRpcWithStatus;
+  configSnap: ConfigSnapshot | null;
   reload: () => Promise<void>;
   onError: (value: string | null) => void;
   isPaidMode: boolean;
@@ -58,14 +51,14 @@ export function useModelProvidersState(props: {
   // ── Derived state ──────────────────────────────────────────────
 
   const configModelId = React.useMemo(
-    () => getDefaultModelPrimary(props.configSnap?.config),
+    () => getDefaultModelPrimary(props.configSnap?.config as ConfigData | undefined),
     [props.configSnap?.config]
   );
 
   const activeModelId = optimisticModelId ?? configModelId;
 
   const configuredProviders = React.useMemo(
-    () => getConfiguredProviders(props.configSnap?.config),
+    () => getConfiguredProviders(props.configSnap?.config as ConfigData | undefined),
     [props.configSnap?.config]
   );
 
@@ -448,7 +441,10 @@ export function useModelProvidersState(props: {
           ),
           note: "Settings: set default model",
         });
-        await Promise.all([props.reload().catch(() => {}), clearSessionModelOverrides()]);
+        await Promise.all([
+          props.reload().catch((err) => console.warn("[model-providers] reload after model change:", err)),
+          clearSessionModelOverrides(),
+        ]);
       } catch (err) {
         props.onError(errorToMessage(err));
         setOptimisticModelId(null);

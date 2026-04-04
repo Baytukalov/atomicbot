@@ -9,28 +9,19 @@ import {
   MODEL_PROVIDERS,
   type ModelProvider,
 } from "@shared/models/providers";
-import type { ConfigData } from "@store/slices/configSlice";
 import { ProviderTile } from "./ProviderTile";
 import { ApiKeyModalContent } from "./ApiKeyModalContent";
 import { OAuthModalContent } from "./OAuthModalContent";
 import { OllamaModalContent } from "./OllamaModalContent";
 import { ModelsView } from "./ModelsView";
 import { useModelProvidersState } from "./useModelProvidersState";
-
-type GatewayRpc = {
-  request: <T = unknown>(method: string, params?: unknown) => Promise<T>;
-};
-
-type ConfigSnapshotLike = {
-  hash?: string;
-  config?: ConfigData;
-};
+import type { ConfigSnapshot, GatewayRpcLike } from "../../onboarding/hooks/types";
 
 export function ModelProvidersTab(props: {
   view: "models" | "providers";
   isPaidMode: boolean;
-  gw: GatewayRpc;
-  configSnap: ConfigSnapshotLike | null;
+  gw: GatewayRpcLike;
+  configSnap: ConfigSnapshot | null;
   reload: () => Promise<void>;
   onError: (value: string | null) => void;
 }) {

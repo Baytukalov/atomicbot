@@ -1,9 +1,6 @@
+import { LLAMACPP_LOCAL_BASE_URL } from "../../../../src/main/constants";
 import type { GatewayRequest } from "./chat/chatSlice";
-
-type ConfigSnapshotLike = {
-  hash?: string;
-  config?: unknown;
-};
+import type { ConfigSnapshot } from "../../ui/onboarding/hooks/types";
 
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -26,7 +23,7 @@ export async function applyLocalModelConfig(params: {
   modelName: string;
   contextLength?: number;
 }): Promise<string> {
-  const snap = await params.request<ConfigSnapshotLike>("config.get", {});
+  const snap = await params.request<ConfigSnapshot>("config.get", {});
   const baseHash = typeof snap.hash === "string" && snap.hash.trim() ? snap.hash.trim() : null;
   if (!baseHash) {
     throw new Error("Missing config base hash while enabling local model.");
@@ -70,7 +67,7 @@ export async function applyLocalModelConfig(params: {
         ...currentProviders,
         llamacpp: {
           ...asObject(currentProviders.llamacpp),
-          baseUrl: "http://127.0.0.1:18790",
+          baseUrl: LLAMACPP_LOCAL_BASE_URL,
           api: "openai-completions",
           apiKey: "LLAMACPP_LOCAL_KEY",
           models,
@@ -98,7 +95,7 @@ export async function applyLocalModelConfig(params: {
     raw: JSON.stringify(nextConfig, null, 2),
   });
 
-  const verify = await params.request<ConfigSnapshotLike>("config.get", {});
+  const verify = await params.request<ConfigSnapshot>("config.get", {});
   if (readPrimaryModel(verify.config) !== localModelRef) {
     throw new Error(`Local model config did not persist primary model: ${localModelRef}`);
   }

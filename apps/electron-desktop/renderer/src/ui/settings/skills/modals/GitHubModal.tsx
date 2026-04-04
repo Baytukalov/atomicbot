@@ -1,6 +1,7 @@
 import React from "react";
 
 import sm from "./SkillModal.module.css";
+import { useSettingsSkillAdapter } from "./useSettingsSkillAdapter";
 import { getDesktopApi, getDesktopApiOrNull } from "@ipc/desktopApi";
 import { ActionButton, InlineError, TextInput } from "@shared/kit";
 import { errorToMessage } from "@shared/toast";
@@ -19,9 +20,7 @@ export function GitHubModalContent(props: {
   const [error, setError] = React.useState<string | null>(null);
   const [status, setStatus] = React.useState<string | null>(null);
   const [ghUser, setGhUser] = React.useState<string | null>(null);
-  const run = React.useCallback(async <T,>(fn: () => Promise<T>) => fn(), []);
-  const markSkillConnected = React.useCallback(() => {}, []);
-  const goSkills = React.useCallback(() => {}, []);
+  const { run, markSkillConnected, goSkills } = useSettingsSkillAdapter();
 
   const { enableGitHub } = useWelcomeGitHub({
     gw: props.gw,

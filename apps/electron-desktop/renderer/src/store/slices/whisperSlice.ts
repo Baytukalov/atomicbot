@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import { getDesktopApiOrNull } from "@ipc/desktopApi";
+import { DESKTOP_API_UNAVAILABLE, getDesktopApiOrNull } from "@ipc/desktopApi";
 import { errorToMessage } from "../../ui/shared/toast";
 import { setVoiceProvider } from "@ui/chat/hooks/useVoiceInput";
 
@@ -51,7 +51,7 @@ export const downloadWhisperModel = createAsyncThunk(
   async (modelId: string, thunkApi) => {
     const api = getDesktopApiOrNull();
     if (!api?.whisperModelDownload) {
-      return thunkApi.rejectWithValue("Desktop API not available");
+      return thunkApi.rejectWithValue(DESKTOP_API_UNAVAILABLE);
     }
 
     thunkApi.dispatch(whisperActions.setDownload({ kind: "downloading", modelId, percent: 0 }));
