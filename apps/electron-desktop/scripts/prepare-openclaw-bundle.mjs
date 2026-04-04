@@ -517,6 +517,52 @@ function removeDanglingLinks(pnpmStoreDir) {
   }
 }
 
+function installExtensionRuntimeDeps() {
+  const extensionsDir = path.join(outDir, "dist", "extensions");
+  if (!fs.existsSync(extensionsDir)) return;
+
+  const missingSpecs = [];
+  for (const ext of fs.readdirSync(extensionsDir, { withFileTypes: true })) {
+    if (!ext.isDirectory()) continue;
+    const pkgPath = path.join(extensionsDir, ext.name, "package.json");
+    if (!fs.existsSync(pkgPath)) continue;
+
+    let pkg;
+    try {
+      pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+    } catch {
+      continue;
+    }
+
+    const deps = { ...pkg.dependencies, ...pkg.optionalDependencies };
+    for (const [name, version] of Object.entries(deps)) {
+      const sentinel = path.join(nmDir, ...name.split("/"), "package.json");
+      if (!fs.existsSync(sentinel)) {
+        missingSpecs.push(`${name}@${version}`);
+      }
+    }
+  }
+
+  if (missingSpecs.length === 0) {
+    console.log("[electron-desktop] All extension runtime deps already present");
+    return;
+  }
+
+  const uniqueSpecs = [...new Set(missingSpecs)];
+  console.log(
+    `[electron-desktop] Installing ${uniqueSpecs.length} missing extension runtime deps: ${uniqueSpecs.join(", ")}`
+  );
+  run("npm", [
+    "install",
+    "--omit=dev",
+    "--no-save",
+    "--package-lock=false",
+    "--legacy-peer-deps",
+    "--ignore-scripts",
+    ...uniqueSpecs,
+  ], { cwd: outDir });
+}
+
 async function main() {
   rmrfStrict(outDir);
   ensureDir(path.dirname(outDir));
@@ -526,6 +572,7 @@ async function main() {
   verifyControlUiBuilt();
   run(PNPM, ["-C", repoRoot, "--filter", "openclaw", "--prod", "--legacy", "deploy", outDir]);
 
+  installExtensionRuntimeDeps();
   hoistPnpmVirtualStoreToRoot();
   pruneKnownUnneededPackages();
 
