@@ -482,9 +482,7 @@ export function buildAgentSystemPrompt(params: {
     return "You are a personal assistant running inside OpenClaw.";
   }
 
-  const lines = [
-    "You are a personal assistant running inside OpenClaw.",
-    "",
+  const toolingSection = [
     "## Tooling",
     "Structured tool definitions are the source of truth for tool names, descriptions, and parameters.",
     "Tool names are case-sensitive. Call tools exactly as listed in the structured tool definitions.",
@@ -520,6 +518,15 @@ export function buildAgentSystemPrompt(params: {
       : []),
     "Do not poll `subagents list` / `sessions_list` in a loop; only check status on-demand (for intervention, debugging, or when explicitly asked).",
     "",
+  ];
+
+  const lines = [
+    "You are a personal assistant running inside OpenClaw.",
+    "",
+    ...buildOverridablePromptSection({
+      override: providerSectionOverrides.tooling,
+      fallback: toolingSection,
+    }),
     ...buildOverridablePromptSection({
       override: providerSectionOverrides.interaction_style,
       fallback: [],
@@ -553,38 +560,59 @@ export function buildAgentSystemPrompt(params: {
       override: providerStablePrefix,
       fallback: [],
     }),
-    ...safetySection,
-    "## OpenClaw CLI Quick Reference",
-    "OpenClaw is controlled via subcommands. Do not invent commands.",
-    "To manage the Gateway daemon service (start/stop/restart):",
-    "- openclaw gateway status",
-    "- openclaw gateway start",
-    "- openclaw gateway stop",
-    "- openclaw gateway restart",
-    "If unsure, ask the user to run `openclaw help` (or `openclaw gateway --help`) and paste the output.",
-    "",
-    ...skillsSection,
-    ...memorySection,
-    // Skip self-update for subagent/none modes
-    hasGateway && !isMinimal ? "## OpenClaw Self-Update" : "",
-    hasGateway && !isMinimal
-      ? [
-          "Get Updates (self-update) is ONLY allowed when the user explicitly asks for it.",
-          "Do not run config.apply or update.run unless the user explicitly requests an update or config change; if it's not explicit, ask first.",
-          "Use config.schema.lookup with a specific dot path to inspect only the relevant config subtree before making config changes or answering config-field questions; avoid guessing field names/types.",
-          "Actions: config.schema.lookup, config.get, config.apply (validate + write full config, then restart), config.patch (partial update, merges with existing), update.run (update deps or git, then restart).",
-          "After restart, OpenClaw pings the last active session automatically.",
-        ].join("\n")
-      : "",
-    hasGateway && !isMinimal ? "" : "",
-    "",
-    // Skip model aliases for subagent/none modes
-    modelAliasLines.length > 0 && !isMinimal ? "## Model Aliases" : "",
-    modelAliasLines.length > 0 && !isMinimal
-      ? "Prefer aliases when specifying model overrides; full provider/model is also accepted."
-      : "",
-    modelAliasLines.length > 0 && !isMinimal ? modelAliasLines.join("\n") : "",
-    modelAliasLines.length > 0 && !isMinimal ? "" : "",
+    ...buildOverridablePromptSection({
+      override: providerSectionOverrides.safety,
+      fallback: safetySection,
+    }),
+    ...buildOverridablePromptSection({
+      override: providerSectionOverrides.cli_reference,
+      fallback: [
+        "## OpenClaw CLI Quick Reference",
+        "OpenClaw is controlled via subcommands. Do not invent commands.",
+        "To manage the Gateway daemon service (start/stop/restart):",
+        "- openclaw gateway status",
+        "- openclaw gateway start",
+        "- openclaw gateway stop",
+        "- openclaw gateway restart",
+        "If unsure, ask the user to run `openclaw help` (or `openclaw gateway --help`) and paste the output.",
+        "",
+      ],
+    }),
+    ...buildOverridablePromptSection({
+      override: providerSectionOverrides.skills,
+      fallback: skillsSection,
+    }),
+    ...buildOverridablePromptSection({
+      override: providerSectionOverrides.memory,
+      fallback: memorySection,
+    }),
+    ...(hasGateway && !isMinimal
+      ? buildOverridablePromptSection({
+          override: providerSectionOverrides.self_update,
+          fallback: [
+            "## OpenClaw Self-Update",
+            [
+              "Get Updates (self-update) is ONLY allowed when the user explicitly asks for it.",
+              "Do not run config.apply or update.run unless the user explicitly requests an update or config change; if it's not explicit, ask first.",
+              "Use config.schema.lookup with a specific dot path to inspect only the relevant config subtree before making config changes or answering config-field questions; avoid guessing field names/types.",
+              "Actions: config.schema.lookup, config.get, config.apply (validate + write full config, then restart), config.patch (partial update, merges with existing), update.run (update deps or git, then restart).",
+              "After restart, OpenClaw pings the last active session automatically.",
+            ].join("\n"),
+            "",
+          ],
+        })
+      : []),
+    ...(modelAliasLines.length > 0 && !isMinimal
+      ? buildOverridablePromptSection({
+          override: providerSectionOverrides.model_aliases,
+          fallback: [
+            "## Model Aliases",
+            "Prefer aliases when specifying model overrides; full provider/model is also accepted.",
+            modelAliasLines.join("\n"),
+            "",
+          ],
+        })
+      : []),
     userTimezone
       ? "If you need the current date, time, or day of week, run session_status (📊 session_status)."
       : "",
@@ -593,72 +621,92 @@ export function buildAgentSystemPrompt(params: {
     workspaceGuidance,
     ...workspaceNotes,
     "",
-    ...docsSection,
-    params.sandboxInfo?.enabled ? "## Sandbox" : "",
-    params.sandboxInfo?.enabled
-      ? [
-          "You are running in a sandboxed runtime (tools execute in Docker).",
-          "Some tools may be unavailable due to sandbox policy.",
-          "Sub-agents stay sandboxed (no elevated/host access). Need outside-sandbox read/write? Don't spawn; ask first.",
-          hasSessionsSpawn && acpEnabled
-            ? 'ACP harness spawns are blocked from sandboxed sessions (`sessions_spawn` with `runtime: "acp"`). Use `runtime: "subagent"` instead.'
-            : "",
-          params.sandboxInfo.containerWorkspaceDir
-            ? `Sandbox container workdir: ${sanitizeForPromptLiteral(params.sandboxInfo.containerWorkspaceDir)}`
-            : "",
-          params.sandboxInfo.workspaceDir
-            ? `Sandbox host mount source (file tools bridge only; not valid inside sandbox exec): ${sanitizeForPromptLiteral(params.sandboxInfo.workspaceDir)}`
-            : "",
-          params.sandboxInfo.workspaceAccess
-            ? `Agent workspace access: ${params.sandboxInfo.workspaceAccess}${
-                params.sandboxInfo.agentWorkspaceMount
-                  ? ` (mounted at ${sanitizeForPromptLiteral(params.sandboxInfo.agentWorkspaceMount)})`
-                  : ""
-              }`
-            : "",
-          params.sandboxInfo.browserBridgeUrl ? "Sandbox browser: enabled." : "",
-          params.sandboxInfo.browserNoVncUrl
-            ? `Sandbox browser observer (noVNC): ${sanitizeForPromptLiteral(params.sandboxInfo.browserNoVncUrl)}`
-            : "",
-          params.sandboxInfo.hostBrowserAllowed === true
-            ? "Host browser control: allowed."
-            : params.sandboxInfo.hostBrowserAllowed === false
-              ? "Host browser control: blocked."
-              : "",
-          params.sandboxInfo.elevated?.allowed
-            ? "Elevated exec is available for this session."
-            : "",
-          params.sandboxInfo.elevated?.allowed
-            ? "User can toggle with /elevated on|off|ask|full."
-            : "",
-          params.sandboxInfo.elevated?.allowed
-            ? "You may also send /elevated on|off|ask|full when needed."
-            : "",
-          params.sandboxInfo.elevated?.allowed
-            ? `Current elevated level: ${params.sandboxInfo.elevated.defaultLevel} (ask runs exec on host with approvals; full auto-approves).`
-            : "",
-        ]
-          .filter(Boolean)
-          .join("\n")
-      : "",
-    params.sandboxInfo?.enabled ? "" : "",
-    ...buildUserIdentitySection(ownerLine, isMinimal),
+    ...buildOverridablePromptSection({
+      override: providerSectionOverrides.docs,
+      fallback: docsSection,
+    }),
+    ...(params.sandboxInfo?.enabled
+      ? buildOverridablePromptSection({
+          override: providerSectionOverrides.sandbox,
+          fallback: [
+            "## Sandbox",
+            [
+              "You are running in a sandboxed runtime (tools execute in Docker).",
+              "Some tools may be unavailable due to sandbox policy.",
+              "Sub-agents stay sandboxed (no elevated/host access). Need outside-sandbox read/write? Don't spawn; ask first.",
+              hasSessionsSpawn && acpEnabled
+                ? 'ACP harness spawns are blocked from sandboxed sessions (`sessions_spawn` with `runtime: "acp"`). Use `runtime: "subagent"` instead.'
+                : "",
+              params.sandboxInfo.containerWorkspaceDir
+                ? `Sandbox container workdir: ${sanitizeForPromptLiteral(params.sandboxInfo.containerWorkspaceDir)}`
+                : "",
+              params.sandboxInfo.workspaceDir
+                ? `Sandbox host mount source (file tools bridge only; not valid inside sandbox exec): ${sanitizeForPromptLiteral(params.sandboxInfo.workspaceDir)}`
+                : "",
+              params.sandboxInfo.workspaceAccess
+                ? `Agent workspace access: ${params.sandboxInfo.workspaceAccess}${
+                    params.sandboxInfo.agentWorkspaceMount
+                      ? ` (mounted at ${sanitizeForPromptLiteral(params.sandboxInfo.agentWorkspaceMount)})`
+                      : ""
+                  }`
+                : "",
+              params.sandboxInfo.browserBridgeUrl ? "Sandbox browser: enabled." : "",
+              params.sandboxInfo.browserNoVncUrl
+                ? `Sandbox browser observer (noVNC): ${sanitizeForPromptLiteral(params.sandboxInfo.browserNoVncUrl)}`
+                : "",
+              params.sandboxInfo.hostBrowserAllowed === true
+                ? "Host browser control: allowed."
+                : params.sandboxInfo.hostBrowserAllowed === false
+                  ? "Host browser control: blocked."
+                  : "",
+              params.sandboxInfo.elevated?.allowed
+                ? "Elevated exec is available for this session."
+                : "",
+              params.sandboxInfo.elevated?.allowed
+                ? "User can toggle with /elevated on|off|ask|full."
+                : "",
+              params.sandboxInfo.elevated?.allowed
+                ? "You may also send /elevated on|off|ask|full when needed."
+                : "",
+              params.sandboxInfo.elevated?.allowed
+                ? `Current elevated level: ${params.sandboxInfo.elevated.defaultLevel} (ask runs exec on host with approvals; full auto-approves).`
+                : "",
+            ]
+              .filter(Boolean)
+              .join("\n"),
+            "",
+          ],
+        })
+      : []),
+    ...buildOverridablePromptSection({
+      override: providerSectionOverrides.authorized_senders,
+      fallback: buildUserIdentitySection(ownerLine, isMinimal),
+    }),
     ...buildTimeSection({
       userTimezone,
     }),
     "## Workspace Files (injected)",
     "These user-editable files are loaded by OpenClaw and included below in Project Context.",
     "",
-    ...buildReplyTagsSection(isMinimal),
-    ...buildMessagingSection({
-      isMinimal,
-      availableTools,
-      messageChannelOptions,
-      inlineButtonsEnabled,
-      runtimeChannel,
-      messageToolHints: params.messageToolHints,
+    ...buildOverridablePromptSection({
+      override: providerSectionOverrides.reply_tags,
+      fallback: buildReplyTagsSection(isMinimal),
     }),
-    ...buildVoiceSection({ isMinimal, ttsHint: params.ttsHint }),
+    ...buildOverridablePromptSection({
+      override: providerSectionOverrides.messaging,
+      fallback: buildMessagingSection({
+        isMinimal,
+        availableTools,
+        messageChannelOptions,
+        inlineButtonsEnabled,
+        runtimeChannel,
+        messageToolHints: params.messageToolHints,
+      }),
+    }),
+    ...buildOverridablePromptSection({
+      override: providerSectionOverrides.voice,
+      fallback: buildVoiceSection({ isMinimal, ttsHint: params.ttsHint }),
+    }),
   ];
 
   if (params.reactionGuidance) {
@@ -682,7 +730,12 @@ export function buildAgentSystemPrompt(params: {
             "- Use reactions to confirm understanding or agreement",
             "Guideline: react whenever it feels natural.",
           ].join("\n");
-    lines.push("## Reactions", guidanceText, "");
+    lines.push(
+      ...buildOverridablePromptSection({
+        override: providerSectionOverrides.reactions,
+        fallback: ["## Reactions", guidanceText, ""],
+      }),
+    );
   }
   if (reasoningHint) {
     lines.push("## Reasoning Format", reasoningHint, "");
@@ -703,23 +756,27 @@ export function buildAgentSystemPrompt(params: {
     }),
   );
 
-  // Skip silent replies for subagent/none modes
   if (!isMinimal) {
     lines.push(
-      "## Silent Replies",
-      `Use ${SILENT_REPLY_TOKEN} ONLY when no user-visible reply is required.`,
-      "",
-      "⚠️ Rules:",
-      "- Valid cases: silent housekeeping, deliberate no-op ambient wakeups, or after a messaging tool already delivered the user-visible reply.",
-      "- Never use it to avoid doing requested work or to end an actionable turn early.",
-      "- It must be your ENTIRE message - nothing else",
-      `- Never append it to an actual response (never include "${SILENT_REPLY_TOKEN}" in real replies)`,
-      "- Never wrap it in markdown or code blocks",
-      "",
-      `❌ Wrong: "Here's help... ${SILENT_REPLY_TOKEN}"`,
-      `❌ Wrong: "${SILENT_REPLY_TOKEN}"`,
-      `✅ Right: ${SILENT_REPLY_TOKEN}`,
-      "",
+      ...buildOverridablePromptSection({
+        override: providerSectionOverrides.silent_replies,
+        fallback: [
+          "## Silent Replies",
+          `Use ${SILENT_REPLY_TOKEN} ONLY when no user-visible reply is required.`,
+          "",
+          "⚠️ Rules:",
+          "- Valid cases: silent housekeeping, deliberate no-op ambient wakeups, or after a messaging tool already delivered the user-visible reply.",
+          "- Never use it to avoid doing requested work or to end an actionable turn early.",
+          "- It must be your ENTIRE message - nothing else",
+          `- Never append it to an actual response (never include "${SILENT_REPLY_TOKEN}" in real replies)`,
+          "- Never wrap it in markdown or code blocks",
+          "",
+          `❌ Wrong: "Here's help... ${SILENT_REPLY_TOKEN}"`,
+          `❌ Wrong: "${SILENT_REPLY_TOKEN}"`,
+          `✅ Right: ${SILENT_REPLY_TOKEN}`,
+          "",
+        ],
+      }),
     );
   }
 
@@ -746,16 +803,20 @@ export function buildAgentSystemPrompt(params: {
     lines.push(providerDynamicSuffix, "");
   }
 
-  // Skip heartbeats for subagent/none modes
   if (!isMinimal && heartbeatPrompt) {
     lines.push(
-      "## Heartbeats",
-      `Heartbeat prompt: ${heartbeatPrompt}`,
-      "If you receive a heartbeat poll (a user message matching the heartbeat prompt above), and there is nothing that needs attention, reply exactly:",
-      "HEARTBEAT_OK",
-      'OpenClaw treats a leading/trailing "HEARTBEAT_OK" as a heartbeat ack (and may discard it).',
-      'If something needs attention, do NOT include "HEARTBEAT_OK"; reply with the alert text instead.',
-      "",
+      ...buildOverridablePromptSection({
+        override: providerSectionOverrides.heartbeats,
+        fallback: [
+          "## Heartbeats",
+          `Heartbeat prompt: ${heartbeatPrompt}`,
+          "If you receive a heartbeat poll (a user message matching the heartbeat prompt above), and there is nothing that needs attention, reply exactly:",
+          "HEARTBEAT_OK",
+          'OpenClaw treats a leading/trailing "HEARTBEAT_OK" as a heartbeat ack (and may discard it).',
+          'If something needs attention, do NOT include "HEARTBEAT_OK"; reply with the alert text instead.',
+          "",
+        ],
+      }),
     );
   }
 

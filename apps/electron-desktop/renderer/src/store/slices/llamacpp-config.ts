@@ -86,6 +86,8 @@ export async function applyLocalModelConfig(params: {
           ...currentDefaultModels,
           [localModelRef]: currentDefaultModels[localModelRef] ?? {},
         },
+        bootstrapMaxChars: 5000,
+        bootstrapTotalMaxChars: 20000,
       },
     },
   };

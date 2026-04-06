@@ -217,10 +217,9 @@ export function resolveProviderSystemPromptContribution(params: {
   env?: NodeJS.ProcessEnv;
   context: ProviderSystemPromptContributionContext;
 }): ProviderSystemPromptContribution | undefined {
-  return (
-    resolveProviderRuntimePlugin(params)?.resolveSystemPromptContribution?.(params.context) ??
-    undefined
-  );
+  const plugin = resolveProviderRuntimePlugin(params);
+  const result = plugin?.resolveSystemPromptContribution?.(params.context) ?? undefined;
+  return result;
 }
 
 export async function prepareProviderDynamicModel(params: {

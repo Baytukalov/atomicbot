@@ -1,0 +1,13 @@
+{
+  "id": "llamacpp",
+  "enabledByDefault": true,
+  "providers": ["llamacpp"],
+  "providerAuthEnvVars": {
+    "llamacpp": ["LLAMACPP_API_KEY"]
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  }
+}

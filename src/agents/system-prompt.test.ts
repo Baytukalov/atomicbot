@@ -745,6 +745,63 @@ describe("buildAgentSystemPrompt", () => {
     expect(prompt).not.toContain("Bias toward action and momentum.");
   });
 
+  it("replaces new overridable sections (tooling, safety, cli, etc.) via sectionOverrides", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+      ownerNumbers: ["+123"],
+      toolNames: ["gateway", "message", "cron"],
+      heartbeatPrompt: "heartbeat-poll",
+      docsPath: "/docs",
+      promptContribution: {
+        sectionOverrides: {
+          tooling: "## Tooling\n\nCondensed tooling.",
+          safety: "## Safety\n\nCondensed safety.",
+          cli_reference: "## CLI\n\nCondensed CLI.",
+          self_update: "## Self-Update\n\nCondensed self-update.",
+          docs: "## Docs\n\nCondensed docs.",
+          reply_tags: "## Reply Tags\n\nCondensed reply tags.",
+          messaging: "## Messaging\n\nCondensed messaging.",
+          silent_replies: "## Silent Replies\n\nCondensed silent replies.",
+          heartbeats: "## Heartbeats\n\nCondensed heartbeats.",
+        },
+      },
+    });
+
+    expect(prompt).toContain("Condensed tooling.");
+    expect(prompt).toContain("Condensed safety.");
+    expect(prompt).toContain("Condensed CLI.");
+    expect(prompt).toContain("Condensed self-update.");
+    expect(prompt).toContain("Condensed docs.");
+    expect(prompt).toContain("Condensed reply tags.");
+    expect(prompt).toContain("Condensed messaging.");
+    expect(prompt).toContain("Condensed silent replies.");
+    expect(prompt).toContain("Condensed heartbeats.");
+
+    expect(prompt).not.toContain("Structured tool definitions are the source of truth");
+    expect(prompt).not.toContain("do not pursue self-preservation");
+    expect(prompt).not.toContain("OpenClaw is controlled via subcommands");
+    expect(prompt).not.toContain("Get Updates (self-update)");
+    expect(prompt).not.toContain("https://docs.openclaw.ai");
+    expect(prompt).not.toContain("Reply tags must be the very first token");
+    expect(prompt).not.toContain("automatically routes to the source channel");
+    expect(prompt).not.toContain("ONLY when no user-visible reply is required");
+    expect(prompt).not.toContain("heartbeat ack");
+  });
+
+  it("preserves default content when no sectionOverrides are provided", () => {
+    const prompt = buildAgentSystemPrompt({
+      workspaceDir: "/tmp/openclaw",
+      toolNames: ["gateway"],
+      docsPath: "/docs",
+    });
+
+    expect(prompt).toContain("Structured tool definitions are the source of truth");
+    expect(prompt).toContain("do not pursue self-preservation");
+    expect(prompt).toContain("OpenClaw is controlled via subcommands");
+    expect(prompt).toContain("Get Updates (self-update)");
+    expect(prompt).toContain("https://docs.openclaw.ai");
+  });
+
   it("places provider stable prefixes above the cache boundary", () => {
     const prompt = buildAgentSystemPrompt({
       workspaceDir: "/tmp/openclaw",
