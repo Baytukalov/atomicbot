@@ -53,7 +53,6 @@ function ChatRoute({ state }: { state: Extract<GatewayState, { kind: "ready" }> 
 
   return (
     <>
-      <UpdateBanner />
       <DefenderBanner />
       <AppBanners />
       {session?.trim() ? <ChatPage state={state} /> : <StartChatPage state={state} />}
@@ -69,6 +68,7 @@ function SidebarLayout() {
       <OptimisticSessionSync />
       <ExecApprovalOverlay />
       <SubscriptionPromoBannerSource />
+      <UpdateBanner />
       <div className={a.TopRightBannerStack}>
         <WarmupBanner />
         <LlamacppDownloadBanner />
@@ -236,6 +236,7 @@ export function App() {
               <Route path="messengers" element={<SettingsTab tab="connectors" />} />
               <Route path="skills" element={<SettingsTab tab="skills-integrations" />} />
               <Route path="voice" element={<SettingsTab tab="voice" />} />
+              <Route path="mcp-servers" element={<SettingsTab tab="mcp-servers" />} />
               <Route path="account" element={<SettingsTab tab="account" />} />
               <Route path="other" element={<SettingsTab tab="other" />} />
             </Route>

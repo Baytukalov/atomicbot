@@ -1,4 +1,5 @@
 import { html, nothing } from "lit";
+import { t } from "../../i18n/index.ts";
 import type {
   AgentIdentityResult,
   AgentsFilesListResult,
@@ -126,13 +127,13 @@ export function renderAgentOverview(params: {
         </div>
       </div>
 
-      ${
-        configDirty
-          ? html`
-              <div class="callout warn" style="margin-top: 16px">You have unsaved config changes.</div>
-            `
-          : nothing
-      }
+      ${configDirty
+        ? html`
+            <div class="callout warn" style="margin-top: 16px">
+              You have unsaved config changes.
+            </div>
+          `
+        : nothing}
 
       <div class="agent-model-select" style="margin-top: 20px;">
         <div class="label">Model Selection</div>
@@ -145,17 +146,13 @@ export function renderAgentOverview(params: {
               @change=${(e: Event) =>
                 onModelChange(agent.id, (e.target as HTMLSelectElement).value || null)}
             >
-              ${
-                isDefault
-                  ? html`
-                      <option value="">Not set</option>
-                    `
-                  : html`
+              ${isDefault
+                ? html` <option value="">Not set</option> `
+                : html`
                     <option value="">
                       ${defaultPrimary ? `Inherit default (${defaultPrimary})` : "Inherit default"}
                     </option>
-                  `
-              }
+                  `}
               ${buildModelOptions(configForm, effectivePrimary ?? undefined, params.modelCatalog)}
             </select>
           </label>
@@ -209,7 +206,7 @@ export function renderAgentOverview(params: {
             ?disabled=${configLoading}
             @click=${onConfigReload}
           >
-            Reload Config
+            ${t("common.reloadConfig")}
           </button>
           <button
             type="button"
