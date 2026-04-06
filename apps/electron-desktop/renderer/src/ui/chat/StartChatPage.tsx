@@ -14,6 +14,29 @@ import { routes } from "../app/routes";
 import { captureRenderer, ANALYTICS_EVENTS } from "@analytics";
 import ct from "./ChatTranscript.module.css";
 
+/** Persists New task composer text while switching sidebar routes (same app session). */
+const START_CHAT_DRAFT_KEY = "atomicbot:start-chat-draft";
+
+function readStartChatDraft(): string {
+  try {
+    return sessionStorage.getItem(START_CHAT_DRAFT_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function writeStartChatDraft(text: string): void {
+  try {
+    if (text) {
+      sessionStorage.setItem(START_CHAT_DRAFT_KEY, text);
+    } else {
+      sessionStorage.removeItem(START_CHAT_DRAFT_KEY);
+    }
+  } catch {
+    // ignore quota / private mode
+  }
+}
+
 function newSessionKey(): string {
   return `agent:main:main:${crypto.randomUUID().slice(0, 8)}`;
 }
@@ -35,9 +58,13 @@ export function StartChatPage({
     authMode === "paid" &&
     (subscription === null || subscription.status === "canceled");
   const composerRef = React.useRef<ChatComposerRef | null>(null);
-  const [input, setInput] = React.useState("");
+  const [input, setInput] = React.useState(readStartChatDraft);
   const [attachments, setAttachments] = React.useState<ChatAttachmentInput[]>([]);
   const [sending, setSending] = React.useState(false);
+
+  React.useEffect(() => {
+    writeStartChatDraft(input);
+  }, [input]);
 
   // Focus on mount (e.g. first visit to main chat).
   React.useEffect(() => {
@@ -173,6 +200,7 @@ export function StartChatPage({
         ...(apiAttachments?.length ? { attachments: apiAttachments } : {}),
       });
       captureRenderer(ANALYTICS_EVENTS.messageSent);
+      writeStartChatDraft("");
       setInput("");
       setAttachments([]);
       const title =
