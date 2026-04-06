@@ -91,6 +91,11 @@ docs/internal/
 tmp/
 IDENTITY.md
 USER.md
+# [llamacpp-condensed] Exceptions: lite workspace templates must be tracked
+# for packaging. The global IDENTITY.md/USER.md ignores above would otherwise
+# exclude docs/reference/templates/lite/IDENTITY.md and USER.md.
+!docs/reference/templates/**/IDENTITY.md
+!docs/reference/templates/**/USER.md
 .tgz
 .idea
 
