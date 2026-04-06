@@ -9,6 +9,7 @@ import type { ClawHubSortField } from "./useClawHubSkills";
 import { ClawHubGrid } from "./ClawHubGrid";
 import type { GatewayRpc } from "../skillDefinitions";
 import { BUILTIN_SKILL_IDS } from "../skillDefinitions";
+import { installSkillWithRetry } from "./install-with-retry";
 
 const VALID_SORT_FIELDS = new Set<ClawHubSortField>([
   "downloads",
@@ -104,14 +105,12 @@ export function ClawHubTab(props: {
       setActionSlug(slug);
       setActionKind("install");
       try {
-        await props.gw.request("skills.install", {
-          source: "clawhub",
-          slug,
-        });
+        await installSkillWithRetry(props.gw, slug);
         addToast(`Installed "${slug}" from ClawHub`);
         await props.onInstalledSkillsChanged();
       } catch (err) {
-        addToastError(err instanceof Error ? err.message : `Failed to install "${slug}"`);
+        const msg = err instanceof Error ? err.message : err && typeof err === "object" && "message" in err ? String((err as Record<string, unknown>).message) : null;
+        addToastError(msg || `Failed to install "${slug}"`);
       } finally {
         setActionSlug(null);
         setActionKind(null);

@@ -13,6 +13,7 @@ import { DetailSkeleton } from "./DetailSkeleton";
 import { ClawHubDetailHeader } from "./ClawHubDetailHeader";
 import { ClawHubDetailReadme } from "./ClawHubDetailReadme";
 import { ClawHubDetailSidebar } from "./ClawHubDetailSidebar";
+import { installSkillWithRetry } from "./install-with-retry";
 import s from "./ClawHubDetailPage.module.css";
 
 export function ClawHubDetailPage({
@@ -82,11 +83,12 @@ export function ClawHubDetailPage({
     if (!slug) return;
     setActionBusy(true);
     try {
-      await gw.request("skills.install", { source: "clawhub", slug });
+      await installSkillWithRetry(gw, slug);
       addToast(`Installed "${slug}" from ClawHub`);
       setInstalled(true);
     } catch (err) {
-      addToastError(err instanceof Error ? err.message : `Failed to install "${slug}"`);
+      const msg = err instanceof Error ? err.message : err && typeof err === "object" && "message" in err ? String((err as Record<string, unknown>).message) : null;
+      addToastError(msg || `Failed to install "${slug}"`);
     } finally {
       setActionBusy(false);
     }
