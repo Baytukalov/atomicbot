@@ -1,7 +1,8 @@
 import { resolveAnnounceTargetFromKey } from "../agents/tools/sessions-send-helpers.js";
-import { normalizeChannelId } from "../channels/plugins/index.js";
+import { getChannelPlugin, normalizeChannelId } from "../channels/plugins/index.js";
 import type { CliDeps } from "../cli/deps.js";
-import { parseSessionThreadInfo } from "../config/sessions/delivery-info.js";
+import { resolveMainSessionKeyFromConfig } from "../config/sessions.js";
+import { parseSessionThreadInfo } from "../config/sessions/thread-info.js";
 import { requestHeartbeatNow } from "../infra/heartbeat-wake.js";
 import { deliverOutboundPayloads } from "../infra/outbound/deliver.js";
 import { ackDelivery, enqueueDelivery, failDelivery } from "../infra/outbound/delivery-queue.js";
@@ -134,9 +135,8 @@ export async function scheduleRestartSentinelWake(params: { deps: CliDeps }) {
   );
 
   if (!sessionKey) {
-    // No session context means the config change came from an external UI
-    // (e.g. electron-desktop onboarding), not from a chat session.
-    // Skip enqueuing to avoid surfacing internal restart noise to the user.
+    const mainSessionKey = resolveMainSessionKeyFromConfig();
+    enqueueSystemEvent(message, { sessionKey: mainSessionKey });
     return;
   }
 
@@ -185,13 +185,19 @@ export async function scheduleRestartSentinelWake(params: { deps: CliDeps }) {
     sessionThreadId ??
     (origin?.threadId != null ? String(origin.threadId) : undefined);
 
-  // Slack uses replyToId (thread_ts) for threading, not threadId.
-  // The reply path does this mapping but deliverOutboundPayloads does not,
-  // so we must convert here to ensure post-restart notifications land in
-  // the originating Slack thread. See #17716.
-  const isSlack = channel === "slack";
-  const replyToId = isSlack && threadId != null && threadId !== "" ? String(threadId) : undefined;
-  const resolvedThreadId = isSlack ? undefined : threadId;
+  const replyTransport =
+    getChannelPlugin(channel)?.threading?.resolveReplyTransport?.({
+      cfg,
+      accountId: origin?.accountId,
+      threadId,
+    }) ?? null;
+  const replyToId = replyTransport?.replyToId ?? undefined;
+  const resolvedThreadId =
+    replyTransport && Object.hasOwn(replyTransport, "threadId")
+      ? replyTransport.threadId != null
+        ? String(replyTransport.threadId)
+        : undefined
+      : threadId;
   const outboundSession = buildOutboundSessionContext({
     cfg,
     sessionKey,
