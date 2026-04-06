@@ -72,7 +72,12 @@ export function LocalModelSelectPage(props: {
   }, [dispatch]);
 
   return (
-    <HeroPageLayout variant="compact" align="center" aria-label="Local model selection">
+    <HeroPageLayout
+      variant="compact"
+      align="center"
+      aria-label="Local model selection"
+      context="onboarding"
+    >
       <OnboardingHeader
         totalSteps={props.totalSteps}
         activeStep={props.activeStep}
