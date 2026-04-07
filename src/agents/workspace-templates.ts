@@ -3,9 +3,12 @@ import { fileURLToPath } from "node:url";
 import { resolveOpenClawPackageRoot } from "../infra/openclaw-root.js";
 import { pathExists } from "../utils.js";
 
+// [llamacpp-condensed] Changed from "templates" to "templates/lite" — lite
+// templates are shorter versions optimized for local models with smaller
+// context windows.
 const FALLBACK_TEMPLATE_DIR = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  "../../docs/reference/templates",
+  "../../docs/reference/templates/lite",
 );
 
 let cachedTemplateDir: string | undefined;
@@ -30,8 +33,8 @@ export async function resolveWorkspaceTemplateDir(opts?: {
 
     const packageRoot = await resolveOpenClawPackageRoot({ moduleUrl, argv1, cwd });
     const candidates = [
-      packageRoot ? path.join(packageRoot, "docs", "reference", "templates") : null,
-      cwd ? path.resolve(cwd, "docs", "reference", "templates") : null,
+      packageRoot ? path.join(packageRoot, "docs", "reference", "templates", "lite") : null,
+      cwd ? path.resolve(cwd, "docs", "reference", "templates", "lite") : null,
       FALLBACK_TEMPLATE_DIR,
     ].filter(Boolean) as string[];
 

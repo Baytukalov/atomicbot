@@ -38,6 +38,29 @@ describe("stripMetadata", () => {
     expect(stripMetadata('before <file path="/a.txt">content</file> after')).toBe("before  after");
   });
 
+  it("strips bootstrap truncation warning block", () => {
+    const input = [
+      "привет",
+      "",
+      "[Bootstrap truncation warning] Some workspace bootstrap files were truncated before injection. Treat Project Context as partial and read the relevant files directly if details seem missing.",
+      "",
+      "AGENTS.md: 7809 raw -> 4608 injected (~41% removed; max/file).",
+      "If unintentional, raise agents.defaults.bootstrapMaxChars and/or agents.defaults.bootstrapTotalMaxChars.",
+    ].join("\n");
+    expect(stripMetadata(input)).toBe("привет\n\n");
+  });
+
+  it("strips bootstrap truncation warning with text after block", () => {
+    const input =
+      "hello\n[Bootstrap truncation warning]\nSome text\n- file: 100 raw -> 50 injected\nIf unintentional, raise agents.defaults.bootstrapMaxChars and/or agents.defaults.bootstrapTotalMaxChars.\nbye";
+    expect(stripMetadata(input)).toBe("hello\n\nbye");
+  });
+
+  it("strips truncated bootstrap warning (no bootstrapTotalMaxChars anchor)", () => {
+    const input = "привет [Bootstrap truncation warning] Some workspace bootstrap files were truncated";
+    expect(stripMetadata(input)).toBe("привет ");
+  });
+
   it("handles empty string", () => {
     expect(stripMetadata("")).toBe("");
   });

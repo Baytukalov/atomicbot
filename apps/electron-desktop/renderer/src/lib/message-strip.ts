@@ -15,11 +15,14 @@ const MEDIA_REPLY_HINT_RE =
 const FILE_TAG_RE = /<file\b[^>]*>[\s\S]*?(<\/file>|$)/g;
 const MESSAGE_ID_RE = /^\s*\[message_id:\s*[^\]]+\]\s*$/gm;
 const THINK_BLOCK_RE = /<think>[\s\S]*?(?:<\/think>|$)/g;
+const BOOTSTRAP_WARNING_RE =
+  /\[Bootstrap truncation warning\][\s\S]*?(?:bootstrapTotalMaxChars\b[^\n]*|$)/g;
 
 /**
  * Strip all gateway-injected metadata from a raw message string:
  * inbound-meta untrusted context, date headers, attachment markers,
- * media-reply hint, file tags, and message_id hints.
+ * media-reply hint, file tags, message_id hints, and bootstrap
+ * truncation warnings echoed back by the model.
  */
 export function stripMetadata(text: string): string {
   return text
@@ -31,5 +34,6 @@ export function stripMetadata(text: string): string {
     .replace(LEGACY_MARKER_RE, "")
     .replace(MEDIA_REPLY_HINT_RE, "")
     .replace(FILE_TAG_RE, "")
-    .replace(MESSAGE_ID_RE, "");
+    .replace(MESSAGE_ID_RE, "")
+    .replace(BOOTSTRAP_WARNING_RE, "");
 }

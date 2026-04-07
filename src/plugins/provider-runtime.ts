@@ -217,10 +217,11 @@ export function resolveProviderSystemPromptContribution(params: {
   env?: NodeJS.ProcessEnv;
   context: ProviderSystemPromptContributionContext;
 }): ProviderSystemPromptContribution | undefined {
-  return (
-    resolveProviderRuntimePlugin(params)?.resolveSystemPromptContribution?.(params.context) ??
-    undefined
-  );
+  // [llamacpp-condensed] Split into separate lines for easier debugging of
+  // provider plugin contribution resolution (was a single return expression).
+  const plugin = resolveProviderRuntimePlugin(params);
+  const result = plugin?.resolveSystemPromptContribution?.(params.context) ?? undefined;
+  return result;
 }
 
 export async function prepareProviderDynamicModel(params: {
